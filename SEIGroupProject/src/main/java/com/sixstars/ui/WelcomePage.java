@@ -3,13 +3,11 @@ package com.sixstars.ui;
 import javax.swing.*;
 import java.awt.*;
 
-public class WelcomePage extends JFrame {
-    public WelcomePage() {
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+public class WelcomePage extends JPanel {
+    public WelcomePage(JPanel pages, CardLayout cardLayout) {
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(new Color(94, 190, 225));
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setBackground(new Color(94, 190, 225));
 
         JLabel label = new JLabel("Welcome to 6 Stars Hotel!");
         label.setFont(new Font("Times New Roman", Font.BOLD, 25));
@@ -17,22 +15,23 @@ public class WelcomePage extends JFrame {
 
         JButton loginButton = new JButton("Login");
         loginButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        loginButton.addActionListener(e -> {
+            cardLayout.show(pages, "login");
+        });
 
         JButton signUpButton = new JButton("Create Account");
         signUpButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        signUpButton.addActionListener(e->{
+            cardLayout.show(pages, "create account");
+        });
 
-        panel.add(Box.createVerticalGlue());
-        panel.add(label);
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
-        panel.add(loginButton);
-        panel.add(Box.createRigidArea(new Dimension(0, 5)));
-        panel.add(signUpButton);
-        panel.add(Box.createVerticalGlue());
+        add(Box.createVerticalGlue());
+        add(label);
+        add(Box.createRigidArea(new Dimension(0, 20)));
+        add(loginButton);
+        add(Box.createRigidArea(new Dimension(0, 5)));
+        add(signUpButton);
+        add(Box.createVerticalGlue());
 
-        add(panel);
-
-        setSize(700, 500);
-        setLocationRelativeTo(null);
-        setVisible(true);
     }
 }
