@@ -25,12 +25,20 @@ public class WelcomePage extends JPanel {
             cardLayout.show(pages, "create account");
         });
 
+        JButton makeReservationButton = new JButton("Make Reservation");
+        makeReservationButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        makeReservationButton.addActionListener(e->{
+            cardLayout.show(pages, "make reservation");
+        });
+
         add(Box.createVerticalGlue());
         add(label);
         add(Box.createRigidArea(new Dimension(0, 20)));
         add(loginButton);
         add(Box.createRigidArea(new Dimension(0, 5)));
         add(signUpButton);
+        add(Box.createRigidArea(new Dimension(0, 5)));
+        add(makeReservationButton);
         add(Box.createVerticalGlue());
 
     }
