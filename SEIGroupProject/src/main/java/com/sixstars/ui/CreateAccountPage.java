@@ -1,12 +1,17 @@
 package com.sixstars.ui;
 
+
+import com.sixstars.logicClasses.AccountController;
+
 import javax.swing.*;
 import java.awt.*;
 
-import static javax.swing.text.StyleConstants.setBackground;
-
 public class CreateAccountPage extends JPanel {
+    private final AccountController accountController;
+
     public CreateAccountPage(JPanel pages, CardLayout cardLayout) {
+        accountController = new AccountController();
+
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
@@ -22,9 +27,9 @@ public class CreateAccountPage extends JPanel {
         mainPanel.add(titleLabel);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 30)));
 
-        JPanel formPanel = new JPanel(new GridLayout(6, 2, 10, 15));
+        JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 15));
         formPanel.setBackground(Color.WHITE);
-        formPanel.setMaximumSize(new Dimension(500, 250));
+        formPanel.setMaximumSize(new Dimension(500, 200));
 
         JLabel firstNameLabel = new JLabel("First Name:");
         JTextField firstNameField = new JTextField();
@@ -67,22 +72,47 @@ public class CreateAccountPage extends JPanel {
         add(mainPanel, BorderLayout.CENTER);
 
         createButton.addActionListener(e -> {
-            String firstName = firstNameField.getText();
-            String lastName = lastNameField.getText();
-            String email = emailField.getText();
-            String password = new String(passwordField.getPassword());
+            String firstName = firstNameField.getText().trim();
+            String lastName = lastNameField.getText().trim();
+            String email = emailField.getText().trim();
+            String password = new String(passwordField.getPassword()).trim();
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Guest account created for " + firstName + " " + lastName,
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
+            if (firstName.isEmpty() || lastName.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please fill in all fields.",
+                        "Missing Information",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
+            }
 
-            firstNameField.setText("");
-            lastNameField.setText("");
-            emailField.setText("");
-            passwordField.setText("");
+            try {
+                accountController.createGuestAccount(firstName, lastName, email, password);
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Guest account created for " + firstName + " " + lastName,
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+
+                firstNameField.setText("");
+                lastNameField.setText("");
+                emailField.setText("");
+                passwordField.setText("");
+
+                CardLayout cl = (CardLayout) pages.getLayout();
+                cl.show(pages, "welcome");
+
+            } catch (RuntimeException ex) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        ex.getMessage(),
+                        "Account Creation Failed",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
         });
 
         backButton.addActionListener(e -> {
