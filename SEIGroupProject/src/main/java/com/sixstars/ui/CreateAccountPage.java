@@ -35,12 +35,6 @@ public class CreateAccountPage extends JPanel {
         JLabel emailLabel = new JLabel("Email:");
         JTextField emailField = new JTextField();
 
-        JLabel phoneLabel = new JLabel("Phone Number:");
-        JTextField phoneField = new JTextField();
-
-        JLabel usernameLabel = new JLabel("Username:");
-        JTextField usernameField = new JTextField();
-
         JLabel passwordLabel = new JLabel("Password:");
         JPasswordField passwordField = new JPasswordField();
 
@@ -52,12 +46,6 @@ public class CreateAccountPage extends JPanel {
 
         formPanel.add(emailLabel);
         formPanel.add(emailField);
-
-        formPanel.add(phoneLabel);
-        formPanel.add(phoneField);
-
-        formPanel.add(usernameLabel);
-        formPanel.add(usernameField);
 
         formPanel.add(passwordLabel);
         formPanel.add(passwordField);
@@ -82,8 +70,6 @@ public class CreateAccountPage extends JPanel {
             String firstName = firstNameField.getText();
             String lastName = lastNameField.getText();
             String email = emailField.getText();
-            String phone = phoneField.getText();
-            String username = usernameField.getText();
             String password = new String(passwordField.getPassword());
 
             JOptionPane.showMessageDialog(
@@ -96,8 +82,6 @@ public class CreateAccountPage extends JPanel {
             firstNameField.setText("");
             lastNameField.setText("");
             emailField.setText("");
-            phoneField.setText("");
-            usernameField.setText("");
             passwordField.setText("");
         });
 
