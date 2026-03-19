@@ -1,16 +1,22 @@
 package com.sixstars.logicClasses;
 
-public class GuestAccount {
+enum Role {
+    GUEST, CLERK, ADMIN;
+}
+
+public class Account {
     private String password;
     private String email;
     private String firstName;
     private String lastName;
+    private Role role;
 
-    public GuestAccount(String password, String email, String firstName, String lastName) {
+    public Account(String password, String email, String firstName, String lastName, Role role) {
         this.password = password;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.role = role;
     }
 
     public String getPassword() {
@@ -44,4 +50,5 @@ public class GuestAccount {
     public void setEmail(String email) {
         this.email = email;
     }
+
 }
