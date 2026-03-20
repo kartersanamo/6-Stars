@@ -15,7 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
 public class AccountService {
-    private static final String FILE_PATH = "src/main/resources/accounts.json";
+    private static final String FILE_PATH = "accounts.json";
     private final Gson gson;
 
     public AccountService() {
