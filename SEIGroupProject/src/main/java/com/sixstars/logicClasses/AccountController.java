@@ -9,7 +9,7 @@ public class AccountController {
         accountService = new AccountService();
     }
 
-    public Account createGuestAccount(String firstName, String lastName, String email, String password) {
-        return accountService.createGuestAccount(firstName, lastName, email, password);
+    public Account createAccount(String firstName, String lastName, String email, String password, Role role) {
+        return accountService.createAccount(firstName, lastName, email, password, role);
     }
 }
