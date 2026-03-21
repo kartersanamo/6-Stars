@@ -1,5 +1,5 @@
 package com.sixstars.logicClasses;
 
-enum Role {
+public enum Role {
     GUEST, CLERK, ADMIN;
 }

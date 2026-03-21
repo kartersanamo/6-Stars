@@ -2,6 +2,7 @@ package com.sixstars.ui;
 
 import javax.swing.*;
 import java.awt.*;
+import com.sixstars.logicClasses.Main;
 
 public class WelcomePage extends JPanel {
     public WelcomePage(JPanel pages, CardLayout cardLayout) {
@@ -22,6 +23,7 @@ public class WelcomePage extends JPanel {
         JButton signUpButton = new JButton("Create Account");
         signUpButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         signUpButton.addActionListener(e->{
+            Main.createAccountPage.refresh();
             cardLayout.show(pages, "create account");
         });
 
