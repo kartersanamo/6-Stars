@@ -22,7 +22,7 @@ public class AccountService {
         gson = new GsonBuilder().setPrettyPrinting().create();
     }
 
-    public Account createGuestAccount(String firstName, String lastName, String email, String password) {
+    public Account createAccount(String firstName, String lastName, String email, String password, Role role) {
         ArrayList<Account> accounts = loadAccounts();
 
         for (Account acc : accounts) {
@@ -38,7 +38,7 @@ public class AccountService {
                 lastName,
                 email,
                 passwordHash,
-                Role.GUEST
+                role
         );
 
         accounts.add(guestAccount);
@@ -77,7 +77,7 @@ public class AccountService {
         }
     }
 
-    private String hashPassword(String password) {
+    public String hashPassword(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] hashedBytes = md.digest(password.getBytes(StandardCharsets.UTF_8));

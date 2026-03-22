@@ -2,15 +2,24 @@ package com.sixstars.ui;
 
 
 import com.sixstars.logicClasses.AccountController;
+import com.sixstars.logicClasses.Role;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class CreateAccountPage extends JPanel {
     private final AccountController accountController;
-
+    JPanel formPanel;
+    JLabel roleLabel;
+    JComboBox<Role> roleComboBox;
+    Boolean isAdmin;
     public CreateAccountPage(JPanel pages, CardLayout cardLayout) {
+
+
+
+
         accountController = new AccountController();
+        
 
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
@@ -27,7 +36,8 @@ public class CreateAccountPage extends JPanel {
         mainPanel.add(titleLabel);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 30)));
 
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 15));
+        formPanel = new JPanel();
+        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         formPanel.setBackground(Color.WHITE);
         formPanel.setMaximumSize(new Dimension(500, 200));
 
@@ -43,17 +53,58 @@ public class CreateAccountPage extends JPanel {
         JLabel passwordLabel = new JLabel("Password:");
         JPasswordField passwordField = new JPasswordField();
 
+    
+        roleLabel = new JLabel("Role:");
+        Role[] roles = {Role.GUEST, Role.CLERK, Role.ADMIN};
+        roleComboBox = new JComboBox<>(roles);
+        roleComboBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+
+        // Set the sizing and centering
+        Dimension fieldSize = new Dimension(300, 25);
+        firstNameField.setMaximumSize(fieldSize);
+        lastNameField.setMaximumSize(fieldSize);
+        emailField.setMaximumSize(fieldSize);
+        passwordField.setMaximumSize(fieldSize);
+        roleComboBox.setMaximumSize(fieldSize);
+
+
+        firstNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        firstNameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        lastNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lastNameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        emailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        emailField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        passwordLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        passwordField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        roleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        roleComboBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         formPanel.add(firstNameLabel);
         formPanel.add(firstNameField);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         formPanel.add(lastNameLabel);
         formPanel.add(lastNameField);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         formPanel.add(emailLabel);
         formPanel.add(emailField);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         formPanel.add(passwordLabel);
         formPanel.add(passwordField);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+
+        formPanel.add(roleLabel);
+        formPanel.add(roleComboBox);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
 
         mainPanel.add(formPanel);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 25)));
@@ -76,6 +127,7 @@ public class CreateAccountPage extends JPanel {
             String lastName = lastNameField.getText().trim();
             String email = emailField.getText().trim();
             String password = new String(passwordField.getPassword()).trim();
+            Role roleSet;
 
             if (firstName.isEmpty() || lastName.isEmpty() || email.isEmpty() || password.isEmpty()) {
                 JOptionPane.showMessageDialog(
@@ -87,12 +139,22 @@ public class CreateAccountPage extends JPanel {
                 return;
             }
 
+          
+
+
             try {
-                accountController.createGuestAccount(firstName, lastName, email, password);
+                // Assuming you are not an admin, default to making a guest:
+                if (!isAdmin) {
+                    roleSet = Role.GUEST;
+                }
+                else {
+                    roleSet = (Role) roleComboBox.getSelectedItem();
+                }
+                accountController.createAccount(firstName, lastName, email, password, roleSet);
 
                 JOptionPane.showMessageDialog(
                         this,
-                        "Guest account created for " + firstName + " " + lastName,
+                        roleSet + " account created for " + firstName + " " + lastName,
                         "Success",
                         JOptionPane.INFORMATION_MESSAGE
                 );
@@ -113,11 +175,23 @@ public class CreateAccountPage extends JPanel {
                         JOptionPane.ERROR_MESSAGE
                 );
             }
+            backButton.addActionListener(ac -> {
+                CardLayout cl = (CardLayout) pages.getLayout();
+                cl.show(pages, "welcome");
+            });
         });
+    }
+    
 
-        backButton.addActionListener(e -> {
-            CardLayout cl = (CardLayout) pages.getLayout();
-            cl.show(pages, "welcome");
-        });
+    public void refresh() {
+        isAdmin = AccountController.currentAccount != null &&
+                  AccountController.currentAccount.getRole() == Role.ADMIN;
+
+        // Show or hide the role dropdown
+        roleLabel.setVisible(isAdmin);
+        roleComboBox.setVisible(isAdmin);
+
+        formPanel.revalidate();
+        formPanel.repaint();
     }
 }
