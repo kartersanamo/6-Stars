@@ -1,4 +1,4 @@
-package com.sixstars.logicClasses;
+package com.sixstars.model;
 
 public enum BedType {
     SINGLE,

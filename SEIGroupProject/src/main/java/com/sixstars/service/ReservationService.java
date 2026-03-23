@@ -1,7 +1,10 @@
-package com.sixstars.logicClasses;
+package com.sixstars.service;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
+import com.sixstars.model.BedType;
+import com.sixstars.model.Reservation;
+import com.sixstars.model.Room;
 
 import java.io.File;
 import java.io.FileReader;

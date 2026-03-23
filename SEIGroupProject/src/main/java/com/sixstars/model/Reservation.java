@@ -1,4 +1,4 @@
-package com.sixstars.logicClasses;
+package com.sixstars.model;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -9,7 +9,7 @@ public class Reservation {
     LocalDate startDate, endDate;
     List<Room> rooms;
 
-    Reservation(LocalDate startDate, LocalDate endDate, List<Room> rooms){
+    public Reservation(LocalDate startDate, LocalDate endDate, List<Room> rooms){
         this.id = nextId++;
         this.startDate = startDate;
         this.endDate = endDate;

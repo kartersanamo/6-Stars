@@ -1,4 +1,4 @@
-package com.sixstars.logicClasses;
+package com.sixstars.controller;
 
 import java.io.FileReader;
 import java.util.List;
@@ -7,6 +7,8 @@ import java.lang.reflect.Type;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.sixstars.model.Account;
+import com.sixstars.service.AccountService;
 
 public class LoginController {
     public static Account checkLogin(String username, String password) {

@@ -1,8 +1,10 @@
-package com.sixstars.logicClasses;
+package com.sixstars.service;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.sixstars.model.Account;
+import com.sixstars.model.Role;
 
 import java.io.File;
 import java.io.FileReader;

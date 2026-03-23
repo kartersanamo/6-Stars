@@ -1,4 +1,8 @@
-package com.sixstars.logicClasses;
+package com.sixstars.controller;
+
+import com.sixstars.model.Role;
+import com.sixstars.model.Account;
+import com.sixstars.service.AccountService;
 
 public class AccountController {
     private final AccountService accountService;
