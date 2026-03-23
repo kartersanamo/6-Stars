@@ -1,8 +1,9 @@
 package com.sixstars.logicClasses;
 
+import com.sixstars.ui.AdminPage;
 import com.sixstars.ui.CreateAccountPage;
-import com.sixstars.ui.MakeReservationPage;
 import com.sixstars.ui.LoginPage;
+import com.sixstars.ui.MakeReservationPage;
 import com.sixstars.ui.WelcomePage;
 
 import javax.swing.*;
@@ -15,6 +16,7 @@ public class Main {
     public static void createAndShowUI() {
         RoomService roomService = new RoomService();
         ReservationService reservationService = new ReservationService();
+        AdminAuth adminAuth = new AdminAuth();
 
         JFrame frame = new JFrame("6 Stars Hotel");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -31,6 +33,7 @@ public class Main {
 
         pages.add(welcomePage, "welcome");
         pages.add(loginPage, "login");
+        pages.add(adminPage, "admin");
         pages.add(createAccountPage, "create account");
         pages.add(makeReservationPage, "make reservation");
 

@@ -1,5 +1,7 @@
 package com.sixstars.ui;
 
+import com.sixstars.logicClasses.AdminAuth;
+
 import javax.swing.*;
 
 import com.sixstars.logicClasses.LoginController;
@@ -9,16 +11,21 @@ import com.sixstars.logicClasses.AccountController;
 import java.awt.*;
 
 public class LoginPage extends JPanel {
-    public LoginPage(JPanel pages, CardLayout cardLayout) {
+    public LoginPage(JPanel pages, CardLayout cardLayout, AdminAuth adminAuth) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(Color.WHITE);
 
-        JLabel label = new JLabel("Login Page");
+        JLabel label = new JLabel("Admin Login");
         label.setFont(new Font("Times New Roman", Font.BOLD, 25));
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JButton backButton = new JButton("Back");
-        backButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JTextField usernameField = new JTextField(18);
+        JPasswordField passwordField = new JPasswordField(18);
+
+        JPanel userRow = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        userRow.setBackground(Color.WHITE);
+        userRow.add(new JLabel("Username:"));
+        userRow.add(usernameField);
 
 
           // Username
@@ -56,6 +63,10 @@ public class LoginPage extends JPanel {
             cardLayout.show(pages, "welcome");
         });
 
+        JButton backButton = new JButton("Back");
+        backButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        backButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
+
         add(Box.createVerticalGlue());
         add(label);
 
@@ -73,6 +84,11 @@ public class LoginPage extends JPanel {
         add(Box.createRigidArea(new Dimension(0, 20)));
         add(loginButton);
         add(Box.createRigidArea(new Dimension(0, 20)));
+        add(userRow);
+        add(passRow);
+        add(Box.createRigidArea(new Dimension(0, 12)));
+        add(loginButton);
+        add(Box.createRigidArea(new Dimension(0, 8)));
         add(backButton);
         add(Box.createVerticalGlue());
     }
