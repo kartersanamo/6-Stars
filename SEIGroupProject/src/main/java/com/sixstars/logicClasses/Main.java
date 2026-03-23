@@ -16,7 +16,6 @@ public class Main {
     public static void createAndShowUI() {
         RoomService roomService = new RoomService();
         ReservationService reservationService = new ReservationService();
-        AdminAuth adminAuth = new AdminAuth();
 
         JFrame frame = new JFrame("6 Stars Hotel");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -33,7 +32,7 @@ public class Main {
 
         pages.add(welcomePage, "welcome");
         pages.add(loginPage, "login");
-        pages.add(adminPage, "admin");
+        pages.add(new AdminPage(pages, cardLayout), "admin");
         pages.add(createAccountPage, "create account");
         pages.add(makeReservationPage, "make reservation");
 
@@ -41,7 +40,7 @@ public class Main {
         frame.setVisible(true);
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> createAndShowUI());
+    static void main() {
+        SwingUtilities.invokeLater(Main::createAndShowUI);
     }
 }
