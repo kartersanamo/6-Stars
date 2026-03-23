@@ -47,5 +47,12 @@
     "email": "testEmail@email.com",
     "passwordHash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
     "role": "ADMIN"
+  },
+  {
+    "firstName": "Georgia",
+    "lastName": "Rushing",
+    "email": "georgia_rushing1@baylor.edu",
+    "passwordHash": "f8638b979b2f4f793ddb6dbd197e0ee25a7a6ea32b0ae22f5e3c5d119d839e75",
+    "role": "GUEST"
   }
 ]
