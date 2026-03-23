@@ -40,7 +40,7 @@ public class Main {
         frame.setVisible(true);
     }
 
-    static void main() {
+    public static void main(String[] args) {
         SwingUtilities.invokeLater(Main::createAndShowUI);
     }
 }
