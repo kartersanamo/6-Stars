@@ -1,9 +1,6 @@
 package com.sixstars.ui;
 
-import com.sixstars.logicClasses.BedType;
-import com.sixstars.logicClasses.ReservationService;
-import com.sixstars.logicClasses.Room;
-import com.sixstars.logicClasses.RoomService;
+import com.sixstars.logicClasses.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,7 +15,7 @@ public class MakeReservationPage extends JPanel {
 
     private JTextField startField, endField;
     private JComboBox<BedType> bedTypeBox;
-    private JButton searchButton, bookButton, logoutButton; // Added logout for navigation
+    private JButton searchButton, bookButton, logoutButton, backButton; // Added logout for navigation
     private JList<Room> resultsList;
     private DefaultListModel<Room> listModel;
 
@@ -38,6 +35,7 @@ public class MakeReservationPage extends JPanel {
         searchButton = new JButton("Search Rooms");
         bookButton = new JButton("Book Selected Room");
         logoutButton = new JButton("Logout");
+        backButton = new JButton("Back");
 
         listModel = new DefaultListModel<>();
         resultsList = new JList<>(listModel);
@@ -57,6 +55,7 @@ public class MakeReservationPage extends JPanel {
         JPanel bottomPanel = new JPanel();
         bottomPanel.add(bookButton);
         bottomPanel.add(logoutButton);
+        bottomPanel.add(backButton);
         add(bottomPanel, BorderLayout.SOUTH);
 
         // 4. Action Listeners
@@ -107,6 +106,16 @@ public class MakeReservationPage extends JPanel {
             resService.makeReservation(start, end, List.of(selectedRoom));
             JOptionPane.showMessageDialog(this, "Reservation Successful!");
             listModel.clear(); // Clear results after booking
+        });
+
+        backButton.addActionListener(e -> {
+            if (AccountController.currentAccount != null) {
+                // User is logged in, go to the Menu Page we just made
+                cardLayout.show(pages, "menu page");
+            } else {
+                // User is not logged in, go back to the Welcome screen
+                cardLayout.show(pages, "welcome");
+            }
         });
 
         // Navigation back to Welcome

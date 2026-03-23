@@ -18,13 +18,13 @@ public class LoginController {
             Type listType = new TypeToken<List<Account>>(){}.getType();
 
             List<Account> users = gson.fromJson(
-               new FileReader("accounts.json"), listType
+                    new FileReader("accounts.json"), listType
             );
 
             for (Account user : users) {
                 if (user.getEmail().equals(username) &&
-                   user.getPasswordHash().equals(hashPassword)) {
-                   return user;
+                        user.getPasswordHash().equals(hashPassword)) {
+                    return user;
                 }
             }
         } catch (Exception e) {

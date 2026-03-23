@@ -6,6 +6,7 @@ import com.sixstars.logicClasses.LoginController;
 import com.sixstars.logicClasses.Account;
 import com.sixstars.logicClasses.AccountController;
 import com.sixstars.logicClasses.Role;
+import com.sixstars.logicClasses.Main;
 
 public class LoginPage extends JPanel {
     public LoginPage(JPanel pages, CardLayout cardLayout) {
@@ -33,15 +34,17 @@ public class LoginPage extends JPanel {
         loginButton.addActionListener(_ -> {
             String email = emailField.getText();
             String password = new String(passwordField.getPassword());
+
             Account a = LoginController.checkLogin(email, password);
+
             if (a != null) {
                 AccountController.currentAccount = a;
                 if (a.getRole() == Role.ADMIN) {
                     JOptionPane.showMessageDialog(this, "Login successful! (Admin)");
                     cardLayout.show(pages, "admin");
                 } else {
-                    JOptionPane.showMessageDialog(this, "Login successful!");
-                    cardLayout.show(pages, "nextPage");
+                    Main.menuPage.updateWelcomeMessage();
+                    cardLayout.show(pages, "menu page");
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid credentials.");
