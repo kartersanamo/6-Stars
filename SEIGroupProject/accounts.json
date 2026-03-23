@@ -40,5 +40,12 @@
     "email": "kartersanamo@gmail.com",
     "passwordHash": "0a7d19792efae443b191d1ca054e8e5e7af8a0a873019448bb4880084d5bd394",
     "role": "ADMIN"
+  },
+  {
+    "firstName": "Nolan",
+    "lastName": "Schirripa",
+    "email": "testEmail@email.com",
+    "passwordHash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+    "role": "ADMIN"
   }
 ]

@@ -175,13 +175,15 @@ public class CreateAccountPage extends JPanel {
                         JOptionPane.ERROR_MESSAGE
                 );
             }
-            backButton.addActionListener(ac -> {
-                CardLayout cl = (CardLayout) pages.getLayout();
-                cl.show(pages, "welcome");
-            });
+        });
+
+        backButton.addActionListener(ac -> {
+            cardLayout.show(pages, "welcome");
         });
     }
-    
+
+
+
 
     public void refresh() {
         isAdmin = AccountController.currentAccount != null &&

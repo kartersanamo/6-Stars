@@ -16,11 +16,11 @@ public class LoginPage extends JPanel {
         label.setFont(new Font("Times New Roman", Font.BOLD, 25));
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel userLabel = new JLabel("Username:");
-        userLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JTextField usernameField = new JTextField(15);
-        usernameField.setMaximumSize(new Dimension(200, 30));
-        usernameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel emailLabel = new JLabel("Email:");
+        emailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JTextField emailField = new JTextField(15);
+        emailField.setMaximumSize(new Dimension(200, 30));
+        emailField.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel passLabel = new JLabel("Password:");
         passLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -31,9 +31,9 @@ public class LoginPage extends JPanel {
         JButton loginButton = new JButton("Log In");
         loginButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         loginButton.addActionListener(_ -> {
-            String username = usernameField.getText();
+            String email = emailField.getText();
             String password = new String(passwordField.getPassword());
-            Account a = LoginController.checkLogin(username, password);
+            Account a = LoginController.checkLogin(email, password);
             if (a != null) {
                 AccountController.currentAccount = a;
                 if (a.getRole() == Role.ADMIN) {
@@ -55,9 +55,9 @@ public class LoginPage extends JPanel {
         add(Box.createVerticalGlue());
         add(label);
         add(Box.createRigidArea(new Dimension(0, 30)));
-        add(userLabel);
+        add(emailLabel);
         add(Box.createRigidArea(new Dimension(0, 15)));
-        add(usernameField);
+        add(emailField);
         add(Box.createRigidArea(new Dimension(0, 15)));
         add(passLabel);
         add(Box.createRigidArea(new Dimension(0, 10)));
