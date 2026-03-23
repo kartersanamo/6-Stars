@@ -10,6 +10,9 @@ import javax.swing.*;
 import java.awt.*;
 
 public class Main {
+
+    public static CreateAccountPage createAccountPage;
+
     public static void createAndShowUI() {
         RoomService roomService = new RoomService();
         ReservationService reservationService = new ReservationService();
@@ -24,9 +27,8 @@ public class Main {
         JPanel pages = new JPanel(cardLayout);
 
         WelcomePage welcomePage = new WelcomePage(pages, cardLayout);
-        LoginPage loginPage = new LoginPage(pages, cardLayout, adminAuth);
-        AdminPage adminPage = new AdminPage(pages, cardLayout);
-        CreateAccountPage createAccountPage = new CreateAccountPage(pages, cardLayout);
+        LoginPage loginPage = new LoginPage(pages, cardLayout);
+        createAccountPage = new CreateAccountPage(pages, cardLayout);
         MakeReservationPage makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
 
         pages.add(welcomePage, "welcome");

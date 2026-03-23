@@ -3,6 +3,11 @@ package com.sixstars.ui;
 import com.sixstars.logicClasses.AdminAuth;
 
 import javax.swing.*;
+
+import com.sixstars.logicClasses.LoginController;
+import com.sixstars.logicClasses.Account;
+import com.sixstars.logicClasses.AccountController;
+
 import java.awt.*;
 
 public class LoginPage extends JPanel {
@@ -22,33 +27,40 @@ public class LoginPage extends JPanel {
         userRow.add(new JLabel("Username:"));
         userRow.add(usernameField);
 
-        JPanel passRow = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        passRow.setBackground(Color.WHITE);
-        passRow.add(new JLabel("Password:"));
-        passRow.add(passwordField);
 
-        JButton loginButton = new JButton("Login");
+          // Username
+          JLabel userLabel = new JLabel("Username:");
+          userLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+  
+          JTextField usernameField = new JTextField(15);
+          usernameField.setMaximumSize(new Dimension(200, 30));
+          usernameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+
+          // Password
+        JLabel passLabel = new JLabel("Password:");
+        passLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JPasswordField passwordField = new JPasswordField(15);
+        passwordField.setMaximumSize(new Dimension(200, 30));
+        passwordField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JButton loginButton = new JButton("Log In");
         loginButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         loginButton.addActionListener(e -> {
             String username = usernameField.getText();
-            char[] password = passwordField.getPassword();
-            if (username.isBlank() || password.length == 0) {
-                JOptionPane.showMessageDialog(this,
-                        "Please enter username and password.",
-                        "Login",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            if (adminAuth.authenticate(username, password)) {
-                passwordField.setText("");
-                cardLayout.show(pages, "admin");
+            String password = new String(passwordField.getPassword());
+            Account a = LoginController.checkLogin(username, password);
+            if (a != null) {
+                AccountController.currentAccount = a;
+                JOptionPane.showMessageDialog(this, "Login successful!");
+                cardLayout.show(pages, "nextPage");
             } else {
-                passwordField.setText("");
-                JOptionPane.showMessageDialog(this,
-                        "Invalid username or password.",
-                        "Login",
-                        JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid credentials.");
             }
+        });
+        backButton.addActionListener(e -> {
+            cardLayout.show(pages, "welcome");
         });
 
         JButton backButton = new JButton("Back");
@@ -57,6 +69,20 @@ public class LoginPage extends JPanel {
 
         add(Box.createVerticalGlue());
         add(label);
+
+        add(Box.createRigidArea(new Dimension(0, 30)));
+        add(userLabel);
+        add(Box.createRigidArea(new Dimension(0, 15)));
+        add(usernameField);
+        add(Box.createRigidArea(new Dimension(0, 15)));
+
+        add(passLabel);
+        add(Box.createRigidArea(new Dimension(0, 10)));
+        add(passwordField);
+        add(Box.createRigidArea(new Dimension(0, 20)));
+
+        add(Box.createRigidArea(new Dimension(0, 20)));
+        add(loginButton);
         add(Box.createRigidArea(new Dimension(0, 20)));
         add(userRow);
         add(passRow);
