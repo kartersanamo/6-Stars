@@ -1,10 +1,10 @@
-package com.sixstars.logicClasses;
+package com.sixstars.model;
 
 public class Room {
     int roomNumber;
     BedType type;
 
-    Room(int rn, BedType t){
+    public Room(int rn, BedType t){
         roomNumber = rn;
         type = t;
     }

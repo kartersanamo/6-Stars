@@ -2,7 +2,7 @@ package com.sixstars.ui;
 
 import javax.swing.*;
 import java.awt.*;
-import com.sixstars.logicClasses.Main;
+import com.sixstars.app.Main;
 
 public class WelcomePage extends JPanel {
     public WelcomePage(JPanel pages, CardLayout cardLayout) {

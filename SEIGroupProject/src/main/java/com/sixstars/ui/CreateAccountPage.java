@@ -1,8 +1,8 @@
 package com.sixstars.ui;
 
 
-import com.sixstars.logicClasses.AccountController;
-import com.sixstars.logicClasses.Role;
+import com.sixstars.controller.AccountController;
+import com.sixstars.model.Role;
 
 import javax.swing.*;
 import java.awt.*;

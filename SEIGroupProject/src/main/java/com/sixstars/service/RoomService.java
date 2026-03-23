@@ -1,4 +1,7 @@
-package com.sixstars.logicClasses;
+package com.sixstars.service;
+
+import com.sixstars.model.BedType;
+import com.sixstars.model.Room;
 
 import java.util.ArrayList;
 import java.util.List;
