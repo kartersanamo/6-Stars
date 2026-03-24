@@ -1,0 +1,24 @@
+[
+  {
+    "id": 0,
+    "startDate": "2026-10-01",
+    "endDate": "2026-10-06",
+    "rooms": [
+      {
+        "roomNumber": 103,
+        "type": "SINGLE"
+      }
+    ]
+  },
+  {
+    "id": 0,
+    "startDate": "2026-10-10",
+    "endDate": "2026-10-11",
+    "rooms": [
+      {
+        "roomNumber": 103,
+        "type": "SINGLE"
+      }
+    ]
+  }
+]

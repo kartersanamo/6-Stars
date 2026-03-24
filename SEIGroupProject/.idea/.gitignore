@@ -8,5 +8,10 @@
 /dataSources.local.xml
 # Editor-based HTTP Client requests
 /httpRequests/
-# ignore all json files
-*.json
+# Ignore compiled python bytecode, etc. (if applicable)
+*.class
+
+# Ignore IDE specific files
+.idea/
+.vscode/
+*.iml
