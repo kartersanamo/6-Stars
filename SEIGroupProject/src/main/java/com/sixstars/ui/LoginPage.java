@@ -2,6 +2,8 @@ package com.sixstars.ui;
 
 import javax.swing.*;
 import java.awt.*;
+
+import com.sixstars.app.Main;
 import com.sixstars.controller.LoginController;
 import com.sixstars.model.Account;
 import com.sixstars.controller.AccountController;
@@ -40,8 +42,8 @@ public class LoginPage extends JPanel {
                     JOptionPane.showMessageDialog(this, "Login successful! (Admin)");
                     cardLayout.show(pages, "admin");
                 } else {
-                    JOptionPane.showMessageDialog(this, "Login successful!");
-                    cardLayout.show(pages, "nextPage");
+                    Main.menuPage.updateWelcomeMessage();
+                    cardLayout.show(pages, "menu page");
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid credentials.");
