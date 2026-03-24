@@ -26,9 +26,9 @@ public class RoomService {
 
     private void initializeRooms() {
         // TODO: only for testing
-        allRooms.add(new Room(101, BedType.KING));
-        allRooms.add(new Room(102, BedType.QUEEN));
-        allRooms.add(new Room(103, BedType.SINGLE));
+        allRooms.add(new Room(101, BedType.KING, false));
+        allRooms.add(new Room(102, BedType.QUEEN, false));
+        allRooms.add(new Room(103, BedType.SINGLE, false));
         saveRoomsToFile();
     }
 

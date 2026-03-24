@@ -3,10 +3,12 @@ package com.sixstars.model;
 public class Room {
     int roomNumber;
     BedType type;
+    Boolean smoking;
 
-    public Room(int rn, BedType t){
+    public Room(int rn, BedType t, boolean s){
         roomNumber = rn;
         type = t;
+        smoking = s;
     }
 
     @Override
@@ -20,4 +22,5 @@ public class Room {
     public BedType getBedType() {
         return type;
     }
+    public Boolean getSmoking() { return smoking; }
 }
