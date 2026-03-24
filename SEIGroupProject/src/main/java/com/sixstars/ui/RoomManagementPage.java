@@ -34,8 +34,8 @@ public class RoomManagementPage extends JPanel {
         roomNumField = new JTextField();
         bedTypeBox = new JComboBox<>(BedType.values());
         JButton btnConfirmAdd = new JButton("Add Room to Inventory");
-        btnConfirmAdd.setBackground(new Color(51, 102, 255));
-        btnConfirmAdd.setForeground(Color.WHITE);
+        btnConfirmAdd.setBackground(new Color(63, 78, 246));
+        btnConfirmAdd.setForeground(Color.BLACK);
 
         addCard.add(new JLabel("Room Number:"));
         addCard.add(roomNumField);
