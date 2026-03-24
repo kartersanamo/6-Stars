@@ -1,0 +1,14 @@
+[
+  {
+    "roomNumber": 101,
+    "type": "KING"
+  },
+  {
+    "roomNumber": 102,
+    "type": "QUEEN"
+  },
+  {
+    "roomNumber": 103,
+    "type": "SINGLE"
+  }
+]
