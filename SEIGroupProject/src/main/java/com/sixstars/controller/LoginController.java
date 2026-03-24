@@ -9,11 +9,13 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.sixstars.model.Account;
 import com.sixstars.service.AccountService;
+import com.sixstars.ui.AccountDetailsPage;
 
 public class LoginController {
     public static Account checkLogin(String username, String password) {
         AccountService aService = new AccountService();
         String hashPassword = aService.hashPassword(password);
+
 
         try {
             Gson gson = new Gson();
@@ -26,6 +28,7 @@ public class LoginController {
             for (Account user : users) {
                 if (user.getEmail().equals(username) &&
                         user.getPasswordHash().equals(hashPassword)) {
+                    AccountController.currentAccount = user;
                     return user;
                 }
             }

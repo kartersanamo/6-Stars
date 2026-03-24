@@ -29,7 +29,7 @@ public class MenuPage extends JPanel {
         // Navigation Logic
         btnReserve.addActionListener(e -> cardLayout.show(pages, "make reservation"));
         btnShop.addActionListener(e -> JOptionPane.showMessageDialog(this, "Store coming soon"));
-        btnAccount.addActionListener(e -> JOptionPane.showMessageDialog(this, "Account details coming soon"));
+        btnAccount.addActionListener(e -> cardLayout.show(pages, "account details"));
 
         menuPanel.add(btnReserve);
         menuPanel.add(btnShop);
