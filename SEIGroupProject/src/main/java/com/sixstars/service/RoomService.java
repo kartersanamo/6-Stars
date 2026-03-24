@@ -24,6 +24,17 @@ public class RoomService {
         }
     }
 
+    public void addRoom(Room newRoom) {
+        // Check for duplicates so you don't have two Room 101s
+        for (Room r : allRooms) {
+            if (r.getRoomNumber() == newRoom.getRoomNumber()) {
+                throw new IllegalArgumentException("Room " + r.getRoomNumber() + " already exists!");
+            }
+        }
+        allRooms.add(newRoom);
+        saveRoomsToFile(); // Important: writes it to rooms.json!
+    }
+
     private void initializeRooms() {
         // TODO: only for testing
         allRooms.add(new Room(101, BedType.KING));
