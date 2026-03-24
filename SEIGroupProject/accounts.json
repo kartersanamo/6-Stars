@@ -54,5 +54,26 @@
     "email": "georgia_rushing1@baylor.edu",
     "passwordHash": "f8638b979b2f4f793ddb6dbd197e0ee25a7a6ea32b0ae22f5e3c5d119d839e75",
     "role": "GUEST"
+  },
+  {
+    "firstName": "admin_first",
+    "lastName": "admin_last",
+    "email": "admin",
+    "passwordHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+    "role": "ADMIN"
+  },
+  {
+    "firstName": "guest_first",
+    "lastName": "guest_last",
+    "email": "guest",
+    "passwordHash": "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
+    "role": "GUEST"
+  },
+  {
+    "firstName": "clerk_first",
+    "lastName": "clerk_last",
+    "email": "clerk",
+    "passwordHash": "c40dc72b0228e5850d8b173ff861a48acfb4a15b37b2849cbb6584bbadbc7907",
+    "role": "CLERK"
   }
 ]
