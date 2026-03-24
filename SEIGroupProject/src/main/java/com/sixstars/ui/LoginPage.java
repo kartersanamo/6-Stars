@@ -48,6 +48,9 @@ public class LoginPage extends JPanel {
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid credentials.");
             }
+            // reset email and password fields
+            emailField.setText("");
+            passwordField.setText("");
         });
 
         JButton backButton = new JButton("Back");
