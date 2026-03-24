@@ -10,5 +10,9 @@
   {
     "roomNumber": 103,
     "type": "SINGLE"
+  },
+  {
+    "roomNumber": 104,
+    "type": "DOUBLE"
   }
 ]

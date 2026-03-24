@@ -29,6 +29,7 @@ public class Main {
         createAccountPage = new CreateAccountPage(pages, cardLayout);
         menuPage = new MenuPage(pages, cardLayout);
         MakeReservationPage makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
+        RoomManagementPage roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
         AccountDetailsPage accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
 
         pages.add(welcomePage, "welcome");
@@ -37,6 +38,7 @@ public class Main {
         pages.add(createAccountPage, "create account");
         pages.add(menuPage, "menu page");
         pages.add(makeReservationPage, "make reservation");
+        pages.add(roomManagementPage, "room management");
         pages.add(accountDetailsPage, "account details");
 
         frame.add(pages);
