@@ -43,6 +43,7 @@ public class LoginPage extends JPanel {
                     cardLayout.show(pages, "admin");
                 } else {
                     Main.menuPage.updateWelcomeMessage();
+                    Main.makeReservationPage.updatePermissions();
                     cardLayout.show(pages, "menu page");
                 }
             } else {

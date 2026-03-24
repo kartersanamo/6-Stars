@@ -1,14 +1,24 @@
 [
   {
     "roomNumber": 101,
-    "type": "KING"
+    "type": "KING",
+    "isSmoking": false
   },
   {
     "roomNumber": 102,
-    "type": "QUEEN"
+    "type": "QUEEN",
+    "isSmoking": false
   },
   {
     "roomNumber": 103,
-    "type": "SINGLE"
+    "type": "SINGLE",
+    "isSmoking": false
+  },
+  {
+    "roomNumber": 110,
+    "type": "QUEEN",
+    "theme": "URBAN_ELEGANCE",
+    "qualityLevel": "BUSINESS",
+    "isSmoking": true
   }
 ]

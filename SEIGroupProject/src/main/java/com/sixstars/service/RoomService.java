@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.sixstars.model.BedType;
+import com.sixstars.model.QualityLevel;
 import com.sixstars.model.Room;
+import com.sixstars.model.Theme;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -26,10 +28,21 @@ public class RoomService {
 
     private void initializeRooms() {
         // TODO: only for testing
-        allRooms.add(new Room(101, BedType.KING));
-        allRooms.add(new Room(102, BedType.QUEEN));
-        allRooms.add(new Room(103, BedType.SINGLE));
+        allRooms.add(new Room(101, BedType.KING, Theme.NATURE_RETREAT, QualityLevel.EXECUTIVE, false));
+        allRooms.add(new Room(201, BedType.QUEEN, Theme.URBAN_ELEGANCE, QualityLevel.BUSINESS, false));
+        allRooms.add(new Room(301, BedType.SINGLE, Theme.VINTAGE_CHARM, QualityLevel.ECONOMY, true));
         saveRoomsToFile();
+    }
+
+    public void addRoom(Room newRoom) {
+        // Check if room number already exists to prevent duplicates
+        for (Room r : allRooms) {
+            if (r.getRoomNumber() == newRoom.getRoomNumber()) {
+                throw new IllegalArgumentException("Room " + newRoom.getRoomNumber() + " already exists!");
+            }
+        }
+        allRooms.add(newRoom);
+        saveRoomsToFile(); // Save immediately so data isn't lost if app crashes
     }
 
     public void saveRoomsToFile(){

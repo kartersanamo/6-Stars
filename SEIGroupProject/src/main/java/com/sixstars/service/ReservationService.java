@@ -2,9 +2,7 @@ package com.sixstars.service;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import com.sixstars.model.BedType;
-import com.sixstars.model.Reservation;
-import com.sixstars.model.Room;
+import com.sixstars.model.*;
 
 import java.io.File;
 import java.io.FileReader;
@@ -66,10 +64,12 @@ public class ReservationService {
     /**
      * Filters a provided list of rooms based on criteria and availability.
      */
-    public List<Room> filterAvailableRooms(List<Room> roomsToSearch, LocalDate start, LocalDate end, BedType type) {
+    public List<Room> filterAvailableRooms(List<Room> roomsToSearch, LocalDate start, LocalDate end, BedType type, Theme theme, QualityLevel quality) {
         List<Reservation> currentReservations = loadReservations();
         return roomsToSearch.stream()
                 .filter(room -> room.getBedType() == type)
+                .filter(room -> room.getTheme() == theme) // New Filter
+                .filter(room -> room.getQualityLevel() == quality) // New Filter
                 .filter(room -> isRoomAvailableInternal(room, start, end, currentReservations))
                 .collect(Collectors.toList());
     }

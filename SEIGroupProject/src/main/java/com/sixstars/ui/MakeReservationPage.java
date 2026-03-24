@@ -1,9 +1,8 @@
 package com.sixstars.ui;
 
 import com.sixstars.controller.AccountController;
-import com.sixstars.model.BedType;
+import com.sixstars.model.*;
 import com.sixstars.service.ReservationService;
-import com.sixstars.model.Room;
 import com.sixstars.service.RoomService;
 
 import javax.swing.*;
@@ -19,7 +18,9 @@ public class MakeReservationPage extends JPanel {
 
     private JTextField startField, endField;
     private JComboBox<BedType> bedTypeBox;
-    private JButton searchButton, bookButton, logoutButton, backButton; // Added logout for navigation
+    private JComboBox<Theme> themeBox;         // Added
+    private JComboBox<QualityLevel> qualityBox; // Added
+    private JButton searchButton, bookButton, logoutButton, backButton, addRoomButton; // Added logout for navigation
     private JList<Room> resultsList;
     private DefaultListModel<Room> listModel;
 
@@ -36,22 +37,36 @@ public class MakeReservationPage extends JPanel {
         startField = new JTextField(10);
         endField = new JTextField(10);
         bedTypeBox = new JComboBox<>(BedType.values());
+        themeBox = new JComboBox<>(Theme.values());
+        qualityBox = new JComboBox<>(QualityLevel.values());
+
         searchButton = new JButton("Search Rooms");
         bookButton = new JButton("Book Selected Room");
         logoutButton = new JButton("Logout");
         backButton = new JButton("Back");
+        addRoomButton = new JButton("Add Room");
+        addRoomButton.setVisible(false); // Hidden by default
 
         listModel = new DefaultListModel<>();
         resultsList = new JList<>(listModel);
 
         // 3. Assemble UI
-        JPanel topPanel = new JPanel();
-        topPanel.add(new JLabel("Check-in (YYYY-MM-DD):"));
-        topPanel.add(startField);
-        topPanel.add(new JLabel("Check-out:"));
-        topPanel.add(endField);
-        topPanel.add(bedTypeBox);
-        topPanel.add(searchButton);
+        JPanel topPanel = new JPanel(new GridLayout(2, 1, 5, 5));
+
+        JPanel row1 = new JPanel();
+        row1.add(new JLabel("Check-in (YYYY-MM-DD):"));
+        row1.add(startField);
+        row1.add(new JLabel("Check-out:"));
+        row1.add(endField);
+
+        JPanel row2 = new JPanel();
+        row2.add(new JLabel("Bed Type:")); row2.add(bedTypeBox);
+        row2.add(new JLabel("Theme:")); row2.add(themeBox);
+        row2.add(new JLabel("Quality:")); row2.add(qualityBox);
+        row2.add(searchButton);
+
+        topPanel.add(row1);
+        topPanel.add(row2);
 
         add(topPanel, BorderLayout.NORTH);
         add(new JScrollPane(resultsList), BorderLayout.CENTER);
@@ -60,6 +75,7 @@ public class MakeReservationPage extends JPanel {
         bottomPanel.add(bookButton);
         bottomPanel.add(logoutButton);
         bottomPanel.add(backButton);
+        bottomPanel.add(addRoomButton);
         add(bottomPanel, BorderLayout.SOUTH);
 
         // 4. Action Listeners
@@ -82,9 +98,10 @@ public class MakeReservationPage extends JPanel {
                 }
 
                 BedType selectedType = (BedType) bedTypeBox.getSelectedItem();
-
+                Theme theme = (Theme) themeBox.getSelectedItem();
+                QualityLevel quality = (QualityLevel) qualityBox.getSelectedItem();
                 List<Room> allRooms = roomService.getAllRooms();
-                List<Room> found = resService.filterAvailableRooms(allRooms, start, end, selectedType);
+                List<Room> found = resService.filterAvailableRooms(allRooms, start, end, selectedType, theme, quality);
 
                 listModel.clear();
                 if (found.isEmpty()) {
@@ -124,5 +141,33 @@ public class MakeReservationPage extends JPanel {
 
         // Navigation back to Welcome
         logoutButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
+
+        addRoomButton.addActionListener(e -> {
+            Frame parent = (Frame) SwingUtilities.getWindowAncestor(this);
+            AddRoomDialog dialog = new AddRoomDialog(parent, roomService);
+            dialog.setVisible(true);
+
+            if (dialog.isSucceeded()) {
+                listModel.clear();
+                for (Room r : roomService.getAllRooms()) {
+                    listModel.addElement(r);
+                }
+                JOptionPane.showMessageDialog(this, "Room added successfully and list updated!");
+            }
+        });
+    }
+
+    public void updatePermissions() {
+        Account current = com.sixstars.controller.AccountController.currentAccount;
+
+        // Using == with Enums is the standard and safest way in Java
+        if (current != null && current.getRole() == Role.CLERK) {
+            addRoomButton.setVisible(true);
+        } else {
+            addRoomButton.setVisible(false);
+        }
+
+        this.revalidate();
+        this.repaint();
     }
 }
