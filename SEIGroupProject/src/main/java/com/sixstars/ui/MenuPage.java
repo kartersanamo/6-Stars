@@ -36,6 +36,7 @@ public class MenuPage extends JPanel {
         btnShop.addActionListener(e -> JOptionPane.showMessageDialog(this, "Store coming soon"));
         btnAccount.addActionListener(e -> JOptionPane.showMessageDialog(this, "Account details coming soon"));
         btnManageRooms.addActionListener(e -> cardLayout.show(pages, "room management"));
+        btnAccount.addActionListener(e -> cardLayout.show(pages, "account details"));
 
         menuPanel.add(btnReserve);
         menuPanel.add(btnShop);
