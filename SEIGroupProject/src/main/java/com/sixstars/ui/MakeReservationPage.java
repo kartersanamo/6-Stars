@@ -38,6 +38,7 @@ public class MakeReservationPage extends JPanel {
         bedTypeBox = new JComboBox<>(BedType.values());
         searchButton = new JButton("Search Rooms");
         bookButton = new JButton("Book Selected Room");
+        bookButton.setEnabled(false);
         logoutButton = new JButton("Logout");
         backButton = new JButton("Back");
 
@@ -92,6 +93,8 @@ public class MakeReservationPage extends JPanel {
                 } else {
                     found.forEach(listModel::addElement);
                 }
+
+                bookButton.setEnabled(true);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Check date format! Use 2026-03-18");
             }
@@ -124,5 +127,9 @@ public class MakeReservationPage extends JPanel {
 
         // Navigation back to Welcome
         logoutButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
+
+        // Initial display all Rooms
+        listModel.clear();
+        roomService.getAllRooms().forEach(listModel::addElement);
     }
 }
