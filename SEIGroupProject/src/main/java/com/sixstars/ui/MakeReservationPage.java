@@ -2,6 +2,8 @@ package com.sixstars.ui;
 
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.BedType;
+import com.sixstars.model.QualityLevel;
+import com.sixstars.model.Theme;
 import com.sixstars.service.ReservationService;
 import com.sixstars.model.Room;
 import com.sixstars.service.RoomService;
@@ -19,6 +21,8 @@ public class MakeReservationPage extends JPanel {
 
     private JTextField startField, endField;
     private JComboBox<BedType> bedTypeBox;
+    private JComboBox<Theme> themeBox;
+    private JComboBox<QualityLevel> qualityBox;
     private JButton searchButton, bookButton, logoutButton, backButton; // Added logout for navigation
     private JList<Room> resultsList;
     private DefaultListModel<Room> listModel;
@@ -30,12 +34,17 @@ public class MakeReservationPage extends JPanel {
         this.roomService = roomService;
 
         // 1. Setup Layout for this Panel
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout(15, 15));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // 2. Initialize Components
         startField = new JTextField(10);
         endField = new JTextField(10);
+
         bedTypeBox = new JComboBox<>(BedType.values());
+        themeBox = new JComboBox<>(Theme.values());
+        qualityBox = new JComboBox<>(QualityLevel.values());
+
         searchButton = new JButton("Search Rooms");
         bookButton = new JButton("Book Selected Room");
         bookButton.setEnabled(false);
@@ -44,14 +53,21 @@ public class MakeReservationPage extends JPanel {
 
         listModel = new DefaultListModel<>();
         resultsList = new JList<>(listModel);
+        resultsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         // 3. Assemble UI
-        JPanel topPanel = new JPanel();
+        JPanel topPanel = new JPanel(new GridLayout(3,4,10,10));
         topPanel.add(new JLabel("Check-in (YYYY-MM-DD):"));
         topPanel.add(startField);
         topPanel.add(new JLabel("Check-out:"));
         topPanel.add(endField);
+        topPanel.add(new JLabel("Bed Type:"));
         topPanel.add(bedTypeBox);
+        topPanel.add(new JLabel("Theme:"));
+        topPanel.add(themeBox);
+        topPanel.add(new JLabel("Quality:"));
+        topPanel.add(qualityBox);
+        topPanel.add(new JLabel(""));
         topPanel.add(searchButton);
 
         add(topPanel, BorderLayout.NORTH);
@@ -83,18 +99,20 @@ public class MakeReservationPage extends JPanel {
                 }
 
                 BedType selectedType = (BedType) bedTypeBox.getSelectedItem();
+                Theme selTheme = (Theme) themeBox.getSelectedItem();
+                QualityLevel selQual = (QualityLevel) qualityBox.getSelectedItem();
 
                 List<Room> allRooms = roomService.getAllRooms();
-                List<Room> found = resService.filterAvailableRooms(allRooms, start, end, selectedType);
+                List<Room> found = resService.filterAvailableRooms(allRooms, start, end, selectedType, selTheme, selQual);
 
                 listModel.clear();
                 if (found.isEmpty()) {
                     JOptionPane.showMessageDialog(this, "No rooms found for these criteria.");
                 } else {
                     found.forEach(listModel::addElement);
+                    bookButton.setEnabled(true);
                 }
 
-                bookButton.setEnabled(true);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Check date format! Use 2026-03-18");
             }
@@ -113,6 +131,7 @@ public class MakeReservationPage extends JPanel {
             resService.makeReservation(start, end, List.of(selectedRoom));
             JOptionPane.showMessageDialog(this, "Reservation Successful!");
             listModel.clear(); // Clear results after booking
+            bookButton.setEnabled(false);
         });
 
         backButton.addActionListener(e -> {

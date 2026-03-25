@@ -1,7 +1,9 @@
 package com.sixstars.ui;
 
 import com.sixstars.model.BedType;
+import com.sixstars.model.QualityLevel;
 import com.sixstars.model.Room;
+import com.sixstars.model.Theme;
 import com.sixstars.service.RoomService;
 import javax.swing.*;
 import java.awt.*;
@@ -11,6 +13,9 @@ public class RoomManagementPage extends JPanel {
     private JList<Room> roomList;
     private JTextField roomNumField;
     private JComboBox<BedType> bedTypeBox;
+    private JComboBox<Theme> themeBox;
+    private JComboBox<QualityLevel> qualityBox;
+    private JCheckBox smokingCheckBox;
 
     public RoomManagementPage(JPanel pages, CardLayout cardLayout, RoomService roomService) {
         setLayout(new BorderLayout(15, 15));
@@ -27,20 +32,34 @@ public class RoomManagementPage extends JPanel {
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
         centerPanel.setOpaque(false);
 
-        JPanel addCard = new JPanel(new GridLayout(3, 2, 10, 10));
+        JPanel addCard = new JPanel(new GridLayout(3, 4, 10, 10));
         addCard.setBorder(BorderFactory.createTitledBorder("Add New Room"));
-        addCard.setMaximumSize(new Dimension(500, 150));
+        addCard.setBackground(Color.WHITE);
 
         roomNumField = new JTextField();
         bedTypeBox = new JComboBox<>(BedType.values());
+        themeBox = new JComboBox<>(Theme.values());
+        qualityBox = new JComboBox<>(QualityLevel.values());
+        smokingCheckBox = new JCheckBox("Smoking Allowed");
+        smokingCheckBox.setBackground(Color.WHITE);
+
         JButton btnConfirmAdd = new JButton("Add Room to Inventory");
         btnConfirmAdd.setBackground(new Color(63, 78, 246));
         btnConfirmAdd.setForeground(Color.BLACK);
 
         addCard.add(new JLabel("Room Number:"));
         addCard.add(roomNumField);
+        addCard.add(new JLabel("Floor Theme:"));
+        addCard.add(themeBox);
+
         addCard.add(new JLabel("Bed Type:"));
         addCard.add(bedTypeBox);
+
+        addCard.add(new JLabel("Quality:"));
+        addCard.add(qualityBox);
+        addCard.add(new JLabel("Option:"));
+        addCard.add(smokingCheckBox);
+
         addCard.add(new JLabel(""));
         addCard.add(btnConfirmAdd);
 
@@ -67,9 +86,12 @@ public class RoomManagementPage extends JPanel {
             try {
                 int num = Integer.parseInt(roomNumField.getText());
                 BedType type = (BedType) bedTypeBox.getSelectedItem();
+                Theme theme = (Theme) themeBox.getSelectedItem();
+                QualityLevel quality = (QualityLevel) qualityBox.getSelectedItem();
+                boolean smoking = smokingCheckBox.isSelected();
 
                 // Create and Save
-                Room newRoom = new Room(num, type);
+                Room newRoom = new Room(num, type, theme, quality, smoking);
                 roomService.addRoom(newRoom);
 
                 // Update UI

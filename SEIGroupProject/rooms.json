@@ -1,18 +1,30 @@
 [
   {
     "roomNumber": 101,
-    "type": "KING"
+    "type": "KING",
+    "theme": "NATURE_RETREAT",
+    "qualityLevel": "EXECUTIVE",
+    "isSmoking": false
   },
   {
     "roomNumber": 102,
-    "type": "QUEEN"
+    "type": "QUEEN",
+    "theme": "URBAN_ELEGANCE",
+    "qualityLevel": "BUSINESS",
+    "isSmoking": false
   },
   {
     "roomNumber": 103,
-    "type": "SINGLE"
+    "type": "SINGLE",
+    "theme": "VINTAGE_CHARM",
+    "qualityLevel": "ECONOMY",
+    "isSmoking": true
   },
   {
     "roomNumber": 104,
-    "type": "DOUBLE"
+    "type": "QUEEN",
+    "theme": "NATURE_RETREAT",
+    "qualityLevel": "COMFORT",
+    "isSmoking": false
   }
 ]

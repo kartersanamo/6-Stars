@@ -2,9 +2,7 @@ package com.sixstars.service;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import com.sixstars.model.BedType;
-import com.sixstars.model.Reservation;
-import com.sixstars.model.Room;
+import com.sixstars.model.*;
 
 import java.io.File;
 import java.io.FileReader;
@@ -66,17 +64,21 @@ public class ReservationService {
     /**
      * Filters a provided list of rooms based on criteria and availability.
      */
-    public List<Room> filterAvailableRooms(List<Room> roomsToSearch, LocalDate start, LocalDate end, BedType type) {
+    public List<Room> filterAvailableRooms(List<Room> roomsToSearch, LocalDate start, LocalDate end, BedType type, Theme theme, QualityLevel quality) {
         List<Reservation> currentReservations = loadReservations();
         return roomsToSearch.stream()
                 .filter(room -> room.getBedType() == type)
+                .filter(room -> room.getTheme() == theme)
+                .filter(room -> room.getQualityLevel() == quality)
                 .filter(room -> isRoomAvailableInternal(room, start, end, currentReservations))
                 .collect(Collectors.toList());
     }
     // Helper method to check availability against a pre-loaded list
     private boolean isRoomAvailableInternal(Room room, LocalDate start, LocalDate end, List<Reservation> reservations) {
         for (Reservation res : reservations) {
-            if (res.getRooms().contains(room)) {
+            boolean containsRoom = res.getRooms().stream()
+                    .anyMatch(r -> r.getRoomNumber() == room.getRoomNumber());
+            if (containsRoom) {
                 if (start.isBefore(res.getEndDate()) && end.isAfter(res.getStartDate())) {
                     return false;
                 }
@@ -90,15 +92,7 @@ public class ReservationService {
      */
     public boolean isRoomAvailable(Room room, LocalDate start, LocalDate end) {
         ArrayList<Reservation> allReservations = loadReservations();
-        for (Reservation res : allReservations) {
-            if (res.getRooms().contains(room)) {
-                // Logic: An overlap exists if (StartA < EndB) AND (EndA > StartB)
-                if (start.isBefore(res.getEndDate()) && end.isAfter(res.getStartDate())) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        return isRoomAvailableInternal(room, start, end, allReservations);
     }
 
     /**
