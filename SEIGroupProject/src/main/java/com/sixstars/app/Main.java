@@ -18,7 +18,7 @@ public class Main {
 
         JFrame frame = new JFrame("6 Stars Hotel");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(700, 500);
+        frame.setSize(900, 600);
         frame.setLocationRelativeTo(null);
 
         CardLayout cardLayout = new CardLayout();
