@@ -1,30 +1,30 @@
 [
-  {
-    "roomNumber": 101,
-    "type": "KING",
-    "theme": "NATURE_RETREAT",
-    "qualityLevel": "EXECUTIVE",
-    "isSmoking": false
-  },
-  {
-    "roomNumber": 102,
-    "type": "QUEEN",
-    "theme": "URBAN_ELEGANCE",
-    "qualityLevel": "BUSINESS",
-    "isSmoking": false
-  },
-  {
-    "roomNumber": 103,
-    "type": "SINGLE",
-    "theme": "VINTAGE_CHARM",
-    "qualityLevel": "ECONOMY",
-    "isSmoking": true
-  },
-  {
-    "roomNumber": 104,
-    "type": "QUEEN",
-    "theme": "NATURE_RETREAT",
-    "qualityLevel": "COMFORT",
-    "isSmoking": false
-  }
+  { "roomNumber": 101, "bedType": "SINGLE", "theme": "NATURE_RETREAT", "qualityLevel": "ECONOMY", "isSmoking": false },
+  { "roomNumber": 102, "bedType": "DOUBLE", "theme": "NATURE_RETREAT", "qualityLevel": "ECONOMY", "isSmoking": false },
+  { "roomNumber": 103, "bedType": "QUEEN", "theme": "NATURE_RETREAT", "qualityLevel": "COMFORT", "isSmoking": false },
+  { "roomNumber": 104, "bedType": "KING", "theme": "NATURE_RETREAT", "qualityLevel": "BUSINESS", "isSmoking": false },
+  { "roomNumber": 105, "bedType": "TWIN", "theme": "NATURE_RETREAT", "qualityLevel": "ECONOMY", "isSmoking": true },
+  { "roomNumber": 106, "bedType": "DOUBLE", "theme": "NATURE_RETREAT", "qualityLevel": "COMFORT", "isSmoking": false },
+  { "roomNumber": 107, "bedType": "QUEEN", "theme": "NATURE_RETREAT", "qualityLevel": "BUSINESS", "isSmoking": false },
+  { "roomNumber": 108, "bedType": "KING", "theme": "NATURE_RETREAT", "qualityLevel": "EXECUTIVE", "isSmoking": false },
+  { "roomNumber": 109, "bedType": "SINGLE", "theme": "NATURE_RETREAT", "qualityLevel": "ECONOMY", "isSmoking": true },
+  { "roomNumber": 110, "bedType": "DOUBLE", "theme": "NATURE_RETREAT", "qualityLevel": "COMFORT", "isSmoking": false },
+
+  { "roomNumber": 201, "bedType": "QUEEN", "theme": "URBAN_ELEGANCE", "qualityLevel": "BUSINESS", "isSmoking": false },
+  { "roomNumber": 202, "bedType": "KING", "theme": "URBAN_ELEGANCE", "qualityLevel": "EXECUTIVE", "isSmoking": false },
+  { "roomNumber": 203, "bedType": "DOUBLE", "theme": "URBAN_ELEGANCE", "qualityLevel": "COMFORT", "isSmoking": false },
+  { "roomNumber": 204, "bedType": "KING", "theme": "URBAN_ELEGANCE", "qualityLevel": "EXECUTIVE", "isSmoking": false },
+  { "roomNumber": 205, "bedType": "QUEEN", "theme": "URBAN_ELEGANCE", "qualityLevel": "BUSINESS", "isSmoking": true },
+  { "roomNumber": 206, "bedType": "DOUBLE", "theme": "URBAN_ELEGANCE", "qualityLevel": "COMFORT", "isSmoking": false },
+  { "roomNumber": 207, "bedType": "KING", "theme": "URBAN_ELEGANCE", "qualityLevel": "EXECUTIVE", "isSmoking": false },
+  { "roomNumber": 208, "bedType": "QUEEN", "theme": "URBAN_ELEGANCE", "qualityLevel": "BUSINESS", "isSmoking": false },
+
+  { "roomNumber": 301, "bedType": "SINGLE", "theme": "VINTAGE_CHARM", "qualityLevel": "ECONOMY", "isSmoking": false },
+  { "roomNumber": 302, "bedType": "DOUBLE", "theme": "VINTAGE_CHARM", "qualityLevel": "COMFORT", "isSmoking": false },
+  { "roomNumber": 303, "bedType": "QUEEN", "theme": "VINTAGE_CHARM", "qualityLevel": "BUSINESS", "isSmoking": false },
+  { "roomNumber": 304, "bedType": "KING", "theme": "VINTAGE_CHARM", "qualityLevel": "EXECUTIVE", "isSmoking": false },
+  { "roomNumber": 305, "bedType": "TWIN", "theme": "VINTAGE_CHARM", "qualityLevel": "ECONOMY", "isSmoking": true },
+  { "roomNumber": 306, "bedType": "DOUBLE", "theme": "VINTAGE_CHARM", "qualityLevel": "COMFORT", "isSmoking": false },
+  { "roomNumber": 307, "bedType": "QUEEN", "theme": "VINTAGE_CHARM", "qualityLevel": "BUSINESS", "isSmoking": false },
+  { "roomNumber": 308, "bedType": "KING", "theme": "VINTAGE_CHARM", "qualityLevel": "EXECUTIVE", "isSmoking": false }
 ]
