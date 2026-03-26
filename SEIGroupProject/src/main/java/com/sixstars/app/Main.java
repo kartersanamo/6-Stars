@@ -11,6 +11,8 @@ public class Main {
 
     public static CreateAccountPage createAccountPage;
     public static MenuPage menuPage;
+    public static MakeReservationPage makeReservationPage;
+    public static RoomManagementPage roomManagementPage;
 
     public static void createAndShowUI() {
         RoomService roomService = new RoomService();
@@ -28,8 +30,8 @@ public class Main {
         LoginPage loginPage = new LoginPage(pages, cardLayout);
         createAccountPage = new CreateAccountPage(pages, cardLayout);
         menuPage = new MenuPage(pages, cardLayout);
-        MakeReservationPage makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
-        RoomManagementPage roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
+        makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
+        roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
         AccountDetailsPage accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
 
         pages.add(welcomePage, "welcome");
