@@ -2,14 +2,14 @@ package com.sixstars.model;
 
 public class Room {
     int roomNumber;
-    BedType type;
+    BedType bedType;
     Theme theme;
     QualityLevel qualityLevel;
     boolean isSmoking;
 
-    public Room(int roomNumber, BedType type, Theme theme, QualityLevel qualityLevel, boolean isSmoking) {
+    public Room(int roomNumber, BedType bedType, Theme theme, QualityLevel qualityLevel, boolean isSmoking) {
         this.roomNumber = roomNumber;
-        this.type = type;
+        this.bedType = bedType;
         this.theme = theme;
         this.qualityLevel = qualityLevel;
         this.isSmoking = isSmoking;
@@ -17,14 +17,14 @@ public class Room {
 
     @Override
     public String toString(){
-        return "Room " + roomNumber + " (" + type + "): " + theme + " (" + qualityLevel + ")";
+        return "Room " + roomNumber + " (" + bedType + "): " + theme + " (" + qualityLevel + ")";
     }
 
     public int getRoomNumber() {
         return roomNumber;
     }
     public BedType getBedType() {
-        return type;
+        return bedType;
     }
     public Theme getTheme() {
         return theme;
