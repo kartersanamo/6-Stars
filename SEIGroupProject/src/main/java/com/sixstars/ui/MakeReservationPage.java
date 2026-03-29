@@ -9,6 +9,8 @@ import com.sixstars.model.Room;
 import com.sixstars.service.RoomService;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -19,11 +21,11 @@ public class MakeReservationPage extends JPanel {
     private ReservationService resService;
     private RoomService roomService;
 
-    private JTextField startField, endField;
-    private JComboBox<BedType> bedTypeBox;
-    private JComboBox<Theme> themeBox;
-    private JComboBox<QualityLevel> qualityBox;
-    private JButton searchButton, bookButton, logoutButton, backButton; // Added logout for navigation
+    private JTextField startField, endField, roomNumberField;
+    private JComboBox<Object> bedTypeBox;
+    private JComboBox<Object> themeBox;
+    private JComboBox<Object> qualityBox;
+    private JButton bookButton, logoutButton, backButton;
     private JList<Room> resultsList;
     private DefaultListModel<Room> listModel;
 
@@ -33,19 +35,31 @@ public class MakeReservationPage extends JPanel {
         this.resService = resService;
         this.roomService = roomService;
 
-        // 1. Setup Layout for this Panel
         setLayout(new BorderLayout(15, 15));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // 2. Initialize Components
         startField = new JTextField(10);
         endField = new JTextField(10);
+        roomNumberField = new JTextField(10);
 
-        bedTypeBox = new JComboBox<>(BedType.values());
-        themeBox = new JComboBox<>(Theme.values());
-        qualityBox = new JComboBox<>(QualityLevel.values());
+        bedTypeBox = new JComboBox<>();
+        bedTypeBox.addItem("Any");
+        for (BedType type : BedType.values()) {
+            bedTypeBox.addItem(type);
+        }
 
-        searchButton = new JButton("Search Rooms");
+        themeBox = new JComboBox<>();
+        themeBox.addItem("Any");
+        for (Theme theme : Theme.values()) {
+            themeBox.addItem(theme);
+        }
+
+        qualityBox = new JComboBox<>();
+        qualityBox.addItem("Any");
+        for (QualityLevel quality : QualityLevel.values()) {
+            qualityBox.addItem(quality);
+        }
+
         bookButton = new JButton("Book Selected Room");
         bookButton.setEnabled(false);
         logoutButton = new JButton("Logout");
@@ -55,20 +69,21 @@ public class MakeReservationPage extends JPanel {
         resultsList = new JList<>(listModel);
         resultsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // 3. Assemble UI
-        JPanel topPanel = new JPanel(new GridLayout(3,4,10,10));
+        JPanel topPanel = new JPanel(new GridLayout(3, 4, 10, 10));
         topPanel.add(new JLabel("Check-in (YYYY-MM-DD):"));
         topPanel.add(startField);
         topPanel.add(new JLabel("Check-out:"));
         topPanel.add(endField);
+
         topPanel.add(new JLabel("Bed Type:"));
         topPanel.add(bedTypeBox);
         topPanel.add(new JLabel("Theme:"));
         topPanel.add(themeBox);
+
         topPanel.add(new JLabel("Quality:"));
         topPanel.add(qualityBox);
-        topPanel.add(new JLabel(""));
-        topPanel.add(searchButton);
+        topPanel.add(new JLabel("Room Number:"));
+        topPanel.add(roomNumberField);
 
         add(topPanel, BorderLayout.NORTH);
         add(new JScrollPane(resultsList), BorderLayout.CENTER);
@@ -79,42 +94,64 @@ public class MakeReservationPage extends JPanel {
         bottomPanel.add(backButton);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // 4. Action Listeners
-        searchButton.addActionListener(e -> {
-            try {
-                LocalDate start = LocalDate.parse(startField.getText());
-                LocalDate end = LocalDate.parse(endField.getText());
+        bedTypeBox.addActionListener(e -> updateRoomList());
+        themeBox.addActionListener(e -> updateRoomList());
+        qualityBox.addActionListener(e -> updateRoomList());
 
-                if (!start.isBefore(end)) {
-                    JOptionPane.showMessageDialog(this,
-                            "Check-in date must be BEFORE the check-out date.",
-                            "Date Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                // check if the date is in the past
-                if (start.isBefore(LocalDate.now())) {
-                    JOptionPane.showMessageDialog(this, "You cannot book a date in the past.");
-                    return;
-                }
+        roomNumberField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateRoomList();
+            }
 
-                BedType selectedType = (BedType) bedTypeBox.getSelectedItem();
-                Theme selTheme = (Theme) themeBox.getSelectedItem();
-                QualityLevel selQual = (QualityLevel) qualityBox.getSelectedItem();
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateRoomList();
+            }
 
-                List<Room> allRooms = roomService.getAllRooms();
-                List<Room> found = resService.filterAvailableRooms(allRooms, start, end, selectedType, selTheme, selQual);
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateRoomList();
+            }
+        });
 
-                listModel.clear();
-                if (found.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "No rooms found for these criteria.");
-                } else {
-                    found.forEach(listModel::addElement);
-                    bookButton.setEnabled(true);
-                }
+        startField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateBookButtonState();
+            }
 
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Check date format! Use 2026-03-18");
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateBookButtonState();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateBookButtonState();
+            }
+        });
+
+        endField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateBookButtonState();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateBookButtonState();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateBookButtonState();
+            }
+        });
+
+        resultsList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                updateBookButtonState();
             }
         });
 
@@ -125,30 +162,125 @@ public class MakeReservationPage extends JPanel {
                 return;
             }
 
-            LocalDate start = LocalDate.parse(startField.getText());
-            LocalDate end = LocalDate.parse(endField.getText());
+            if (!datesAreValid()) {
+                JOptionPane.showMessageDialog(this,
+                        "Please enter valid check-in and check-out dates.",
+                        "Date Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            LocalDate start = LocalDate.parse(startField.getText().trim());
+            LocalDate end = LocalDate.parse(endField.getText().trim());
+
+            if (!resService.isRoomAvailable(selectedRoom, start, end)) {
+                JOptionPane.showMessageDialog(this,
+                        "That room is not available for the selected dates.",
+                        "Unavailable Room",
+                        JOptionPane.ERROR_MESSAGE);
+                updateBookButtonState();
+                return;
+            }
 
             resService.makeReservation(start, end, List.of(selectedRoom));
             JOptionPane.showMessageDialog(this, "Reservation Successful!");
-            listModel.clear(); // Clear results after booking
+            updateRoomList();
             bookButton.setEnabled(false);
         });
 
         backButton.addActionListener(e -> {
             if (AccountController.currentAccount != null) {
-                // User is logged in, go to the Menu Page we just made
                 cardLayout.show(pages, "menu page");
             } else {
-                // User is not logged in, go back to the Welcome screen
                 cardLayout.show(pages, "welcome");
             }
         });
 
-        // Navigation back to Welcome
         logoutButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
 
-        // Initial display all Rooms
         listModel.clear();
         roomService.getAllRooms().forEach(listModel::addElement);
+    }
+
+    private void updateRoomList() {
+        listModel.clear();
+
+        Object selectedType = bedTypeBox.getSelectedItem();
+        Object selectedTheme = themeBox.getSelectedItem();
+        Object selectedQuality = qualityBox.getSelectedItem();
+        String roomNumberText = roomNumberField.getText().trim();
+
+        List<Room> allRooms = roomService.getAllRooms();
+
+        for (Room room : allRooms) {
+            boolean matches = true;
+
+            if (selectedType instanceof BedType && room.getBedType() != selectedType) {
+                matches = false;
+            }
+            if (selectedTheme instanceof Theme && room.getTheme() != selectedTheme) {
+                matches = false;
+            }
+            if (selectedQuality instanceof QualityLevel && room.getQualityLevel() != selectedQuality) {
+                matches = false;
+            }
+            if (!roomNumberText.isEmpty()) {
+                try {
+                    int roomNumber = Integer.parseInt(roomNumberText);
+                    if (room.getRoomNumber() != roomNumber) {
+                        matches = false;
+                    }
+                } catch (NumberFormatException e) {
+                    matches = false;
+                }
+            }
+
+            if (matches) {
+                listModel.addElement(room);
+            }
+        }
+
+        updateBookButtonState();
+    }
+
+    private boolean datesAreValid() {
+        try {
+            String startText = startField.getText().trim();
+            String endText = endField.getText().trim();
+
+            if (startText.isEmpty() || endText.isEmpty()) {
+                return false;
+            }
+
+            LocalDate start = LocalDate.parse(startText);
+            LocalDate end = LocalDate.parse(endText);
+
+            if (!start.isBefore(end)) {
+                return false;
+            }
+
+            if (start.isBefore(LocalDate.now())) {
+                return false;
+            }
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void updateBookButtonState() {
+        Room selectedRoom = resultsList.getSelectedValue();
+
+        if (selectedRoom == null || !datesAreValid()) {
+            bookButton.setEnabled(false);
+            return;
+        }
+
+        LocalDate start = LocalDate.parse(startField.getText().trim());
+        LocalDate end = LocalDate.parse(endField.getText().trim());
+
+        boolean available = resService.isRoomAvailable(selectedRoom, start, end);
+        bookButton.setEnabled(available);
     }
 }
