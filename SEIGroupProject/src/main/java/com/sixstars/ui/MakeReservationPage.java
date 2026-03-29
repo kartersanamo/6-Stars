@@ -29,6 +29,10 @@ public class MakeReservationPage extends JPanel {
     private JList<Room> resultsList;
     private DefaultListModel<Room> listModel;
 
+    private JLabel selectedRoomLabel;
+    private JLabel selectedStartLabel;
+    private JLabel selectedEndLabel;
+
     public MakeReservationPage(JPanel pages, CardLayout cardLayout, ReservationService resService, RoomService roomService) {
         this.pages = pages;
         this.cardLayout = cardLayout;
@@ -60,7 +64,7 @@ public class MakeReservationPage extends JPanel {
             qualityBox.addItem(quality);
         }
 
-        bookButton = new JButton("Book Selected Room");
+        bookButton = new JButton("Reserve Selected Room");
         bookButton.setEnabled(false);
         logoutButton = new JButton("Logout");
         backButton = new JButton("Back");
@@ -69,10 +73,14 @@ public class MakeReservationPage extends JPanel {
         resultsList = new JList<>(listModel);
         resultsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
+        selectedRoomLabel = new JLabel("Selected Room: None");
+        selectedStartLabel = new JLabel("Check-in: Not entered");
+        selectedEndLabel = new JLabel("Check-out: Not entered");
+
         JPanel topPanel = new JPanel(new GridLayout(3, 4, 10, 10));
         topPanel.add(new JLabel("Check-in (YYYY-MM-DD):"));
         topPanel.add(startField);
-        topPanel.add(new JLabel("Check-out:"));
+        topPanel.add(new JLabel("Check-out (YYYY-MM-DD):"));
         topPanel.add(endField);
 
         topPanel.add(new JLabel("Bed Type:"));
@@ -86,12 +94,29 @@ public class MakeReservationPage extends JPanel {
         topPanel.add(roomNumberField);
 
         add(topPanel, BorderLayout.NORTH);
-        add(new JScrollPane(resultsList), BorderLayout.CENTER);
+
+        JScrollPane scrollPane = new JScrollPane(resultsList);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Available Rooms"));
+        add(scrollPane, BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel();
-        bottomPanel.add(bookButton);
-        bottomPanel.add(logoutButton);
-        bottomPanel.add(backButton);
+        bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
+
+        JPanel summaryPanel = new JPanel(new GridLayout(4, 1));
+        summaryPanel.setBorder(BorderFactory.createTitledBorder("Reservation Summary"));
+        summaryPanel.add(selectedRoomLabel);
+        summaryPanel.add(selectedStartLabel);
+        summaryPanel.add(selectedEndLabel);
+        summaryPanel.add(new JLabel("You can only reserve when both dates are valid."));
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(bookButton);
+        buttonPanel.add(logoutButton);
+        buttonPanel.add(backButton);
+
+        bottomPanel.add(summaryPanel);
+        bottomPanel.add(buttonPanel);
+
         add(bottomPanel, BorderLayout.SOUTH);
 
         bedTypeBox.addActionListener(e -> updateRoomList());
@@ -118,16 +143,19 @@ public class MakeReservationPage extends JPanel {
         startField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
+                updateSummaryLabels();
                 updateBookButtonState();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
+                updateSummaryLabels();
                 updateBookButtonState();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
+                updateSummaryLabels();
                 updateBookButtonState();
             }
         });
@@ -135,22 +163,26 @@ public class MakeReservationPage extends JPanel {
         endField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
+                updateSummaryLabels();
                 updateBookButtonState();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
+                updateSummaryLabels();
                 updateBookButtonState();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
+                updateSummaryLabels();
                 updateBookButtonState();
             }
         });
 
         resultsList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
+                updateSummaryLabels();
                 updateBookButtonState();
             }
         });
@@ -185,6 +217,7 @@ public class MakeReservationPage extends JPanel {
             resService.makeReservation(start, end, List.of(selectedRoom));
             JOptionPane.showMessageDialog(this, "Reservation Successful!");
             updateRoomList();
+            updateSummaryLabels();
             bookButton.setEnabled(false);
         });
 
@@ -200,6 +233,7 @@ public class MakeReservationPage extends JPanel {
 
         listModel.clear();
         roomService.getAllRooms().forEach(listModel::addElement);
+        updateSummaryLabels();
     }
 
     private void updateRoomList() {
@@ -240,7 +274,33 @@ public class MakeReservationPage extends JPanel {
             }
         }
 
+        updateSummaryLabels();
         updateBookButtonState();
+    }
+
+    private void updateSummaryLabels() {
+        Room selectedRoom = resultsList.getSelectedValue();
+
+        if (selectedRoom == null) {
+            selectedRoomLabel.setText("Selected Room: None");
+        } else {
+            selectedRoomLabel.setText("Selected Room: Room " + selectedRoom.getRoomNumber());
+        }
+
+        String startText = startField.getText().trim();
+        String endText = endField.getText().trim();
+
+        if (startText.isEmpty()) {
+            selectedStartLabel.setText("Check-in: Not entered");
+        } else {
+            selectedStartLabel.setText("Check-in: " + startText);
+        }
+
+        if (endText.isEmpty()) {
+            selectedEndLabel.setText("Check-out: Not entered");
+        } else {
+            selectedEndLabel.setText("Check-out: " + endText);
+        }
     }
 
     private boolean datesAreValid() {
