@@ -3,85 +3,88 @@ package com.sixstars.ui;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+
 import com.sixstars.app.Main;
 
 public class WelcomePage extends JPanel {
 
     public WelcomePage(JPanel pages, CardLayout cardLayout) {
         setLayout(new GridBagLayout());
-        setBackground(new Color(24, 44, 72));
+        setBackground(UITheme.PAGE_BACKGROUND);
 
         JPanel cardPanel = new JPanel();
         cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
-        cardPanel.setBackground(new Color(245, 247, 250));
-        cardPanel.setBorder(new EmptyBorder(35, 50, 35, 50));
-        cardPanel.setPreferredSize(new Dimension(420, 320));
+        cardPanel.setBackground(UITheme.CARD_BACKGROUND);
+        cardPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(40, 50, 40, 50)
+        ));
+        cardPanel.setPreferredSize(new Dimension(460, 380));
 
-        JLabel titleLabel = new JLabel("Welcome to 6 Stars Hotel");
-        titleLabel.setFont(new Font("Serif", Font.BOLD, 28));
-        titleLabel.setForeground(new Color(24, 44, 72));
+        JLabel titleLabel = new JLabel("6 Stars Hotel");
+        titleLabel.setFont(UITheme.TITLE_FONT);
+        titleLabel.setForeground(UITheme.TEXT_DARK);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel subtitleLabel = new JLabel("Luxury stays made simple");
-        subtitleLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        subtitleLabel.setForeground(new Color(90, 90, 90));
+        subtitleLabel.setFont(UITheme.SUBTITLE_FONT);
+        subtitleLabel.setForeground(UITheme.TEXT_MEDIUM);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JButton loginButton = createStyledButton("Login");
-        loginButton.addActionListener(e -> cardLayout.show(pages, "login"));
+        JButton loginButton = createPrimaryButton("Login");
+        loginButton.addActionListener(_ -> cardLayout.show(pages, "login"));
 
-        JButton signUpButton = createStyledButton("Create Account");
-        signUpButton.addActionListener(e -> {
+        JButton signUpButton = createPrimaryButton("Create Account");
+        signUpButton.addActionListener(_ -> {
             Main.createAccountPage.refresh();
             cardLayout.show(pages, "create account");
         });
 
-        JButton makeReservationButton = createStyledButton("Make Reservation");
-        makeReservationButton.addActionListener(e -> cardLayout.show(pages, "make reservation"));
+        JButton makeReservationButton = createSecondaryButton("Make Reservation");
+        makeReservationButton.addActionListener(_ -> cardLayout.show(pages, "make reservation"));
 
+        cardPanel.add(Box.createVerticalGlue());
         cardPanel.add(titleLabel);
-        cardPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        cardPanel.add(Box.createRigidArea(new Dimension(0, 12)));
         cardPanel.add(subtitleLabel);
-        cardPanel.add(Box.createRigidArea(new Dimension(0, 30)));
+        cardPanel.add(Box.createRigidArea(new Dimension(0, 36)));
         cardPanel.add(loginButton);
-        cardPanel.add(Box.createRigidArea(new Dimension(0, 12)));
+        cardPanel.add(Box.createRigidArea(new Dimension(0, 14)));
         cardPanel.add(signUpButton);
-        cardPanel.add(Box.createRigidArea(new Dimension(0, 12)));
+        cardPanel.add(Box.createRigidArea(new Dimension(0, 14)));
         cardPanel.add(makeReservationButton);
+        cardPanel.add(Box.createVerticalGlue());
 
         add(cardPanel);
     }
 
-    private JButton createStyledButton(String text) {
+    private JButton createPrimaryButton(String text) {
         JButton button = new JButton(text);
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        button.setMaximumSize(new Dimension(260, 45));
-        button.setPreferredSize(new Dimension(260, 45));
-        button.setFont(new Font("SansSerif", Font.BOLD, 16));
-
-        Color normalColor = new Color(30, 90, 160);
-        Color hoverColor = new Color(50, 120, 200);
-
-        button.setBackground(normalColor);
+        button.setPreferredSize(new Dimension(280, 46));
+        button.setMaximumSize(new Dimension(280, 46));
+        button.setFont(UITheme.BUTTON_FONT);
+        button.setBackground(UITheme.ACCENT_GOLD);
         button.setForeground(Color.WHITE);
-
         button.setOpaque(true);
-        button.setContentAreaFilled(true);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
+    }
 
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                button.setBackground(hoverColor);
-            }
-
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                button.setBackground(normalColor);
-            }
-        });
-
+    private JButton createSecondaryButton(String text) {
+        JButton button = new JButton(text);
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
+        button.setPreferredSize(new Dimension(280, 46));
+        button.setMaximumSize(new Dimension(280, 46));
+        button.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        button.setBackground(UITheme.SECONDARY_BUTTON);
+        button.setForeground(UITheme.TEXT_DARK);
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return button;
     }
 }
