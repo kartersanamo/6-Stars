@@ -40,8 +40,6 @@ public class WelcomePage extends JPanel {
             cardLayout.show(pages, "create account");
         });
 
-        JButton makeReservationButton = createSecondaryButton("Make Reservation");
-        makeReservationButton.addActionListener(_ -> cardLayout.show(pages, "make reservation"));
 
         cardPanel.add(Box.createVerticalGlue());
         cardPanel.add(titleLabel);
@@ -51,10 +49,8 @@ public class WelcomePage extends JPanel {
         cardPanel.add(loginButton);
         cardPanel.add(Box.createRigidArea(new Dimension(0, 14)));
         cardPanel.add(signUpButton);
-        cardPanel.add(Box.createRigidArea(new Dimension(0, 14)));
-        cardPanel.add(makeReservationButton);
+        cardPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         cardPanel.add(Box.createVerticalGlue());
-
         add(cardPanel);
     }
 
