@@ -6,65 +6,55 @@ import java.awt.*;
 
 import com.sixstars.app.Main;
 import com.sixstars.controller.LoginController;
-import com.sixstars.model.Account;
 import com.sixstars.controller.AccountController;
+import com.sixstars.model.Account;
 import com.sixstars.model.Role;
 
 public class LoginPage extends JPanel {
 
-    private static final Color PAGE_BACKGROUND = new Color(245, 242, 235);
-    private static final Color CARD_BACKGROUND = new Color(252, 252, 252);
-    private static final Color ACCENT_GOLD = new Color(151, 121, 66);
-    private static final Color TEXT_DARK = new Color(70, 50, 35);
-    private static final Color TEXT_MEDIUM = new Color(90, 90, 90);
-    private static final Color BORDER_COLOR = new Color(210, 210, 210);
-    private static final Color SECONDARY_BUTTON = new Color(232, 232, 232);
-
     public LoginPage(JPanel pages, CardLayout cardLayout) {
         setLayout(new GridBagLayout());
-        setBackground(PAGE_BACKGROUND);
+        setBackground(UITheme.PAGE_BACKGROUND);
 
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(CARD_BACKGROUND);
+        card.setBackground(UITheme.CARD_BACKGROUND);
         card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER_COLOR, 1),
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
                 new EmptyBorder(35, 45, 35, 45)
         ));
         card.setPreferredSize(new Dimension(440, 560));
 
         JLabel hotelLabel = new JLabel("6 Stars Hotel");
-        hotelLabel.setFont(new Font("Serif", Font.BOLD, 32));
-        hotelLabel.setForeground(TEXT_DARK);
+        hotelLabel.setFont(UITheme.TITLE_FONT);
+        hotelLabel.setForeground(UITheme.TEXT_DARK);
         hotelLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel subtitleLabel = new JLabel("Guest Login");
-        subtitleLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        subtitleLabel.setForeground(new Color(120, 120, 120));
+        subtitleLabel.setFont(UITheme.SUBTITLE_FONT);
+        subtitleLabel.setForeground(UITheme.TEXT_MEDIUM);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JPanel formPanel = new JPanel();
-        formPanel.setLayout(new GridBagLayout());
-        formPanel.setBackground(CARD_BACKGROUND);
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(UITheme.CARD_BACKGROUND);
         formPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(0, 0, 10, 0);
         gbc.weightx = 1.0;
 
         JLabel emailLabel = new JLabel("Email Address");
-        emailLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
-        emailLabel.setForeground(TEXT_MEDIUM);
+        emailLabel.setFont(UITheme.LABEL_FONT);
+        emailLabel.setForeground(UITheme.TEXT_MEDIUM);
         emailLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         JTextField emailField = new JTextField();
         styleTextField(emailField);
 
         JLabel passwordLabel = new JLabel("Password");
-        passwordLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
-        passwordLabel.setForeground(TEXT_MEDIUM);
+        passwordLabel.setFont(UITheme.LABEL_FONT);
+        passwordLabel.setForeground(UITheme.TEXT_MEDIUM);
         passwordLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         JPasswordField passwordField = new JPasswordField();
@@ -77,6 +67,7 @@ public class LoginPage extends JPanel {
         styleSecondaryButton(backButton);
 
         gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 10, 0);
         formPanel.add(emailLabel, gbc);
 
         gbc.gridy = 1;
@@ -106,6 +97,7 @@ public class LoginPage extends JPanel {
             Account a = LoginController.checkLogin(email, password);
             if (a != null) {
                 AccountController.currentAccount = a;
+
                 if (a.getRole() == Role.ADMIN) {
                     JOptionPane.showMessageDialog(this, "Login successful! (Admin)");
                     cardLayout.show(pages, "admin");
@@ -139,35 +131,38 @@ public class LoginPage extends JPanel {
         field.setMaximumSize(new Dimension(320, 42));
         field.setFont(new Font("SansSerif", Font.PLAIN, 14));
         field.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(185, 185, 185), 1),
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
                 new EmptyBorder(10, 12, 10, 12)
         ));
         field.setBackground(Color.WHITE);
+        field.setForeground(UITheme.TEXT_DARK);
+        field.setCaretColor(UITheme.TEXT_DARK);
         field.setHorizontalAlignment(SwingConstants.LEFT);
-        field.setCaretColor(TEXT_DARK);
     }
 
     private void stylePrimaryButton(JButton button) {
         button.setPreferredSize(new Dimension(320, 46));
         button.setMaximumSize(new Dimension(320, 46));
-        button.setFont(new Font("SansSerif", Font.BOLD, 15));
-        button.setBackground(ACCENT_GOLD);
+        button.setFont(UITheme.BUTTON_FONT);
+        button.setBackground(UITheme.ACCENT_GOLD);
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setOpaque(true);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
     }
 
     private void styleSecondaryButton(JButton button) {
         button.setPreferredSize(new Dimension(320, 44));
         button.setMaximumSize(new Dimension(320, 44));
         button.setFont(new Font("SansSerif", Font.PLAIN, 15));
-        button.setBackground(SECONDARY_BUTTON);
-        button.setForeground(TEXT_DARK);
+        button.setBackground(UITheme.SECONDARY_BUTTON);
+        button.setForeground(UITheme.TEXT_DARK);
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setOpaque(true);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
     }
 }
