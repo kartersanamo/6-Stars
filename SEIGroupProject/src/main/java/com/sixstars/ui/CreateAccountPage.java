@@ -1,126 +1,139 @@
 package com.sixstars.ui;
 
-
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Role;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class CreateAccountPage extends JPanel {
     private final AccountController accountController;
-    JPanel formPanel;
-    JLabel roleLabel;
-    JComboBox<Role> roleComboBox;
-    Boolean isAdmin;
+    private JPanel formPanel;
+    private JLabel roleLabel;
+    private JComboBox<Role> roleComboBox;
+    private boolean isAdmin;
+
     public CreateAccountPage(JPanel pages, CardLayout cardLayout) {
-
-
-
-
         accountController = new AccountController();
-        
 
-        setLayout(new BorderLayout());
-        setBackground(Color.WHITE);
+        setLayout(new GridBagLayout());
+        setBackground(UITheme.PAGE_BACKGROUND);
 
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBackground(Color.WHITE);
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(30, 50, 30, 50));
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(UITheme.CARD_BACKGROUND);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(35, 45, 35, 45)
+        ));
+        card.setPreferredSize(new Dimension(460, 620));
 
-        JLabel titleLabel = new JLabel("Create Guest Account");
-        titleLabel.setFont(new Font("Times New Roman", Font.BOLD, 28));
+        JLabel titleLabel = new JLabel("Create Account");
+        titleLabel.setFont(UITheme.TITLE_FONT);
+        titleLabel.setForeground(UITheme.TEXT_DARK);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        mainPanel.add(titleLabel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 30)));
+        JLabel subtitleLabel = new JLabel("Register a new hotel guest or staff account");
+        subtitleLabel.setFont(UITheme.SUBTITLE_FONT);
+        subtitleLabel.setForeground(UITheme.TEXT_MEDIUM);
+        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        formPanel = new JPanel();
-        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
-        formPanel.setBackground(Color.WHITE);
-        formPanel.setMaximumSize(new Dimension(500, 200));
+        formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(UITheme.CARD_BACKGROUND);
+        formPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel firstNameLabel = new JLabel("First Name:");
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        JLabel firstNameLabel = createCenteredLabel("First Name");
         JTextField firstNameField = new JTextField();
+        styleTextField(firstNameField);
 
-        JLabel lastNameLabel = new JLabel("Last Name:");
+        JLabel lastNameLabel = createCenteredLabel("Last Name");
         JTextField lastNameField = new JTextField();
+        styleTextField(lastNameField);
 
-        JLabel emailLabel = new JLabel("Email:");
+        JLabel emailLabel = createCenteredLabel("Email Address");
         JTextField emailField = new JTextField();
+        styleTextField(emailField);
 
-        JLabel passwordLabel = new JLabel("Password:");
+        JLabel passwordLabel = createCenteredLabel("Password");
         JPasswordField passwordField = new JPasswordField();
+        styleTextField(passwordField);
 
-    
-        roleLabel = new JLabel("Role:");
+        roleLabel = createCenteredLabel("Role");
         Role[] roles = {Role.GUEST, Role.CLERK, Role.ADMIN};
         roleComboBox = new JComboBox<>(roles);
-        roleComboBox.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-
-        // Set the sizing and centering
-        Dimension fieldSize = new Dimension(300, 25);
-        firstNameField.setMaximumSize(fieldSize);
-        lastNameField.setMaximumSize(fieldSize);
-        emailField.setMaximumSize(fieldSize);
-        passwordField.setMaximumSize(fieldSize);
-        roleComboBox.setMaximumSize(fieldSize);
-
-
-        firstNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        firstNameField.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        lastNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        lastNameField.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        emailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        emailField.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        passwordLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        passwordField.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        roleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        roleComboBox.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        formPanel.add(firstNameLabel);
-        formPanel.add(firstNameField);
-        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        formPanel.add(lastNameLabel);
-        formPanel.add(lastNameField);
-        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        formPanel.add(emailLabel);
-        formPanel.add(emailField);
-        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        formPanel.add(passwordLabel);
-        formPanel.add(passwordField);
-        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-
-
-        formPanel.add(roleLabel);
-        formPanel.add(roleComboBox);
-        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-
-
-        mainPanel.add(formPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 25)));
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
-        buttonPanel.setBackground(Color.WHITE);
+        styleComboBox(roleComboBox);
 
         JButton createButton = new JButton("Create Account");
+        stylePrimaryButton(createButton);
+
         JButton backButton = new JButton("Back");
+        styleSecondaryButton(backButton);
 
-        buttonPanel.add(createButton);
-        buttonPanel.add(backButton);
+        int row = 0;
 
-        mainPanel.add(buttonPanel);
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        formPanel.add(firstNameLabel, gbc);
 
-        add(mainPanel, BorderLayout.CENTER);
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(firstNameField, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        formPanel.add(lastNameLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(lastNameField, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        formPanel.add(emailLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(emailField, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        formPanel.add(passwordLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(passwordField, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        formPanel.add(roleLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 24, 0);
+        formPanel.add(roleComboBox, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 14, 0);
+        formPanel.add(createButton, gbc);
+
+        gbc.gridy = row;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        formPanel.add(backButton, gbc);
+
+        card.add(Box.createVerticalGlue());
+        card.add(titleLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
+        card.add(subtitleLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 30)));
+        card.add(formPanel);
+        card.add(Box.createVerticalGlue());
+
+        add(card);
 
         createButton.addActionListener(e -> {
             String firstName = firstNameField.getText().trim();
@@ -139,17 +152,13 @@ public class CreateAccountPage extends JPanel {
                 return;
             }
 
-          
-
-
             try {
-                // Assuming you are not an admin, default to making a guest:
                 if (!isAdmin) {
                     roleSet = Role.GUEST;
-                }
-                else {
+                } else {
                     roleSet = (Role) roleComboBox.getSelectedItem();
                 }
+
                 accountController.createAccount(firstName, lastName, email, password, roleSet);
 
                 JOptionPane.showMessageDialog(
@@ -164,8 +173,7 @@ public class CreateAccountPage extends JPanel {
                 emailField.setText("");
                 passwordField.setText("");
 
-                CardLayout cl = (CardLayout) pages.getLayout();
-                cl.show(pages, "welcome");
+                cardLayout.show(pages, "welcome");
 
             } catch (RuntimeException ex) {
                 JOptionPane.showMessageDialog(
@@ -177,19 +185,71 @@ public class CreateAccountPage extends JPanel {
             }
         });
 
-        backButton.addActionListener(ac -> {
-            cardLayout.show(pages, "welcome");
-        });
+        backButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
     }
 
+    private JLabel createCenteredLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(UITheme.LABEL_FONT);
+        label.setForeground(UITheme.TEXT_MEDIUM);
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        return label;
+    }
 
+    private void styleTextField(JTextField field) {
+        field.setPreferredSize(new Dimension(320, 42));
+        field.setMaximumSize(new Dimension(320, 42));
+        field.setFont(UITheme.INPUT_FONT);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.FIELD_BORDER, 1),
+                new EmptyBorder(10, 12, 10, 12)
+        ));
+        field.setBackground(Color.WHITE);
+        field.setForeground(UITheme.TEXT_DARK);
+        field.setCaretColor(UITheme.TEXT_DARK);
+        field.setHorizontalAlignment(SwingConstants.LEFT);
+    }
 
+    private void styleComboBox(JComboBox<Role> comboBox) {
+        comboBox.setPreferredSize(new Dimension(320, 42));
+        comboBox.setMaximumSize(new Dimension(320, 42));
+        comboBox.setFont(UITheme.INPUT_FONT);
+        comboBox.setBackground(Color.WHITE);
+        comboBox.setForeground(UITheme.TEXT_DARK);
+        comboBox.setBorder(BorderFactory.createLineBorder(UITheme.FIELD_BORDER, 1));
+        comboBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+    }
+
+    private void stylePrimaryButton(JButton button) {
+        button.setPreferredSize(new Dimension(320, 46));
+        button.setMaximumSize(new Dimension(320, 46));
+        button.setFont(UITheme.BUTTON_FONT);
+        button.setBackground(UITheme.ACCENT_GOLD);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
+    }
+
+    private void styleSecondaryButton(JButton button) {
+        button.setPreferredSize(new Dimension(320, 44));
+        button.setMaximumSize(new Dimension(320, 44));
+        button.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        button.setBackground(UITheme.SECONDARY_BUTTON);
+        button.setForeground(UITheme.TEXT_DARK);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
+    }
 
     public void refresh() {
         isAdmin = AccountController.currentAccount != null &&
-                  AccountController.currentAccount.getRole() == Role.ADMIN;
+                AccountController.currentAccount.getRole() == Role.ADMIN;
 
-        // Show or hide the role dropdown
         roleLabel.setVisible(isAdmin);
         roleComboBox.setVisible(isAdmin);
 

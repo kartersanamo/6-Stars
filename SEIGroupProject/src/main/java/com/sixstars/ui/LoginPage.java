@@ -30,7 +30,7 @@ public class LoginPage extends JPanel {
         hotelLabel.setForeground(UITheme.TEXT_DARK);
         hotelLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel subtitleLabel = new JLabel("Guest Login");
+        JLabel subtitleLabel = new JLabel("User Login");
         subtitleLabel.setFont(UITheme.SUBTITLE_FONT);
         subtitleLabel.setForeground(UITheme.TEXT_MEDIUM);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
