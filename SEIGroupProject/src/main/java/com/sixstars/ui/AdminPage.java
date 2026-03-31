@@ -1,6 +1,9 @@
 package com.sixstars.ui;
 
 import javax.swing.*;
+
+import com.sixstars.app.Main;
+
 import java.awt.*;
 
 public class AdminPage extends JPanel {
@@ -20,11 +23,19 @@ public class AdminPage extends JPanel {
         logoutButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         logoutButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
 
+        JButton signUpButton = new JButton("Create Account");
+        signUpButton.addActionListener(_ -> {
+            Main.createAccountPage.refresh();
+            cardLayout.show(pages, "create account");
+        });
+
         add(Box.createVerticalGlue());
         add(title);
         add(Box.createRigidArea(new Dimension(0, 12)));
         add(subtitle);
         add(Box.createRigidArea(new Dimension(0, 24)));
+        add(signUpButton);
+        add(Box.createVerticalGlue());
         add(logoutButton);
         add(Box.createVerticalGlue());
     }

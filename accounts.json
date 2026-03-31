@@ -75,5 +75,12 @@
     "email": "clerk",
     "passwordHash": "c40dc72b0228e5850d8b173ff861a48acfb4a15b37b2849cbb6584bbadbc7907",
     "role": "CLERK"
+  },
+  {
+    "firstName": "Peter",
+    "lastName": "Ingalsbe",
+    "email": "pingalsbe@gmail.com",
+    "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "role": "GUEST"
   }
 ]
