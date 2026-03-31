@@ -1,0 +1,80 @@
+
+[
+  {
+    "firstName": "Bob",
+    "lastName": "Jones",
+    "email": "123@123",
+    "passwordHash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+    "role": "GUEST"
+  },
+  {
+    "firstName": "Peter",
+    "lastName": "Ingalsbe",
+    "email": "ingalsbepeter@gmail.com",
+    "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "role": "ADMIN"
+  },
+  {
+    "firstName": "Charlie",
+    "lastName": "Klerk",
+    "email": "CharlieKlerk@gmail.com",
+    "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "role": "CLERK"
+  },
+  {
+    "firstName": "Nolan",
+    "lastName": "Schirripa",
+    "email": "myEmail@gmail.com",
+    "passwordHash": "6e659deaa85842cdabb5c6305fcc40033ba43772ec00d45c2a3c921741a5e377",
+    "role": "ADMIN"
+  },
+  {
+    "firstName": "Christine",
+    "lastName": "Seng",
+    "email": "christinesseng@gmail.com",
+    "passwordHash": "fd5cb51bafd60f6fdbedde6e62c473da6f247db271633e15919bab78a02ee9eb",
+    "role": "ADMIN"
+  },
+  {
+    "firstName": "Karter",
+    "lastName": "Sanamo",
+    "email": "kartersanamo@gmail.com",
+    "passwordHash": "0a7d19792efae443b191d1ca054e8e5e7af8a0a873019448bb4880084d5bd394",
+    "role": "ADMIN"
+  },
+  {
+    "firstName": "Nolan",
+    "lastName": "Schirripa",
+    "email": "testEmail@email.com",
+    "passwordHash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+    "role": "ADMIN"
+  },
+  {
+    "firstName": "Georgia",
+    "lastName": "Rushing",
+    "email": "georgia_rushing1@baylor.edu",
+    "passwordHash": "f8638b979b2f4f793ddb6dbd197e0ee25a7a6ea32b0ae22f5e3c5d119d839e75",
+    "role": "CLERK"
+  },
+  {
+    "firstName": "admin_first",
+    "lastName": "admin_last",
+    "email": "admin",
+    "passwordHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+    "role": "ADMIN"
+  },
+  {
+    "firstName": "guest_first",
+    "lastName": "guest_last",
+    "email": "guest",
+    "passwordHash": "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
+    "role": "GUEST"
+  },
+  {
+    "firstName": "clerk_first",
+    "lastName": "clerk_last",
+    "email": "clerk",
+    "passwordHash": "c40dc72b0228e5850d8b173ff861a48acfb4a15b37b2849cbb6584bbadbc7907",
+    "role": "CLERK"
+  }
+]
