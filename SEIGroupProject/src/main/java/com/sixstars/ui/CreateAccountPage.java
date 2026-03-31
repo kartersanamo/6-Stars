@@ -27,7 +27,7 @@ public class CreateAccountPage extends JPanel {
                 BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
                 new EmptyBorder(35, 45, 35, 45)
         ));
-        card.setPreferredSize(new Dimension(460, 620));
+        card.setPreferredSize(new Dimension(460, 800));
 
         JLabel titleLabel = new JLabel("Create Account");
         titleLabel.setFont(UITheme.TITLE_FONT);
@@ -216,7 +216,8 @@ public class CreateAccountPage extends JPanel {
         comboBox.setFont(UITheme.INPUT_FONT);
         comboBox.setBackground(Color.WHITE);
         comboBox.setForeground(UITheme.TEXT_DARK);
-        comboBox.setBorder(BorderFactory.createLineBorder(UITheme.FIELD_BORDER, 1));
+        //comboBox.setBorder(BorderFactory.createLineBorder(UITheme.FIELD_BORDER, 1));
+        comboBox.setBorder(BorderFactory.createEmptyBorder());
         comboBox.setAlignmentX(Component.CENTER_ALIGNMENT);
     }
 
