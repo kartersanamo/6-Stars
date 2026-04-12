@@ -1,5 +1,7 @@
 package com.sixstars.app;
 
+import com.sixstars.database.DatabaseManager;
+import com.sixstars.service.AccountService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
 import com.sixstars.ui.*;
@@ -15,8 +17,12 @@ public class Main {
     public static RoomManagementPage roomManagementPage;
 
     public static void createAndShowUI() {
+        // create the .db file and tables if they don't already exist
+        DatabaseManager.initializeDatabase();
+
         RoomService roomService = new RoomService();
         ReservationService reservationService = new ReservationService();
+        AccountService accountService = new AccountService();
 
         JFrame frame = new JFrame("6 Stars Hotel");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -27,7 +33,7 @@ public class Main {
         JPanel pages = new JPanel(cardLayout);
 
         WelcomePage welcomePage = new WelcomePage(pages, cardLayout);
-        LoginPage loginPage = new LoginPage(pages, cardLayout);
+        LoginPage loginPage = new LoginPage(pages, cardLayout, accountService);
         createAccountPage = new CreateAccountPage(pages, cardLayout);
         menuPage = new MenuPage(pages, cardLayout);
         makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);

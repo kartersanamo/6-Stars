@@ -9,10 +9,11 @@ import com.sixstars.controller.LoginController;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.Role;
+import com.sixstars.service.AccountService;
 
 public class LoginPage extends JPanel {
 
-    public LoginPage(JPanel pages, CardLayout cardLayout) {
+    public LoginPage(JPanel pages, CardLayout cardLayout, AccountService accountService) {
         setLayout(new GridBagLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
 
@@ -94,7 +95,7 @@ public class LoginPage extends JPanel {
             String email = emailField.getText().trim();
             String password = new String(passwordField.getPassword());
 
-            Account a = LoginController.checkLogin(email, password);
+            Account a = accountService.authenticate(email, password);
             if (a != null) {
                 AccountController.currentAccount = a;
 

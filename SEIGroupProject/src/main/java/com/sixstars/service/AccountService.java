@@ -3,6 +3,7 @@ package com.sixstars.service;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.sixstars.database.AccountDAO;
 import com.sixstars.model.Account;
 import com.sixstars.model.Role;
 
@@ -17,67 +18,79 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
 public class AccountService {
-    private static final String FILE_PATH = "accounts.json";
-    private final Gson gson;
+//    private static final String FILE_PATH = "accounts.json";
+//    private final Gson gson;
+    private final AccountDAO accountDAO;
 
     public AccountService() {
-        gson = new GsonBuilder().setPrettyPrinting().create();
+//        gson = new GsonBuilder().setPrettyPrinting().create();
+        accountDAO = new AccountDAO();
     }
 
     public Account createAccount(String firstName, String lastName, String email, String password, Role role) {
-        ArrayList<Account> accounts = loadAccounts();
-
-        for (Account acc : accounts) {
-            if (acc.getEmail().equalsIgnoreCase(email)) {
-                throw new RuntimeException("An account with that email already exists.");
-            }
+        if (accountDAO.getAccountByEmail(email) != null){
+            throw new RuntimeException("An account with that email already exists!");
         }
 
         String passwordHash = hashPassword(password);
-
-        Account guestAccount = new Account(
-                firstName,
-                lastName,
-                email,
-                passwordHash,
-                role
-        );
-
-        accounts.add(guestAccount);
-        saveAccounts(accounts);
+        Account guestAccount = new Account(firstName, lastName, email, passwordHash, role);
+        accountDAO.saveAccount(guestAccount);
 
         return guestAccount;
+
+//        ArrayList<Account> accounts = loadAccounts();
+//
+//        for (Account acc : accounts) {
+//            if (acc.getEmail().equalsIgnoreCase(email)) {
+//                throw new RuntimeException("An account with that email already exists.");
+//            }
+//        }
+//
+//        String passwordHash = hashPassword(password);
+//
+//        Account guestAccount = new Account(
+//                firstName,
+//                lastName,
+//                email,
+//                passwordHash,
+//                role
+//        );
+//
+//        accounts.add(guestAccount);
+//        saveAccounts(accounts);
+//
+//        return guestAccount;
     }
 
-    private ArrayList<Account> loadAccounts() {
-        File file = new File(FILE_PATH);
+//    private ArrayList<Account> loadAccounts() {
+//        File file = new File(FILE_PATH);
+//
+//        if (!file.exists()) {
+//            return new ArrayList<>();
+//        }
+//
+//        try (FileReader reader = new FileReader(file)) {
+//            Type listType = new TypeToken<ArrayList<Account>>() {}.getType();
+//            ArrayList<Account> accounts = gson.fromJson(reader, listType);
+//
+//            if (accounts == null) {
+//                return new ArrayList<>();
+//            }
+//
+//            return accounts;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return new ArrayList<>();
+//        }
+//    }
 
-        if (!file.exists()) {
-            return new ArrayList<>();
-        }
-
-        try (FileReader reader = new FileReader(file)) {
-            Type listType = new TypeToken<ArrayList<Account>>() {}.getType();
-            ArrayList<Account> accounts = gson.fromJson(reader, listType);
-
-            if (accounts == null) {
-                return new ArrayList<>();
-            }
-
-            return accounts;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
-    }
-
-    private void saveAccounts(ArrayList<Account> accounts) {
-        try (FileWriter writer = new FileWriter(FILE_PATH)) {
-            gson.toJson(accounts, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+//    private void saveAccounts(ArrayList<Account> accounts) {
+//        try (FileWriter writer = new FileWriter(FILE_PATH)) {
+//            gson.toJson(accounts, writer);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     public String hashPassword(String password) {
         try {
@@ -93,5 +106,12 @@ public class AccountService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Could not hash password.", e);
         }
+    }
+    public Account authenticate(String email, String password) {
+        Account account = accountDAO.getAccountByEmail(email);
+        if (account != null && account.getPasswordHash().equals(hashPassword(password))) {
+            return account;
+        }
+        return null;
     }
 }
