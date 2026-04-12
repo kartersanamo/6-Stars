@@ -26,7 +26,7 @@ public class WelcomePage extends JPanel {
         titleLabel.setForeground(UITheme.TEXT_DARK);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel subtitleLabel = new JLabel("Luxury stays made simple");
+        JLabel subtitleLabel = new JLabel("Because five stars isn't enough");
         subtitleLabel.setFont(UITheme.SUBTITLE_FONT);
         subtitleLabel.setForeground(UITheme.TEXT_MEDIUM);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);

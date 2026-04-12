@@ -144,19 +144,19 @@ public class MakeReservationPage extends JPanel {
             @Override
             public void insertUpdate(DocumentEvent e) {
                 updateSummaryLabels();
-                updateBookButtonState();
+                updateRoomList();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
                 updateSummaryLabels();
-                updateBookButtonState();
+                updateRoomList();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
                 updateSummaryLabels();
-                updateBookButtonState();
+                updateRoomList();
             }
         });
 
@@ -164,19 +164,19 @@ public class MakeReservationPage extends JPanel {
             @Override
             public void insertUpdate(DocumentEvent e) {
                 updateSummaryLabels();
-                updateBookButtonState();
+                updateRoomList();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
                 updateSummaryLabels();
-                updateBookButtonState();
+                updateRoomList();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
                 updateSummaryLabels();
-                updateBookButtonState();
+                updateRoomList();
             }
         });
 
@@ -210,12 +210,14 @@ public class MakeReservationPage extends JPanel {
                         "That room is not available for the selected dates.",
                         "Unavailable Room",
                         JOptionPane.ERROR_MESSAGE);
-                updateBookButtonState();
+                updateRoomList();
                 return;
             }
 
             resService.makeReservation(start, end, List.of(selectedRoom));
             JOptionPane.showMessageDialog(this, "Reservation Successful!");
+
+            resultsList.clearSelection();
             updateRoomList();
             updateSummaryLabels();
             bookButton.setEnabled(false);
@@ -231,8 +233,7 @@ public class MakeReservationPage extends JPanel {
 
         logoutButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
 
-        listModel.clear();
-        roomService.getAllRooms().forEach(listModel::addElement);
+        updateRoomList();
         updateSummaryLabels();
     }
 
@@ -246,18 +247,30 @@ public class MakeReservationPage extends JPanel {
 
         List<Room> allRooms = roomService.getAllRooms();
 
+        boolean validDates = datesAreValid();
+        LocalDate start = null;
+        LocalDate end = null;
+
+        if (validDates) {
+            start = LocalDate.parse(startField.getText().trim());
+            end = LocalDate.parse(endField.getText().trim());
+        }
+
         for (Room room : allRooms) {
             boolean matches = true;
 
             if (selectedType instanceof BedType && room.getBedType() != selectedType) {
                 matches = false;
             }
+
             if (selectedTheme instanceof Theme && room.getTheme() != selectedTheme) {
                 matches = false;
             }
+
             if (selectedQuality instanceof QualityLevel && room.getQualityLevel() != selectedQuality) {
                 matches = false;
             }
+
             if (!roomNumberText.isEmpty()) {
                 try {
                     int roomNumber = Integer.parseInt(roomNumberText);
@@ -269,9 +282,17 @@ public class MakeReservationPage extends JPanel {
                 }
             }
 
+            if (matches && validDates && !resService.isRoomAvailable(room, start, end)) {
+                matches = false;
+            }
+
             if (matches) {
                 listModel.addElement(room);
             }
+        }
+
+        if (!listModel.contains(resultsList.getSelectedValue())) {
+            resultsList.clearSelection();
         }
 
         updateSummaryLabels();
