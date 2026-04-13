@@ -1,10 +1,20 @@
 package com.sixstars.ui;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagLayout;
 
-import com.sixstars.app.Main;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.border.EmptyBorder;
 
 public class WelcomePage extends JPanel {
 
@@ -36,7 +46,6 @@ public class WelcomePage extends JPanel {
 
         JButton signUpButton = createPrimaryButton("Create Account");
         signUpButton.addActionListener(_ -> {
-            Main.createAccountPage.refresh();
             cardLayout.show(pages, "create account");
         });
 

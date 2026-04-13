@@ -1,19 +1,33 @@
 package com.sixstars.ui;
 
-import com.sixstars.controller.AccountController;
-import com.sixstars.model.BedType;
-import com.sixstars.model.QualityLevel;
-import com.sixstars.model.Theme;
-import com.sixstars.service.ReservationService;
-import com.sixstars.model.Room;
-import com.sixstars.service.RoomService;
-
-import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.GridLayout;
 import java.time.LocalDate;
 import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+
+import com.sixstars.app.Main;
+import com.sixstars.model.BedType;
+import com.sixstars.model.QualityLevel;
+import com.sixstars.model.Room;
+import com.sixstars.model.Theme;
+import com.sixstars.service.ReservationService;
+import com.sixstars.service.RoomService;
 
 public class MakeReservationPage extends JPanel {
     private JPanel pages;
@@ -45,6 +59,7 @@ public class MakeReservationPage extends JPanel {
         startField = new JTextField(10);
         endField = new JTextField(10);
         roomNumberField = new JTextField(10);
+
 
         bedTypeBox = new JComboBox<>();
         bedTypeBox.addItem("Any");
@@ -93,7 +108,18 @@ public class MakeReservationPage extends JPanel {
         topPanel.add(new JLabel("Room Number:"));
         topPanel.add(roomNumberField);
 
-        add(topPanel, BorderLayout.NORTH);
+        Main.headerBar2.refreshInfo();
+        JPanel topContainer = new JPanel(new BorderLayout());
+
+        // global header (shared)
+        topContainer.add(Main.headerBar2, BorderLayout.NORTH);
+
+        // page-specific filters UI
+        topContainer.add(topPanel, BorderLayout.CENTER);
+
+        add(topContainer, BorderLayout.NORTH);
+
+        
 
         JScrollPane scrollPane = new JScrollPane(resultsList);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Available Rooms"));
@@ -224,11 +250,8 @@ public class MakeReservationPage extends JPanel {
         });
 
         backButton.addActionListener(e -> {
-            if (AccountController.currentAccount != null) {
-                cardLayout.show(pages, "menu page");
-            } else {
-                cardLayout.show(pages, "home");
-            }
+            Main.headerBar.refreshInfo();
+            cardLayout.show(pages, "home");
         });
 
         logoutButton.addActionListener(e -> cardLayout.show(pages, "welcome"));

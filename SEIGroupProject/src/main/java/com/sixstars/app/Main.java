@@ -13,6 +13,7 @@ import com.sixstars.service.RoomService;
 import com.sixstars.ui.AccountDetailsPage;
 import com.sixstars.ui.AdminPage;
 import com.sixstars.ui.CreateAccountPage;
+import com.sixstars.ui.HeaderBar;
 import com.sixstars.ui.HomeLandingPage;
 import com.sixstars.ui.LoginPage;
 import com.sixstars.ui.MakeReservationPage;
@@ -27,6 +28,9 @@ public class Main {
     public static MakeReservationPage makeReservationPage;
     public static RoomManagementPage roomManagementPage;
     public static AccountDetailsPage accountDetailsPage;
+    public static HomeLandingPage homeLandingPage;
+    public static HeaderBar headerBar;
+    public static HeaderBar headerBar2;
 
     public static void createAndShowUI() {
         // create the .db file and tables if they don't already exist
@@ -40,11 +44,13 @@ public class Main {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1200, 700);
         frame.setLocationRelativeTo(null);
-
+        
         CardLayout cardLayout = new CardLayout();
         JPanel pages = new JPanel(cardLayout);
-
-        HomeLandingPage homeLandingPage = new HomeLandingPage(pages, cardLayout);
+        
+        headerBar = new HeaderBar(pages, cardLayout);
+        headerBar2 = new HeaderBar(pages, cardLayout);
+        homeLandingPage = new HomeLandingPage(pages, cardLayout);
         WelcomePage welcomePage = new WelcomePage(pages, cardLayout);
         LoginPage loginPage = new LoginPage(pages, cardLayout, accountService);
         createAccountPage = new CreateAccountPage(pages, cardLayout);
@@ -52,6 +58,8 @@ public class Main {
         makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
         roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
         accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
+        accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
+        
 
         pages.add(homeLandingPage, "home");
         pages.add(welcomePage, "welcome");

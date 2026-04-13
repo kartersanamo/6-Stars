@@ -37,7 +37,7 @@ public class AdminPage extends JPanel {
 
         JButton signUpButton = new JButton("Create Account");
         signUpButton.addActionListener(_ -> {
-            Main.createAccountPage.refresh();
+            Main.createAccountPage.refreshInfo();
             cardLayout.show(pages, "create account");
         });
 
