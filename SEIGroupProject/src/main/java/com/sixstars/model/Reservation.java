@@ -16,6 +16,17 @@ public class Reservation {
         this.rooms = rooms;
     }
 
+    @Override
+    public String toString() {
+        String roomDetails = rooms.stream()
+                .map(r -> "Room " + r.getRoomNumber() + " (" + r.getTheme() + ")")
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("No Rooms Assigned");
+
+        return String.format("%s | %s to %s",
+                roomDetails, startDate, endDate);
+    }
+
     public int getId() {
         return id;
     }

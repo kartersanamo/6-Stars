@@ -151,4 +151,21 @@ public List<Room> filterAvailableRooms(LocalDate start, LocalDate end, BedType t
         return reservationDAO.getAllReservations();
 //        return loadReservations();
     }
+
+    // Gets all reservations belonging to specific email
+    public List<Reservation> getGuestReservations(String email) {
+        return reservationDAO.getReservationsByEmail(email);
+    }
+
+    // Cancels booking by id
+    public void cancelBooking(int id) {
+        reservationDAO.cancelReservation(id);
+    }
+
+    // Updates existing reservation
+    public void updateReservation(int id, LocalDate start, LocalDate end) {
+        // Business Logic: You could add a check here to ensure the new dates
+        // are available before calling the DAO!
+        reservationDAO.updateReservationDates(id, start, end);
+    }
 }

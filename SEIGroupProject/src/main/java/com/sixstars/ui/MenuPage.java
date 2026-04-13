@@ -1,5 +1,6 @@
 package com.sixstars.ui;
 
+import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.Role;
@@ -12,6 +13,7 @@ public class MenuPage extends JPanel {
     private JLabel welcomeLabel;
     private JLabel subtitleLabel;
     private JButton btnManageRooms;
+    private JButton btnMyReservations;
 
     public MenuPage(JPanel pages, CardLayout cardLayout) {
         setLayout(new GridBagLayout());
@@ -39,15 +41,22 @@ public class MenuPage extends JPanel {
         JButton btnReserve = createPrimaryButton("Make a Reservation");
         JButton btnShop = createSecondaryButton("Visit the Store");
         JButton btnAccount = createSecondaryButton("My Account");
+        btnMyReservations = createSecondaryButton("My Reservations");
         btnManageRooms = createSecondaryButton("Room Management");
         JButton btnLogout = createSecondaryButton("Logout");
 
         btnManageRooms.setVisible(false);
+        btnMyReservations.setVisible(false);
 
         btnReserve.addActionListener(e -> cardLayout.show(pages, "make reservation"));
         btnShop.addActionListener(e -> JOptionPane.showMessageDialog(this, "Store coming soon"));
         btnAccount.addActionListener(e -> cardLayout.show(pages, "account details"));
         btnManageRooms.addActionListener(e -> cardLayout.show(pages, "room management"));
+        btnMyReservations.addActionListener(e -> {
+            Main.guestReservationsPage.refresh();
+            cardLayout.show(pages, "guest reservations");
+        });
+
         btnLogout.addActionListener(e -> {
             AccountController.currentAccount = null;
             cardLayout.show(pages, "welcome");
@@ -59,6 +68,8 @@ public class MenuPage extends JPanel {
         card.add(subtitleLabel);
         card.add(Box.createRigidArea(new Dimension(0, 35)));
         card.add(btnReserve);
+        card.add(Box.createRigidArea(new Dimension(0, 14)));
+        card.add(btnMyReservations);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnShop);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
@@ -110,12 +121,19 @@ public class MenuPage extends JPanel {
 
             if (current.getRole() == Role.CLERK) {
                 btnManageRooms.setVisible(true);
-            } else {
+                btnMyReservations.setVisible(false); // Clerks use Room Management
+            } else if (current.getRole() == Role.GUEST) {
                 btnManageRooms.setVisible(false);
+                btnMyReservations.setVisible(true); // Guests use My Reservations
+            } else {
+                // For Admins or undefined roles, show both or handle accordingly
+                btnManageRooms.setVisible(true);
+                btnMyReservations.setVisible(true);
             }
         } else {
             welcomeLabel.setText("Welcome!");
             btnManageRooms.setVisible(false);
+            btnMyReservations.setVisible(false);
         }
 
         revalidate();

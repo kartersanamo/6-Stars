@@ -15,6 +15,7 @@ public class Main {
     public static MenuPage menuPage;
     public static MakeReservationPage makeReservationPage;
     public static RoomManagementPage roomManagementPage;
+    public static GuestReservationsPage guestReservationsPage;
 
     public static void createAndShowUI() {
         // create the .db file and tables if they don't already exist
@@ -39,6 +40,7 @@ public class Main {
         menuPage = new MenuPage(pages, cardLayout);
         makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
         roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
+        guestReservationsPage = new GuestReservationsPage(pages, cardLayout, reservationService);
         AccountDetailsPage accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
 
         pages.add(homeLandingPage, "home");
@@ -49,6 +51,7 @@ public class Main {
         pages.add(menuPage, "menu page");
         pages.add(makeReservationPage, "make reservation");
         pages.add(roomManagementPage, "room management");
+        pages.add(guestReservationsPage, "guest reservations");
         pages.add(accountDetailsPage, "account details");
 
         frame.add(pages);

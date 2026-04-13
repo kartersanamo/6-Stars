@@ -198,8 +198,8 @@ public class MakeReservationPage extends JPanel {
             Room selectedRoom = resultsList.getSelectedValue();
             String guestEmail = emailField.getText().trim();
 
-            if (guestEmail.isEmpty() || !guestEmail.contains("@")) {
-                JOptionPane.showMessageDialog(this, "Please enter a valid email for confirmation.");
+            if (guestEmail.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter an email");
                 emailField.requestFocus(); // Pop the cursor back into the box
                 return;
             }

@@ -26,7 +26,7 @@ public class DatabaseManager {
 
             // Create Reservations Table
             stmt.execute("CREATE TABLE IF NOT EXISTS reservations (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT, startDate TEXT, endDate TEXT)");
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, startDate TEXT, endDate TEXT, guestEmail TEXT)");
 
             // Create Join Table for Reservation <-> Rooms (Many-to-Many)
             stmt.execute("CREATE TABLE IF NOT EXISTS reservation_rooms (" +
