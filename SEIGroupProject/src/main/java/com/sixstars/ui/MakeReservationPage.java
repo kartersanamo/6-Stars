@@ -227,7 +227,7 @@ public class MakeReservationPage extends JPanel {
             if (AccountController.currentAccount != null) {
                 cardLayout.show(pages, "menu page");
             } else {
-                cardLayout.show(pages, "welcome");
+                cardLayout.show(pages, "home");
             }
         });
 

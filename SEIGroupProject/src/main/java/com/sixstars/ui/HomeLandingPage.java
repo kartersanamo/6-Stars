@@ -1,16 +1,31 @@
 package com.sixstars.ui;
 
+import com.sixstars.model.Room;
+import com.sixstars.service.RoomService;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.List;
 
 public class HomeLandingPage extends JPanel {
+    private static final String HERO_IMAGE_PATH = "assets/6Stars-Background.jpg";
+    private static final String ROOM_IMAGE_PATH = "assets/6Stars-Room.jpg";
+
+    private final Image heroImage;
+    private final Image roomImage;
+    private final RoomService roomService;
+
     public HomeLandingPage(JPanel pages, CardLayout cardLayout) {
+        this.roomService = new RoomService();
+        this.heroImage = loadImage(HERO_IMAGE_PATH);
+        this.roomImage = loadImage(ROOM_IMAGE_PATH);
+
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
 
         add(buildHeader(pages, cardLayout), BorderLayout.NORTH);
-        add(buildContent(pages, cardLayout), BorderLayout.CENTER);
+        add(buildContentScrollPane(pages, cardLayout), BorderLayout.CENTER);
         add(buildFooter(), BorderLayout.SOUTH);
     }
 
@@ -46,35 +61,45 @@ public class HomeLandingPage extends JPanel {
         return header;
     }
 
+    private JScrollPane buildContentScrollPane(JPanel pages, CardLayout cardLayout) {
+        JPanel content = buildContent(pages, cardLayout);
+        JScrollPane scrollPane = new JScrollPane(content);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(UITheme.PAGE_BACKGROUND);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        return scrollPane;
+    }
+
     private JPanel buildContent(JPanel pages, CardLayout cardLayout) {
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        content.setOpaque(false);
+        content.setOpaque(true);
+        content.setBackground(UITheme.PAGE_BACKGROUND);
         content.setBorder(new EmptyBorder(24, 30, 24, 30));
 
-        JPanel heroCard = new JPanel();
+        JPanel heroCard = new ImagePanel(heroImage);
         heroCard.setLayout(new BoxLayout(heroCard, BoxLayout.Y_AXIS));
-        heroCard.setBackground(UITheme.CARD_BACKGROUND);
         heroCard.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
                 new EmptyBorder(26, 30, 26, 30)
         ));
         heroCard.setAlignmentX(Component.CENTER_ALIGNMENT);
-        heroCard.setMaximumSize(new Dimension(860, 320));
+        heroCard.setMaximumSize(new Dimension(860, 360));
+        heroCard.setPreferredSize(new Dimension(860, 360));
 
         JLabel heroTitle = new JLabel("Experience Timeless Luxury");
         heroTitle.setFont(new Font("Serif", Font.BOLD, 38));
-        heroTitle.setForeground(UITheme.TEXT_DARK);
+        heroTitle.setForeground(Color.WHITE);
         heroTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel heroSubtitle = new JLabel("Elegant suites, curated dining, and exceptional hospitality.");
         heroSubtitle.setFont(new Font("SansSerif", Font.PLAIN, 18));
-        heroSubtitle.setForeground(UITheme.TEXT_MEDIUM);
+        heroSubtitle.setForeground(new Color(245, 245, 245));
         heroSubtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel heroDetail = new JLabel("Plan your stay with comfort and confidence in just a few clicks.");
         heroDetail.setFont(new Font("SansSerif", Font.PLAIN, 15));
-        heroDetail.setForeground(UITheme.TEXT_MEDIUM);
+        heroDetail.setForeground(new Color(236, 236, 236));
         heroDetail.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JPanel heroActions = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
@@ -97,6 +122,18 @@ public class HomeLandingPage extends JPanel {
         heroCard.add(Box.createRigidArea(new Dimension(0, 24)));
         heroCard.add(heroActions);
 
+        JLabel roomsPreviewTitle = new JLabel("Room Collection Preview");
+        roomsPreviewTitle.setFont(new Font("Serif", Font.BOLD, 30));
+        roomsPreviewTitle.setForeground(UITheme.TEXT_DARK);
+        roomsPreviewTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel roomsPreviewSubtitle = new JLabel("Every room currently available in the 6 Stars database");
+        roomsPreviewSubtitle.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        roomsPreviewSubtitle.setForeground(UITheme.TEXT_MEDIUM);
+        roomsPreviewSubtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JPanel roomsPreviewPanel = buildRoomsPreviewPanel();
+
         JPanel highlightsPanel = new JPanel(new GridLayout(1, 3, 16, 0));
         highlightsPanel.setOpaque(false);
         highlightsPanel.setMaximumSize(new Dimension(860, 180));
@@ -108,7 +145,83 @@ public class HomeLandingPage extends JPanel {
         content.add(heroCard);
         content.add(Box.createRigidArea(new Dimension(0, 18)));
         content.add(highlightsPanel);
+        content.add(Box.createRigidArea(new Dimension(0, 26)));
+        content.add(roomsPreviewTitle);
+        content.add(Box.createRigidArea(new Dimension(0, 8)));
+        content.add(roomsPreviewSubtitle);
+        content.add(Box.createRigidArea(new Dimension(0, 16)));
+        content.add(roomsPreviewPanel);
+        content.add(Box.createVerticalGlue());
         return content;
+    }
+
+    private JPanel buildRoomsPreviewPanel() {
+        JPanel panel = new JPanel(new GridLayout(0, 2, 16, 16));
+        panel.setOpaque(false);
+        panel.setMaximumSize(new Dimension(860, Integer.MAX_VALUE));
+        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        List<Room> allRooms = roomService.getAllRooms();
+        for (Room room : allRooms) {
+            panel.add(createRoomPreviewCard(room));
+        }
+
+        if (allRooms.isEmpty()) {
+            JPanel emptyCard = new JPanel(new BorderLayout());
+            emptyCard.setBackground(UITheme.CARD_BACKGROUND);
+            emptyCard.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                    new EmptyBorder(24, 20, 24, 20)
+            ));
+            JLabel emptyLabel = new JLabel("No rooms found in the database.");
+            emptyLabel.setForeground(UITheme.TEXT_MEDIUM);
+            emptyLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            emptyLabel.setFont(new Font("SansSerif", Font.PLAIN, 15));
+            emptyCard.add(emptyLabel, BorderLayout.CENTER);
+            panel.add(emptyCard);
+        }
+
+        return panel;
+    }
+
+    private JPanel createRoomPreviewCard(Room room) {
+        JPanel card = new ImagePanel(roomImage);
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(14, 16, 14, 16)
+        ));
+        card.setPreferredSize(new Dimension(422, 215));
+
+        JLabel roomTitle = new JLabel("Room " + room.getRoomNumber());
+        roomTitle.setFont(new Font("Serif", Font.BOLD, 26));
+        roomTitle.setForeground(Color.WHITE);
+        roomTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel bedTypeLabel = createRoomDetailLabel("Bed Type: " + room.getBedType());
+        JLabel themeLabel = createRoomDetailLabel("Theme: " + room.getTheme());
+        JLabel qualityLabel = createRoomDetailLabel("Quality: " + room.getQualityLevel());
+        JLabel smokingLabel = createRoomDetailLabel("Smoking: " + (room.isSmoking() ? "Yes" : "No"));
+
+        card.add(roomTitle);
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
+        card.add(bedTypeLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 5)));
+        card.add(themeLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 5)));
+        card.add(qualityLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 5)));
+        card.add(smokingLabel);
+
+        return card;
+    }
+
+    private JLabel createRoomDetailLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("SansSerif", Font.BOLD, 14));
+        label.setForeground(new Color(248, 248, 248));
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return label;
     }
 
     private JPanel createFeatureCard(String title, String text) {
@@ -194,5 +307,40 @@ public class HomeLandingPage extends JPanel {
         button.setOpaque(true);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return button;
+    }
+
+    private Image loadImage(String relativePath) {
+        ImageIcon icon = new ImageIcon(relativePath);
+        if (icon.getIconWidth() > 0 && icon.getIconHeight() > 0) {
+            return icon.getImage();
+        }
+
+        ImageIcon fallbackIcon = new ImageIcon("SEIGroupProject/" + relativePath);
+        if (fallbackIcon.getIconWidth() > 0 && fallbackIcon.getIconHeight() > 0) {
+            return fallbackIcon.getImage();
+        }
+        return null;
+    }
+
+    private static class ImagePanel extends JPanel {
+        private final Image backgroundImage;
+
+        ImagePanel(Image backgroundImage) {
+            this.backgroundImage = backgroundImage;
+            setBackground(UITheme.CARD_BACKGROUND);
+            setOpaque(true);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (backgroundImage != null) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+                g2.setColor(new Color(20, 20, 20, 90));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        }
     }
 }

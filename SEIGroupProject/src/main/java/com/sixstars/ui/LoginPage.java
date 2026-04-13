@@ -114,7 +114,7 @@ public class LoginPage extends JPanel {
             passwordField.setText("");
         });
 
-        backButton.addActionListener(_ -> cardLayout.show(pages, "welcome"));
+        backButton.addActionListener(_ -> cardLayout.show(pages, "home"));
 
         card.add(Box.createVerticalGlue());
         card.add(hotelLabel);

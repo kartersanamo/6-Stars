@@ -173,7 +173,7 @@ public class CreateAccountPage extends JPanel {
                 emailField.setText("");
                 passwordField.setText("");
 
-                cardLayout.show(pages, "welcome");
+                cardLayout.show(pages, "home");
 
             } catch (RuntimeException ex) {
                 JOptionPane.showMessageDialog(
@@ -185,7 +185,7 @@ public class CreateAccountPage extends JPanel {
             }
         });
 
-        backButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
+        backButton.addActionListener(e -> cardLayout.show(pages, "home"));
     }
 
     private JLabel createCenteredLabel(String text) {
