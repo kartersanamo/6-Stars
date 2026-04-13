@@ -1,12 +1,33 @@
 package com.sixstars.ui;
 
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
+
+import com.sixstars.app.Main;
 import com.sixstars.model.Room;
 import com.sixstars.service.RoomService;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.util.List;
 
 public class HomeLandingPage extends JPanel {
     private static final String HERO_IMAGE_PATH = "assets/6Stars-Background.jpg";
@@ -16,6 +37,14 @@ public class HomeLandingPage extends JPanel {
     private final Image roomImage;
     private final RoomService roomService;
 
+    private JButton loginButton;
+    private JButton createAccountButton;
+    private JPanel navPanel;
+    private JButton btnAccount;
+
+
+  
+    
     public HomeLandingPage(JPanel pages, CardLayout cardLayout) {
         this.roomService = new RoomService();
         this.heroImage = loadImage(HERO_IMAGE_PATH);
@@ -24,41 +53,10 @@ public class HomeLandingPage extends JPanel {
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
 
-        add(buildHeader(pages, cardLayout), BorderLayout.NORTH);
+        add(Main.headerBar, BorderLayout.NORTH);
         add(buildContentScrollPane(pages, cardLayout), BorderLayout.CENTER);
         add(buildFooter(), BorderLayout.SOUTH);
-    }
-
-    private JPanel buildHeader(JPanel pages, CardLayout cardLayout) {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(UITheme.CARD_BACKGROUND);
-        header.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER_COLOR),
-                new EmptyBorder(16, 28, 16, 28)
-        ));
-
-        JLabel brandLabel = new JLabel("6 Stars Hotel");
-        brandLabel.setFont(new Font("Serif", Font.BOLD, 30));
-        brandLabel.setForeground(UITheme.TEXT_DARK);
-
-        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        navPanel.setOpaque(false);
-
-        JButton bookNowButton = createHeaderButton("Book Now");
-        JButton loginButton = createHeaderButton("Login");
-        JButton createAccountButton = createHeaderButton("Create Account");
-
-        bookNowButton.addActionListener(e -> cardLayout.show(pages, "make reservation"));
-        loginButton.addActionListener(e -> cardLayout.show(pages, "login"));
-        createAccountButton.addActionListener(e -> cardLayout.show(pages, "create account"));
-
-        navPanel.add(bookNowButton);
-        navPanel.add(loginButton);
-        navPanel.add(createAccountButton);
-
-        header.add(brandLabel, BorderLayout.WEST);
-        header.add(navPanel, BorderLayout.EAST);
-        return header;
+        Main.headerBar.refreshInfo();
     }
 
     private JScrollPane buildContentScrollPane(JPanel pages, CardLayout cardLayout) {
@@ -108,7 +106,11 @@ public class HomeLandingPage extends JPanel {
         JButton reserveButton = createPrimaryButton("Reserve Your Stay");
         JButton exploreButton = createSecondaryButton("Enter Guest Portal");
 
-        reserveButton.addActionListener(e -> cardLayout.show(pages, "make reservation"));
+        reserveButton.addActionListener(e -> {
+            cardLayout.show(pages, "make reservation");
+            Main.headerBar2.refreshInfo();
+        }
+    );
         exploreButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
 
         heroActions.add(reserveButton);

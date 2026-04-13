@@ -1,11 +1,30 @@
 package com.sixstars.ui;
 
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
+
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Role;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
 
 public class CreateAccountPage extends JPanel {
     private final AccountController accountController;
@@ -172,7 +191,6 @@ public class CreateAccountPage extends JPanel {
                 lastNameField.setText("");
                 emailField.setText("");
                 passwordField.setText("");
-
                 cardLayout.show(pages, "home");
 
             } catch (RuntimeException ex) {
@@ -247,7 +265,7 @@ public class CreateAccountPage extends JPanel {
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
     }
 
-    public void refresh() {
+    public void refreshInfo() {
         isAdmin = AccountController.currentAccount != null &&
                 AccountController.currentAccount.getRole() == Role.ADMIN;
 
