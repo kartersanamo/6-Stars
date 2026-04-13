@@ -40,6 +40,9 @@ public class WelcomePage extends JPanel {
             cardLayout.show(pages, "create account");
         });
 
+        JButton homeButton = createSecondaryButton("Back to Home");
+        homeButton.addActionListener(_ -> cardLayout.show(pages, "home"));
+
 
         cardPanel.add(Box.createVerticalGlue());
         cardPanel.add(titleLabel);
@@ -49,6 +52,8 @@ public class WelcomePage extends JPanel {
         cardPanel.add(loginButton);
         cardPanel.add(Box.createRigidArea(new Dimension(0, 14)));
         cardPanel.add(signUpButton);
+        cardPanel.add(Box.createRigidArea(new Dimension(0, 14)));
+        cardPanel.add(homeButton);
         cardPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         cardPanel.add(Box.createVerticalGlue());
         add(cardPanel);
