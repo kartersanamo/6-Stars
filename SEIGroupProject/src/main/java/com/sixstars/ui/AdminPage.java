@@ -1,10 +1,19 @@
 package com.sixstars.ui;
 
-import javax.swing.*;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 import com.sixstars.app.Main;
-
-import java.awt.*;
+import com.sixstars.controller.AccountController;
 
 public class AdminPage extends JPanel {
     public AdminPage(JPanel pages, CardLayout cardLayout) {
@@ -21,11 +30,14 @@ public class AdminPage extends JPanel {
 
         JButton logoutButton = new JButton("Logout");
         logoutButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        logoutButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
+        logoutButton.addActionListener(e -> {
+            cardLayout.show(pages, "welcome");
+            AccountController.currentAccount = null;
+        });
 
         JButton signUpButton = new JButton("Create Account");
         signUpButton.addActionListener(_ -> {
-            Main.createAccountPage.refresh();
+            Main.createAccountPage.refreshInfo();
             cardLayout.show(pages, "create account");
         });
 

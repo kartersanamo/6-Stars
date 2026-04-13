@@ -1,11 +1,28 @@
 package com.sixstars.ui;
 
-import javax.swing.*;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
-import java.awt.*;
 
 import com.sixstars.app.Main;
-import com.sixstars.controller.LoginController;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.Role;
@@ -104,7 +121,8 @@ public class LoginPage extends JPanel {
                     cardLayout.show(pages, "admin");
                 } else {
                     Main.menuPage.updateWelcomeMessage();
-                    cardLayout.show(pages, "menu page");
+                    Main.headerBar.refreshInfo();
+                    cardLayout.show(pages, "home");
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid credentials.");
@@ -114,7 +132,10 @@ public class LoginPage extends JPanel {
             passwordField.setText("");
         });
 
-        backButton.addActionListener(_ -> cardLayout.show(pages, "home"));
+        backButton.addActionListener(_ -> {
+            Main.headerBar.refreshInfo();          
+            cardLayout.show(pages, "home");
+        });
 
         card.add(Box.createVerticalGlue());
         card.add(hotelLabel);

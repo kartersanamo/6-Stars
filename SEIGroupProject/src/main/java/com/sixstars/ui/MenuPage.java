@@ -1,13 +1,26 @@
 package com.sixstars.ui;
 
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagLayout;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.border.EmptyBorder;
+
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.Role;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
 
 public class MenuPage extends JPanel {
     private JLabel welcomeLabel;
@@ -50,7 +63,10 @@ public class MenuPage extends JPanel {
 
         btnReserve.addActionListener(e -> cardLayout.show(pages, "make reservation"));
         btnShop.addActionListener(e -> JOptionPane.showMessageDialog(this, "Store coming soon"));
-        btnAccount.addActionListener(e -> cardLayout.show(pages, "account details"));
+        btnAccount.addActionListener(e -> {
+            Main.accountDetailsPage.refreshInfo();
+            cardLayout.show(pages, "account details");
+        });
         btnManageRooms.addActionListener(e -> cardLayout.show(pages, "room management"));
         btnMyReservations.addActionListener(e -> {
             Main.guestReservationsPage.refresh();
