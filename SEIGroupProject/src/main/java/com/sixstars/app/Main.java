@@ -32,6 +32,7 @@ public class Main {
         CardLayout cardLayout = new CardLayout();
         JPanel pages = new JPanel(cardLayout);
 
+        HomeLandingPage homeLandingPage = new HomeLandingPage(pages, cardLayout);
         WelcomePage welcomePage = new WelcomePage(pages, cardLayout);
         LoginPage loginPage = new LoginPage(pages, cardLayout, accountService);
         createAccountPage = new CreateAccountPage(pages, cardLayout);
@@ -40,6 +41,7 @@ public class Main {
         roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
         AccountDetailsPage accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
 
+        pages.add(homeLandingPage, "home");
         pages.add(welcomePage, "welcome");
         pages.add(loginPage, "login");
         pages.add(new AdminPage(pages, cardLayout), "admin");
