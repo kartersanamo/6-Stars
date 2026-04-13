@@ -10,7 +10,7 @@ import java.util.List;
 public class ReservationDAO {
 
     public void saveReservation(Reservation res) {
-        String resSql = "INSERT INTO reservations(startDate, endDate) VALUES(?,?)";
+        String resSql = "INSERT INTO reservations(startDate, endDate, guestEmail) VALUES(?,?,?)";
         String joinSql = "INSERT INTO reservation_rooms(reservation_id, room_number) VALUES(?,?)";
 
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -20,6 +20,7 @@ public class ReservationDAO {
             try (PreparedStatement pstmt = conn.prepareStatement(resSql, Statement.RETURN_GENERATED_KEYS)) {
                 pstmt.setString(1, res.getStartDate().toString());
                 pstmt.setString(2, res.getEndDate().toString());
+                pstmt.setString(3, res.getGuestEmail());
                 pstmt.executeUpdate();
 
                 ResultSet rs = pstmt.getGeneratedKeys();
@@ -59,13 +60,14 @@ public class ReservationDAO {
                 int id = rs.getInt("id");
                 LocalDate start = LocalDate.parse(rs.getString("startDate"));
                 LocalDate end = LocalDate.parse(rs.getString("endDate"));
+                String email = rs.getString("guestEmail");
 
                 // Fetch the rooms associated with this specific reservation
                 List<Room> rooms = getRoomsForReservation(id);
 
                 // Manual ID management: Since your constructor sets ID automatically,
                 // you might need a setter or a specific constructor for DB loading.
-                Reservation res = new Reservation(start, end, rooms);
+                Reservation res = new Reservation(email, start, end, rooms);
                 // res.setId(id); // If you add a setter to Reservation.java
 
                 reservations.add(res);
