@@ -1,12 +1,33 @@
 package com.sixstars.ui;
 
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
+
+import com.sixstars.app.Main;
 import com.sixstars.model.Room;
 import com.sixstars.service.RoomService;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.util.List;
 
 public class HomeLandingPage extends JPanel {
     private static final String HERO_IMAGE_PATH = "assets/6Stars-Background.jpg";
@@ -50,7 +71,10 @@ public class HomeLandingPage extends JPanel {
 
         bookNowButton.addActionListener(e -> cardLayout.show(pages, "make reservation"));
         loginButton.addActionListener(e -> cardLayout.show(pages, "login"));
-        createAccountButton.addActionListener(e -> cardLayout.show(pages, "create account"));
+        createAccountButton.addActionListener(e -> {
+            cardLayout.show(pages, "create account");
+            Main.createAccountPage.refresh();
+        });
 
         navPanel.add(bookNowButton);
         navPanel.add(loginButton);
