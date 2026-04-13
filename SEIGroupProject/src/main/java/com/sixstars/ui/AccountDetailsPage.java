@@ -52,37 +52,6 @@ public class AccountDetailsPage extends JPanel {
         }
     }
 
-
-    void refreshInfo() {
-        try {
-            var account = com.sixstars.controller.AccountController.currentAccount;
-    
-            if (account != null) {
-                firstName.setText(account.getFirstName() != null ? account.getFirstName() : "Unknown");
-                lastName.setText(account.getLastName() != null ? account.getLastName() : "Unknown");
-                email.setText(account.getEmail() != null ? account.getEmail() : "Unknown");
-                role.setText(account.getRole() != null ? account.getRole().toString() : "Unknown");
-            } else {
-                firstName.setText("Unknown");
-                lastName.setText("Unknown");
-                email.setText("Unknown");
-                role.setText("Unknown");
-            }
-    
-            // Refresh UI
-            revalidate();
-            repaint();
-    
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    ex.getMessage(),
-                    "Failed to Refresh Account Details",
-                    JOptionPane.ERROR_MESSAGE
-            );
-        }
-    }
-
     public AccountDetailsPage(JPanel pages, CardLayout cardLayout) {
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
