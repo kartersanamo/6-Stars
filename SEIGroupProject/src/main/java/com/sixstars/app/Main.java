@@ -19,6 +19,7 @@ import com.sixstars.ui.LoginPage;
 import com.sixstars.ui.MakeReservationPage;
 import com.sixstars.ui.MenuPage;
 import com.sixstars.ui.RoomManagementPage;
+import com.sixstars.ui.GuestReservationsPage;
 import com.sixstars.ui.WelcomePage;
 
 public class Main {

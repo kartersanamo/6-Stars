@@ -1,8 +1,6 @@
 package com.sixstars.ui;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.GridLayout;
+import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
 
