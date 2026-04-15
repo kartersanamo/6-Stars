@@ -118,7 +118,7 @@ public List<Room> filterAvailableRooms(LocalDate start, LocalDate end, BedType t
     /**
      * Logic to finalize and save a booking.
      */
-    public Reservation makeReservation(LocalDate start, LocalDate end, List<Room> selectedRooms) {
+    public Reservation makeReservation(String guestEmail, LocalDate start, LocalDate end, List<Room> selectedRooms) {
         for (Room r : selectedRooms) {
             // The Service asks the DAO to do the work
             if (!reservationDAO.isRoomAvailable(r.getRoomNumber(), start, end)) {
@@ -127,7 +127,7 @@ public List<Room> filterAvailableRooms(LocalDate start, LocalDate end, BedType t
         }
 
         // If all checks pass, the Service proceeds with business logic
-        Reservation newBooking = new Reservation(start, end, selectedRooms);
+        Reservation newBooking = new Reservation(guestEmail, start, end, selectedRooms);
         reservationDAO.saveReservation(newBooking);
         return newBooking;
 //        ArrayList<Reservation> allReservations = loadReservations();
@@ -150,5 +150,22 @@ public List<Room> filterAvailableRooms(LocalDate start, LocalDate end, BedType t
     public List<Reservation> getAllReservations() {
         return reservationDAO.getAllReservations();
 //        return loadReservations();
+    }
+
+    // Gets all reservations belonging to specific email
+    public List<Reservation> getGuestReservations(String email) {
+        return reservationDAO.getReservationsByEmail(email);
+    }
+
+    // Cancels booking by id
+    public void cancelBooking(int id) {
+        reservationDAO.cancelReservation(id);
+    }
+
+    // Updates existing reservation
+    public void updateReservation(int id, LocalDate start, LocalDate end) {
+        // Business Logic: You could add a check here to ensure the new dates
+        // are available before calling the DAO!
+        reservationDAO.updateReservationDates(id, start, end);
     }
 }

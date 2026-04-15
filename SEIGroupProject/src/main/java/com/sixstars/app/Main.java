@@ -20,6 +20,7 @@ import com.sixstars.ui.LoginPage;
 import com.sixstars.ui.MakeReservationPage;
 import com.sixstars.ui.MenuPage;
 import com.sixstars.ui.RoomManagementPage;
+import com.sixstars.ui.GuestReservationsPage;
 import com.sixstars.ui.WelcomePage;
 import com.sixstars.model.Room;
 
@@ -29,6 +30,7 @@ public class Main {
     public static MenuPage menuPage;
     public static MakeReservationPage makeReservationPage;
     public static RoomManagementPage roomManagementPage;
+    public static GuestReservationsPage guestReservationsPage;
     public static AccountDetailsPage accountDetailsPage;
     public static HomeLandingPage homeLandingPage;
     public static HeaderBar headerBar;
@@ -60,9 +62,8 @@ public class Main {
         menuPage = new MenuPage(pages, cardLayout);
         makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
         roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
+        guestReservationsPage = new GuestReservationsPage(pages, cardLayout, reservationService);
         accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
-        accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
-        
 
         pages.add(homeLandingPage, "home");
         pages.add(welcomePage, "welcome");
@@ -72,6 +73,7 @@ public class Main {
         pages.add(menuPage, "menu page");
         pages.add(makeReservationPage, "make reservation");
         pages.add(roomManagementPage, "room management");
+        pages.add(guestReservationsPage, "guest reservations");
         pages.add(accountDetailsPage, "account details");
 
         frame.add(pages);

@@ -1,5 +1,28 @@
 package com.sixstars.ui;
 
+import java.awt.*;
+import java.time.LocalDate;
+import java.util.List;
+import java.time.ZoneId;
+import java.util.Date;
+
+import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.border.EmptyBorder;
+
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
@@ -12,16 +35,6 @@ import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
 import com.toedter.calendar.JDateChooser;
 
-import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-
 public class MakeReservationPage extends JPanel {
     private static final String ROOM_IMAGE_PATH = "assets/6Stars-Room.jpg";
 
@@ -32,12 +45,19 @@ public class MakeReservationPage extends JPanel {
 
     private final JDateChooser checkInChooser;
     private final JDateChooser checkOutChooser;
-    private final JTextField roomNumberField;
+    private JTextField startField, endField, roomNumberField, emailField;
     private final JComboBox<Object> bedTypeBox;
     private final JComboBox<Object> themeBox;
     private final JComboBox<Object> qualityBox;
     private final JComboBox<Object> smokingBox;
     private final JCheckBox onlyAvailableCheck;
+    private JButton bookButton, logoutButton, backButton;
+    private JList<Room> resultsList;
+    private DefaultListModel<Room> listModel;
+    private JLabel selectedRoomLabel;
+    private JLabel selectedStartLabel;
+    private JLabel selectedEndLabel;
+    private JLabel emailLabel;
     private final JLabel resultsInfoLabel;
     private final JPanel roomCardsContainer;
     private final Image roomCardImage;

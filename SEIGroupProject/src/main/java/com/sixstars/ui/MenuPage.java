@@ -26,6 +26,7 @@ public class MenuPage extends JPanel {
     private JLabel welcomeLabel;
     private JLabel subtitleLabel;
     private JButton btnManageRooms;
+    private JButton btnMyReservations;
 
     public MenuPage(JPanel pages, CardLayout cardLayout) {
         setLayout(new GridBagLayout());
@@ -53,10 +54,12 @@ public class MenuPage extends JPanel {
         JButton btnReserve = createPrimaryButton("Make a Reservation");
         JButton btnShop = createSecondaryButton("Visit the Store");
         JButton btnAccount = createSecondaryButton("My Account");
+        btnMyReservations = createSecondaryButton("My Reservations");
         btnManageRooms = createSecondaryButton("Room Management");
         JButton btnLogout = createSecondaryButton("Logout");
 
         btnManageRooms.setVisible(false);
+        btnMyReservations.setVisible(false);
 
         btnReserve.addActionListener(e -> cardLayout.show(pages, "make reservation"));
         btnShop.addActionListener(e -> JOptionPane.showMessageDialog(this, "Store coming soon"));
@@ -65,6 +68,11 @@ public class MenuPage extends JPanel {
             cardLayout.show(pages, "account details");
         });
         btnManageRooms.addActionListener(e -> cardLayout.show(pages, "room management"));
+        btnMyReservations.addActionListener(e -> {
+            Main.guestReservationsPage.refresh();
+            cardLayout.show(pages, "guest reservations");
+        });
+
         btnLogout.addActionListener(e -> {
             AccountController.currentAccount = null;
             cardLayout.show(pages, "welcome");
@@ -76,6 +84,8 @@ public class MenuPage extends JPanel {
         card.add(subtitleLabel);
         card.add(Box.createRigidArea(new Dimension(0, 35)));
         card.add(btnReserve);
+        card.add(Box.createRigidArea(new Dimension(0, 14)));
+        card.add(btnMyReservations);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnShop);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
@@ -122,20 +132,28 @@ public class MenuPage extends JPanel {
     public void updateWelcomeMessage() {
         Account current = AccountController.currentAccount;
 
+        btnManageRooms.setVisible(false);
+        btnMyReservations.setVisible(false);
+
         if (current != null) {
             welcomeLabel.setText("Welcome, " + current.getFirstName() + "!");
+            Role role = current.getRole();
 
-            if (current.getRole() == Role.CLERK) {
+            if (role == Role.CLERK) {
                 btnManageRooms.setVisible(true);
-            } else {
-                btnManageRooms.setVisible(false);
+            } else if (role == Role.GUEST) {
+                btnMyReservations.setVisible(true);
+            } else if (role == Role.ADMIN) {
+                // Admins get both
+                btnManageRooms.setVisible(true);
+                btnMyReservations.setVisible(true);
             }
+
         } else {
             welcomeLabel.setText("Welcome!");
-            btnManageRooms.setVisible(false);
         }
 
-        revalidate();
-        repaint();
+        this.revalidate();
+        this.repaint();
     }
 }
