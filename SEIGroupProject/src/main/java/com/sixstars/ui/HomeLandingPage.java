@@ -37,14 +37,6 @@ public class HomeLandingPage extends JPanel {
     private final Image roomImage;
     private final RoomService roomService;
 
-    private JButton loginButton;
-    private JButton createAccountButton;
-    private JPanel navPanel;
-    private JButton btnAccount;
-
-
-  
-    
     public HomeLandingPage(JPanel pages, CardLayout cardLayout) {
         this.roomService = new RoomService();
         this.heroImage = loadImage(HERO_IMAGE_PATH);
@@ -124,17 +116,23 @@ public class HomeLandingPage extends JPanel {
         heroCard.add(Box.createRigidArea(new Dimension(0, 24)));
         heroCard.add(heroActions);
 
-        JLabel roomsPreviewTitle = new JLabel("Room Collection Preview");
+        JLabel roomsPreviewTitle = new JLabel("Featured Rooms");
         roomsPreviewTitle.setFont(new Font("Serif", Font.BOLD, 30));
         roomsPreviewTitle.setForeground(UITheme.TEXT_DARK);
         roomsPreviewTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel roomsPreviewSubtitle = new JLabel("Every room currently available in the 6 Stars database");
+        JLabel roomsPreviewSubtitle = new JLabel("A curated preview from our full room collection");
         roomsPreviewSubtitle.setFont(new Font("SansSerif", Font.PLAIN, 16));
         roomsPreviewSubtitle.setForeground(UITheme.TEXT_MEDIUM);
         roomsPreviewSubtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JPanel roomsPreviewPanel = buildRoomsPreviewPanel();
+        JButton viewAllButton = createPrimaryButton("View All Rooms");
+        viewAllButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        viewAllButton.addActionListener(e -> {
+            cardLayout.show(pages, "make reservation");
+            Main.headerBar2.refreshInfo();
+        });
 
         JPanel highlightsPanel = new JPanel(new GridLayout(1, 3, 16, 0));
         highlightsPanel.setOpaque(false);
@@ -153,6 +151,8 @@ public class HomeLandingPage extends JPanel {
         content.add(roomsPreviewSubtitle);
         content.add(Box.createRigidArea(new Dimension(0, 16)));
         content.add(roomsPreviewPanel);
+        content.add(Box.createRigidArea(new Dimension(0, 16)));
+        content.add(viewAllButton);
         content.add(Box.createVerticalGlue());
         return content;
     }
@@ -164,11 +164,13 @@ public class HomeLandingPage extends JPanel {
         panel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         List<Room> allRooms = roomService.getAllRooms();
-        for (Room room : allRooms) {
+        int featuredCount = Math.min(4, allRooms.size());
+        for (int i = 0; i < featuredCount; i++) {
+            Room room = allRooms.get(i);
             panel.add(createRoomPreviewCard(room));
         }
 
-        if (allRooms.isEmpty()) {
+        if (featuredCount == 0) {
             JPanel emptyCard = new JPanel(new BorderLayout());
             emptyCard.setBackground(UITheme.CARD_BACKGROUND);
             emptyCard.setBorder(BorderFactory.createCompoundBorder(

@@ -1,390 +1,668 @@
 package com.sixstars.ui;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.GridLayout;
-import java.time.LocalDate;
-import java.util.List;
-
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-
 import com.sixstars.app.Main;
+import com.sixstars.controller.AccountController;
+import com.sixstars.model.Account;
 import com.sixstars.model.BedType;
 import com.sixstars.model.QualityLevel;
+import com.sixstars.model.Role;
 import com.sixstars.model.Room;
 import com.sixstars.model.Theme;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
+import com.toedter.calendar.JDateChooser;
+
+import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
 
 public class MakeReservationPage extends JPanel {
-    private JPanel pages;
-    private CardLayout cardLayout;
-    private ReservationService resService;
-    private RoomService roomService;
+    private static final String ROOM_IMAGE_PATH = "assets/6Stars-Room.jpg";
 
-    private JTextField startField, endField, roomNumberField;
-    private JComboBox<Object> bedTypeBox;
-    private JComboBox<Object> themeBox;
-    private JComboBox<Object> qualityBox;
-    private JButton bookButton, logoutButton, backButton;
-    private JList<Room> resultsList;
-    private DefaultListModel<Room> listModel;
+    private final JPanel pages;
+    private final CardLayout cardLayout;
+    private final ReservationService reservationService;
+    private final RoomService roomService;
 
-    private JLabel selectedRoomLabel;
-    private JLabel selectedStartLabel;
-    private JLabel selectedEndLabel;
+    private final JDateChooser checkInChooser;
+    private final JDateChooser checkOutChooser;
+    private final JTextField roomNumberField;
+    private final JComboBox<Object> bedTypeBox;
+    private final JComboBox<Object> themeBox;
+    private final JComboBox<Object> qualityBox;
+    private final JComboBox<Object> smokingBox;
+    private final JCheckBox onlyAvailableCheck;
+    private final JLabel resultsInfoLabel;
+    private final JPanel roomCardsContainer;
+    private final Image roomCardImage;
 
-    public MakeReservationPage(JPanel pages, CardLayout cardLayout, ReservationService resService, RoomService roomService) {
+    public MakeReservationPage(JPanel pages, CardLayout cardLayout, ReservationService reservationService, RoomService roomService) {
         this.pages = pages;
         this.cardLayout = cardLayout;
-        this.resService = resService;
+        this.reservationService = reservationService;
         this.roomService = roomService;
+        this.roomCardImage = loadImage(ROOM_IMAGE_PATH);
 
-        setLayout(new BorderLayout(15, 15));
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setLayout(new BorderLayout());
+        setBackground(UITheme.PAGE_BACKGROUND);
 
-        startField = new JTextField(10);
-        endField = new JTextField(10);
-        roomNumberField = new JTextField(10);
+        Date today = todayAtMidnight();
+        Date tomorrow = dateFromLocalDate(LocalDate.now().plusDays(1));
+        checkInChooser = createDateChooser(today);
+        checkOutChooser = createDateChooser(tomorrow);
+        checkInChooser.setMinSelectableDate(today);
+        checkOutChooser.setMinSelectableDate(tomorrow);
+        roomNumberField = createTextField("Any");
+        bedTypeBox = buildEnumFilterBox(BedType.values());
+        themeBox = buildEnumFilterBox(Theme.values());
+        qualityBox = buildEnumFilterBox(QualityLevel.values());
+        smokingBox = new JComboBox<>(new Object[]{"Any", "Smoking", "Non-smoking"});
+        styleFilterCombo(smokingBox);
+        onlyAvailableCheck = new JCheckBox("Only show currently available");
+        resultsInfoLabel = new JLabel("0 rooms");
+        roomCardsContainer = new JPanel();
 
+        add(buildTopSection(), BorderLayout.NORTH);
+        add(buildRoomListingsSection(), BorderLayout.CENTER);
+        add(buildBottomActionBar(), BorderLayout.SOUTH);
 
-        bedTypeBox = new JComboBox<>();
-        bedTypeBox.addItem("Any");
-        for (BedType type : BedType.values()) {
-            bedTypeBox.addItem(type);
-        }
+        attachFilterListeners();
+        refreshListings();
+    }
 
-        themeBox = new JComboBox<>();
-        themeBox.addItem("Any");
-        for (Theme theme : Theme.values()) {
-            themeBox.addItem(theme);
-        }
-
-        qualityBox = new JComboBox<>();
-        qualityBox.addItem("Any");
-        for (QualityLevel quality : QualityLevel.values()) {
-            qualityBox.addItem(quality);
-        }
-
-        bookButton = new JButton("Reserve Selected Room");
-        bookButton.setEnabled(false);
-        logoutButton = new JButton("Logout");
-        backButton = new JButton("Back");
-
-        listModel = new DefaultListModel<>();
-        resultsList = new JList<>(listModel);
-        resultsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        selectedRoomLabel = new JLabel("Selected Room: None");
-        selectedStartLabel = new JLabel("Check-in: Not entered");
-        selectedEndLabel = new JLabel("Check-out: Not entered");
-
-        JPanel topPanel = new JPanel(new GridLayout(3, 4, 10, 10));
-        topPanel.add(new JLabel("Check-in (YYYY-MM-DD):"));
-        topPanel.add(startField);
-        topPanel.add(new JLabel("Check-out (YYYY-MM-DD):"));
-        topPanel.add(endField);
-
-        topPanel.add(new JLabel("Bed Type:"));
-        topPanel.add(bedTypeBox);
-        topPanel.add(new JLabel("Theme:"));
-        topPanel.add(themeBox);
-
-        topPanel.add(new JLabel("Quality:"));
-        topPanel.add(qualityBox);
-        topPanel.add(new JLabel("Room Number:"));
-        topPanel.add(roomNumberField);
+    private JPanel buildTopSection() {
+        JPanel top = new JPanel(new BorderLayout());
+        top.setBackground(UITheme.PAGE_BACKGROUND);
 
         Main.headerBar2.refreshInfo();
-        JPanel topContainer = new JPanel(new BorderLayout());
+        top.add(Main.headerBar2, BorderLayout.NORTH);
+        top.add(buildSearchSummaryPanel(), BorderLayout.CENTER);
+        return top;
+    }
 
-        // global header (shared)
-        topContainer.add(Main.headerBar2, BorderLayout.NORTH);
+    private JPanel buildSearchSummaryPanel() {
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setBackground(UITheme.CARD_BACKGROUND);
+        searchPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER_COLOR),
+                new EmptyBorder(16, 24, 16, 24)
+        ));
 
-        // page-specific filters UI
-        topContainer.add(topPanel, BorderLayout.CENTER);
+        JPanel fields = new JPanel(new GridLayout(1, 4, 10, 0));
+        fields.setOpaque(false);
+        fields.add(createFieldCard("Check In", checkInChooser));
+        fields.add(createFieldCard("Check Out", checkOutChooser));
+        fields.add(createFieldCard("Room Number", roomNumberField));
 
-        add(topContainer, BorderLayout.NORTH);
+        JButton refreshButton = createPrimaryButton("Update Search");
+        refreshButton.setForeground(Color.BLACK);
+        refreshButton.addActionListener(e -> refreshListings());
+        fields.add(createFieldCard("Search", refreshButton));
 
-        
+        JPanel filtersRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        filtersRow.setOpaque(false);
+        filtersRow.add(createFilterLabel("Bed"));
+        filtersRow.add(bedTypeBox);
+        filtersRow.add(createFilterLabel("Theme"));
+        filtersRow.add(themeBox);
+        filtersRow.add(createFilterLabel("Quality"));
+        filtersRow.add(qualityBox);
+        filtersRow.add(createFilterLabel("Smoking"));
+        filtersRow.add(smokingBox);
+        filtersRow.add(onlyAvailableCheck);
 
-        JScrollPane scrollPane = new JScrollPane(resultsList);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Available Rooms"));
-        add(scrollPane, BorderLayout.CENTER);
-
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
-
-        JPanel summaryPanel = new JPanel(new GridLayout(4, 1));
-        summaryPanel.setBorder(BorderFactory.createTitledBorder("Reservation Summary"));
-        summaryPanel.add(selectedRoomLabel);
-        summaryPanel.add(selectedStartLabel);
-        summaryPanel.add(selectedEndLabel);
-        summaryPanel.add(new JLabel("You can only reserve when both dates are valid."));
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(bookButton);
-        buttonPanel.add(logoutButton);
-        buttonPanel.add(backButton);
-
-        bottomPanel.add(summaryPanel);
-        bottomPanel.add(buttonPanel);
-
-        add(bottomPanel, BorderLayout.SOUTH);
-
-        bedTypeBox.addActionListener(e -> updateRoomList());
-        themeBox.addActionListener(e -> updateRoomList());
-        qualityBox.addActionListener(e -> updateRoomList());
-
-        roomNumberField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                updateRoomList();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                updateRoomList();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                updateRoomList();
-            }
+        JButton clearButton = createSecondaryButton("Clear Filters");
+        clearButton.addActionListener(e -> {
+            checkInChooser.setDate(todayAtMidnight());
+            setCheckOutMinimum();
+            checkOutChooser.setDate(checkOutChooser.getMinSelectableDate());
+            roomNumberField.setText("");
+            bedTypeBox.setSelectedIndex(0);
+            themeBox.setSelectedIndex(0);
+            qualityBox.setSelectedIndex(0);
+            smokingBox.setSelectedIndex(0);
+            onlyAvailableCheck.setSelected(false);
+            refreshListings();
         });
+        filtersRow.add(clearButton);
 
-        startField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                updateSummaryLabels();
-                updateRoomList();
-            }
+        JLabel title = new JLabel("Browse Every Room at 6 Stars");
+        title.setFont(new Font("Serif", Font.BOLD, 28));
+        title.setForeground(UITheme.TEXT_DARK);
 
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                updateSummaryLabels();
-                updateRoomList();
-            }
+        JLabel subtitle = new JLabel("Hotel-style room listings with live filtering and reservation actions");
+        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        subtitle.setForeground(UITheme.TEXT_MEDIUM);
 
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                updateSummaryLabels();
-                updateRoomList();
-            }
-        });
+        JPanel titles = new JPanel();
+        titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
+        titles.setOpaque(false);
+        titles.add(title);
+        titles.add(Box.createRigidArea(new Dimension(0, 4)));
+        titles.add(subtitle);
 
-        endField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                updateSummaryLabels();
-                updateRoomList();
-            }
+        searchPanel.add(titles, BorderLayout.NORTH);
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setOpaque(false);
+        body.add(Box.createRigidArea(new Dimension(0, 14)));
+        body.add(fields);
+        body.add(Box.createRigidArea(new Dimension(0, 10)));
+        body.add(filtersRow);
+        searchPanel.add(body, BorderLayout.SOUTH);
+        return searchPanel;
+    }
 
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                updateSummaryLabels();
-                updateRoomList();
-            }
+    private JPanel buildRoomListingsSection() {
+        JPanel section = new JPanel(new BorderLayout());
+        section.setBackground(UITheme.PAGE_BACKGROUND);
+        section.setBorder(new EmptyBorder(26, 36, 22, 36));
 
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                updateSummaryLabels();
-                updateRoomList();
-            }
-        });
+        JPanel infoBar = new JPanel(new BorderLayout());
+        infoBar.setOpaque(false);
+        JLabel heading = new JLabel("All Available Rooms");
+        heading.setFont(new Font("SansSerif", Font.BOLD, 22));
+        heading.setForeground(UITheme.TEXT_DARK);
 
-        resultsList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                updateSummaryLabels();
-                updateBookButtonState();
-            }
-        });
+        resultsInfoLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        resultsInfoLabel.setForeground(UITheme.TEXT_MEDIUM);
+        resultsInfoLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
-        bookButton.addActionListener(e -> {
-            Room selectedRoom = resultsList.getSelectedValue();
-            if (selectedRoom == null) {
-                JOptionPane.showMessageDialog(this, "Please select a room first!");
-                return;
-            }
+        infoBar.add(heading, BorderLayout.WEST);
+        infoBar.add(resultsInfoLabel, BorderLayout.EAST);
 
-            if (!datesAreValid()) {
-                JOptionPane.showMessageDialog(this,
-                        "Please enter valid check-in and check-out dates.",
-                        "Date Error",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+        roomCardsContainer.setLayout(new BoxLayout(roomCardsContainer, BoxLayout.Y_AXIS));
+        roomCardsContainer.setOpaque(false);
+        roomCardsContainer.setBorder(new EmptyBorder(8, 8, 8, 8));
 
-            LocalDate start = LocalDate.parse(startField.getText().trim());
-            LocalDate end = LocalDate.parse(endField.getText().trim());
+        JScrollPane scrollPane = new JScrollPane(roomCardsContainer);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getViewport().setBackground(UITheme.PAGE_BACKGROUND);
 
-            if (!resService.isRoomAvailable(selectedRoom, start, end)) {
-                JOptionPane.showMessageDialog(this,
-                        "That room is not available for the selected dates.",
-                        "Unavailable Room",
-                        JOptionPane.ERROR_MESSAGE);
-                updateRoomList();
-                return;
-            }
+        section.add(infoBar, BorderLayout.NORTH);
+        section.add(Box.createRigidArea(new Dimension(0, 12)), BorderLayout.CENTER);
+        section.add(scrollPane, BorderLayout.SOUTH);
 
-            resService.makeReservation(start, end, List.of(selectedRoom));
-            JOptionPane.showMessageDialog(this, "Reservation Successful!");
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(infoBar, BorderLayout.NORTH);
+        wrapper.add(scrollPane, BorderLayout.CENTER);
+        return wrapper;
+    }
 
-            resultsList.clearSelection();
-            updateRoomList();
-            updateSummaryLabels();
-            bookButton.setEnabled(false);
-        });
+    private JPanel buildBottomActionBar() {
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setBackground(UITheme.CARD_BACKGROUND);
+        footer.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, UITheme.BORDER_COLOR),
+                new EmptyBorder(10, 16, 10, 16)
+        ));
 
+        JLabel helperText = new JLabel("Tip: Choose dates and filters above to narrow your results.");
+        helperText.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        helperText.setForeground(UITheme.TEXT_MEDIUM);
+
+        JButton backButton = createSecondaryButton("Back to Home");
         backButton.addActionListener(e -> {
             Main.headerBar.refreshInfo();
             cardLayout.show(pages, "home");
         });
 
-        logoutButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        actions.setOpaque(false);
+        actions.add(backButton);
 
-        updateRoomList();
-        updateSummaryLabels();
+        footer.add(helperText, BorderLayout.CENTER);
+        footer.add(actions, BorderLayout.EAST);
+        return footer;
     }
 
-    private void updateRoomList() {
-        listModel.clear();
+    private JPanel createFieldCard(String label, JComponent field) {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(new Color(248, 248, 248));
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(10, 10, 10, 10)
+        ));
 
-        Object selectedType = bedTypeBox.getSelectedItem();
-        Object selectedTheme = themeBox.getSelectedItem();
-        Object selectedQuality = qualityBox.getSelectedItem();
-        String roomNumberText = roomNumberField.getText().trim();
+        JLabel title = new JLabel(label);
+        title.setFont(new Font("SansSerif", Font.BOLD, 12));
+        title.setForeground(UITheme.TEXT_MEDIUM);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(title);
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(field);
+        return card;
+    }
+
+    private void attachFilterListeners() {
+        DocumentListener documentListener = new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                refreshListings();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                refreshListings();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                refreshListings();
+            }
+        };
+
+        checkInChooser.getDateEditor().addPropertyChangeListener("date", e -> {
+            setCheckOutMinimum();
+            refreshListings();
+        });
+        checkOutChooser.getDateEditor().addPropertyChangeListener("date", e -> refreshListings());
+        roomNumberField.getDocument().addDocumentListener(documentListener);
+
+        bedTypeBox.addActionListener(e -> refreshListings());
+        themeBox.addActionListener(e -> refreshListings());
+        qualityBox.addActionListener(e -> refreshListings());
+        smokingBox.addActionListener(e -> refreshListings());
+        onlyAvailableCheck.addActionListener(e -> refreshListings());
+    }
+
+    private void refreshListings() {
+        roomCardsContainer.removeAll();
 
         List<Room> allRooms = roomService.getAllRooms();
+        LocalDate startDate = toLocalDate(checkInChooser.getDate());
+        LocalDate endDate = toLocalDate(checkOutChooser.getDate());
+        boolean validDateRange = startDate != null && endDate != null && startDate.isBefore(endDate);
 
-        boolean validDates = datesAreValid();
-        LocalDate start = null;
-        LocalDate end = null;
-
-        if (validDates) {
-            start = LocalDate.parse(startField.getText().trim());
-            end = LocalDate.parse(endField.getText().trim());
-        }
-
+        int shownCount = 0;
         for (Room room : allRooms) {
-            boolean matches = true;
-
-            if (selectedType instanceof BedType && room.getBedType() != selectedType) {
-                matches = false;
+            if (!matchesRoomFilters(room)) {
+                continue;
             }
 
-            if (selectedTheme instanceof Theme && room.getTheme() != selectedTheme) {
-                matches = false;
+            boolean isAvailable = !validDateRange || reservationService.isRoomAvailable(room, startDate, endDate);
+            if (onlyAvailableCheck.isSelected() && !isAvailable) {
+                continue;
             }
 
-            if (selectedQuality instanceof QualityLevel && room.getQualityLevel() != selectedQuality) {
-                matches = false;
-            }
-
-            if (!roomNumberText.isEmpty()) {
-                try {
-                    int roomNumber = Integer.parseInt(roomNumberText);
-                    if (room.getRoomNumber() != roomNumber) {
-                        matches = false;
-                    }
-                } catch (NumberFormatException e) {
-                    matches = false;
-                }
-            }
-
-            if (matches && validDates && !resService.isRoomAvailable(room, start, end)) {
-                matches = false;
-            }
-
-            if (matches) {
-                listModel.addElement(room);
-            }
+            roomCardsContainer.add(createRoomCard(room, isAvailable, validDateRange));
+            roomCardsContainer.add(Box.createRigidArea(new Dimension(0, 12)));
+            shownCount++;
         }
 
-        if (!listModel.contains(resultsList.getSelectedValue())) {
-            resultsList.clearSelection();
+        if (shownCount == 0) {
+            roomCardsContainer.add(createEmptyStateCard());
+            resultsInfoLabel.setText("0 results");
+        } else {
+            resultsInfoLabel.setText(shownCount + " result" + (shownCount == 1 ? "" : "s"));
         }
 
-        updateSummaryLabels();
-        updateBookButtonState();
+        roomCardsContainer.revalidate();
+        roomCardsContainer.repaint();
     }
 
-    private void updateSummaryLabels() {
-        Room selectedRoom = resultsList.getSelectedValue();
+    private JPanel createRoomCard(Room room, boolean isAvailable, boolean hasValidDateRange) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(UITheme.CARD_BACKGROUND);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(0, 0, 0, 0)
+        ));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
 
-        if (selectedRoom == null) {
-            selectedRoomLabel.setText("Selected Room: None");
-        } else {
-            selectedRoomLabel.setText("Selected Room: Room " + selectedRoom.getRoomNumber());
-        }
+        ImagePanel imagePanel = new ImagePanel(roomCardImage);
+        imagePanel.setPreferredSize(new Dimension(340, 220));
+        imagePanel.setLayout(new BorderLayout());
 
-        String startText = startField.getText().trim();
-        String endText = endField.getText().trim();
+        JLabel imageRoomLabel = new JLabel("Room " + room.getRoomNumber());
+        imageRoomLabel.setFont(new Font("Serif", Font.BOLD, 30));
+        imageRoomLabel.setForeground(Color.WHITE);
+        imageRoomLabel.setBorder(new EmptyBorder(14, 16, 12, 16));
+        imagePanel.add(imageRoomLabel, BorderLayout.SOUTH);
 
-        if (startText.isEmpty()) {
-            selectedStartLabel.setText("Check-in: Not entered");
-        } else {
-            selectedStartLabel.setText("Check-in: " + startText);
-        }
+        JPanel details = new JPanel();
+        details.setLayout(new BoxLayout(details, BoxLayout.Y_AXIS));
+        details.setBackground(Color.WHITE);
+        details.setBorder(new EmptyBorder(16, 18, 16, 18));
 
-        if (endText.isEmpty()) {
-            selectedEndLabel.setText("Check-out: Not entered");
-        } else {
-            selectedEndLabel.setText("Check-out: " + endText);
-        }
+        JLabel title = new JLabel(room.toString());
+        title.setFont(new Font("SansSerif", Font.BOLD, 20));
+        title.setForeground(UITheme.TEXT_DARK);
+
+        JLabel subtitle = new JLabel(
+                "Theme: " + room.getTheme() + "  |  Quality: " + room.getQualityLevel() + "  |  "
+                        + (room.isSmoking() ? "Smoking" : "Non-smoking")
+        );
+        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        subtitle.setForeground(UITheme.TEXT_MEDIUM);
+
+        JLabel availabilityLabel = new JLabel(
+                hasValidDateRange
+                        ? (isAvailable ? "Available for selected dates" : "Unavailable for selected dates")
+                        : "Enter check-in and check-out dates to confirm availability"
+        );
+        availabilityLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
+        availabilityLabel.setForeground(isAvailable ? new Color(44, 122, 72) : new Color(161, 62, 47));
+
+        JButton reserveButton = createPrimaryButton("Reserve This Room");
+        reserveButton.setForeground(Color.BLACK);
+        reserveButton.setEnabled(hasValidDateRange && isAvailable);
+        reserveButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        reserveButton.addActionListener(e -> reserveRoom(room));
+
+        details.add(title);
+        details.add(Box.createRigidArea(new Dimension(0, 8)));
+        details.add(subtitle);
+        details.add(Box.createRigidArea(new Dimension(0, 14)));
+        details.add(availabilityLabel);
+        details.add(Box.createVerticalGlue());
+        details.add(reserveButton);
+
+        card.add(imagePanel, BorderLayout.WEST);
+        card.add(details, BorderLayout.CENTER);
+        return card;
     }
 
-    private boolean datesAreValid() {
-        try {
-            String startText = startField.getText().trim();
-            String endText = endField.getText().trim();
+    private JPanel createEmptyStateCard() {
+        JPanel empty = new JPanel(new BorderLayout());
+        empty.setBackground(UITheme.CARD_BACKGROUND);
+        empty.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(26, 20, 26, 20)
+        ));
+        empty.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
 
-            if (startText.isEmpty() || endText.isEmpty()) {
-                return false;
-            }
+        JLabel text = new JLabel("No rooms match the active filters.");
+        text.setHorizontalAlignment(SwingConstants.CENTER);
+        text.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        text.setForeground(UITheme.TEXT_MEDIUM);
+        empty.add(text, BorderLayout.CENTER);
+        return empty;
+    }
 
-            LocalDate start = LocalDate.parse(startText);
-            LocalDate end = LocalDate.parse(endText);
+    private boolean matchesRoomFilters(Room room) {
+        Object selectedBedType = bedTypeBox.getSelectedItem();
+        Object selectedTheme = themeBox.getSelectedItem();
+        Object selectedQuality = qualityBox.getSelectedItem();
+        Object selectedSmoking = smokingBox.getSelectedItem();
+        String roomNumberText = roomNumberField.getText().trim();
 
-            if (!start.isBefore(end)) {
-                return false;
-            }
-
-            if (start.isBefore(LocalDate.now())) {
-                return false;
-            }
-
-            return true;
-        } catch (Exception e) {
+        if (selectedBedType instanceof BedType && room.getBedType() != selectedBedType) {
             return false;
         }
+        if (selectedTheme instanceof Theme && room.getTheme() != selectedTheme) {
+            return false;
+        }
+        if (selectedQuality instanceof QualityLevel && room.getQualityLevel() != selectedQuality) {
+            return false;
+        }
+
+        if ("Smoking".equals(selectedSmoking) && !room.isSmoking()) {
+            return false;
+        }
+        if ("Non-smoking".equals(selectedSmoking) && room.isSmoking()) {
+            return false;
+        }
+
+        if (!roomNumberText.isEmpty()) {
+            try {
+                int roomNumber = Integer.parseInt(roomNumberText);
+                return room.getRoomNumber() == roomNumber;
+            } catch (NumberFormatException ex) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    private void updateBookButtonState() {
-        Room selectedRoom = resultsList.getSelectedValue();
+    private void reserveRoom(Room room) {
+        LocalDate startDate = toLocalDate(checkInChooser.getDate());
+        LocalDate endDate = toLocalDate(checkOutChooser.getDate());
 
-        if (selectedRoom == null || !datesAreValid()) {
-            bookButton.setEnabled(false);
+        if (startDate == null || endDate == null || !startDate.isBefore(endDate)) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter valid check-in and check-out dates before reserving.",
+                    "Invalid Date Range",
+                    JOptionPane.ERROR_MESSAGE
+            );
             return;
         }
 
-        LocalDate start = LocalDate.parse(startField.getText().trim());
-        LocalDate end = LocalDate.parse(endField.getText().trim());
+        if (startDate.isBefore(LocalDate.now())) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Check-in date cannot be in the past.",
+                    "Invalid Date",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
 
-        boolean available = resService.isRoomAvailable(selectedRoom, start, end);
-        bookButton.setEnabled(available);
+        if (!reservationService.isRoomAvailable(room, startDate, endDate)) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "This room was just booked for the selected dates. Please choose another room.",
+                    "Room Unavailable",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            refreshListings();
+            return;
+        }
+
+        Account currentAccount = AccountController.currentAccount;
+        if (currentAccount == null) {
+            Main.setPendingReservation(room, startDate, endDate);
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please create a Guest account to complete this reservation.",
+                    "Guest Account Required",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            Main.createAccountPage.refreshInfo();
+            cardLayout.show(pages, "create account");
+            return;
+        }
+
+        if (currentAccount.getRole() != Role.GUEST) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Only Guest accounts can reserve rooms.",
+                    "Guest Account Required",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        reservationService.makeReservation(startDate, endDate, List.of(room));
+        JOptionPane.showMessageDialog(
+                this,
+                "Reservation successful for Room " + room.getRoomNumber() + ".",
+                "Booking Confirmed",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+        refreshListings();
+    }
+
+    public boolean completePendingReservationIfAny() {
+        Main.PendingReservation pendingReservation = Main.consumePendingReservation();
+        if (pendingReservation == null) {
+            return false;
+        }
+
+        Room room = pendingReservation.getRoom();
+        LocalDate startDate = pendingReservation.getStartDate();
+        LocalDate endDate = pendingReservation.getEndDate();
+
+        if (!reservationService.isRoomAvailable(room, startDate, endDate)) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Your selected room is no longer available. Please choose another room.",
+                    "Room Unavailable",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            refreshListings();
+            cardLayout.show(pages, "make reservation");
+            return true;
+        }
+
+        reservationService.makeReservation(startDate, endDate, List.of(room));
+        JOptionPane.showMessageDialog(
+                this,
+                "Welcome! Your reservation for Room " + room.getRoomNumber() + " is confirmed.",
+                "Booking Confirmed",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+        refreshListings();
+        cardLayout.show(pages, "make reservation");
+        return true;
+    }
+
+    private JTextField createTextField(String placeholder) {
+        JTextField textField = new JTextField();
+        textField.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        textField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(8, 10, 8, 10)
+        ));
+        textField.setToolTipText(placeholder);
+        return textField;
+    }
+
+    private JDateChooser createDateChooser(Date initialDate) {
+        JDateChooser chooser = new JDateChooser();
+        chooser.setDate(initialDate);
+        chooser.setDateFormatString("yyyy-MM-dd");
+        chooser.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        chooser.setPreferredSize(new Dimension(220, 38));
+        chooser.setBackground(Color.WHITE);
+        chooser.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(0, 0, 0, 0)
+        ));
+        JTextField textField = ((JTextField) chooser.getDateEditor().getUiComponent());
+        textField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(8, 10, 8, 10)
+        ));
+        return chooser;
+    }
+
+    private JComboBox<Object> buildEnumFilterBox(Object[] values) {
+        JComboBox<Object> box = new JComboBox<>();
+        box.addItem("Any");
+        for (Object value : values) {
+            box.addItem(value);
+        }
+        styleFilterCombo(box);
+        return box;
+    }
+
+    private void styleFilterCombo(JComboBox<Object> box) {
+        box.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        box.setBackground(Color.WHITE);
+        box.setForeground(UITheme.TEXT_DARK);
+    }
+
+    private JLabel createFilterLabel(String text) {
+        JLabel label = new JLabel(text + ":");
+        label.setFont(new Font("SansSerif", Font.BOLD, 13));
+        label.setForeground(UITheme.TEXT_MEDIUM);
+        return label;
+    }
+
+    private JButton createPrimaryButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(UITheme.BUTTON_FONT);
+        button.setBackground(UITheme.ACCENT_GOLD);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
+    }
+
+    private JButton createSecondaryButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        button.setBackground(UITheme.SECONDARY_BUTTON);
+        button.setForeground(UITheme.TEXT_DARK);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
+    }
+
+    private Date todayAtMidnight() {
+        return Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
+    }
+
+    private Date dateFromLocalDate(LocalDate date) {
+        return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    }
+
+    private LocalDate toLocalDate(Date date) {
+        if (date == null) {
+            return null;
+        }
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    private void setCheckOutMinimum() {
+        LocalDate checkInDate = toLocalDate(checkInChooser.getDate());
+        if (checkInDate == null) {
+            return;
+        }
+        LocalDate minCheckOutDate = checkInDate.plusDays(1);
+        Date minCheckOut = dateFromLocalDate(minCheckOutDate);
+        checkOutChooser.setMinSelectableDate(minCheckOut);
+        Date selectedCheckOut = checkOutChooser.getDate();
+        if (selectedCheckOut == null || selectedCheckOut.before(minCheckOut)) {
+            checkOutChooser.setDate(minCheckOut);
+        }
+    }
+
+    private Image loadImage(String relativePath) {
+        ImageIcon icon = new ImageIcon(relativePath);
+        if (icon.getIconWidth() > 0 && icon.getIconHeight() > 0) {
+            return icon.getImage();
+        }
+
+        ImageIcon fallbackIcon = new ImageIcon("SEIGroupProject/" + relativePath);
+        if (fallbackIcon.getIconWidth() > 0 && fallbackIcon.getIconHeight() > 0) {
+            return fallbackIcon.getImage();
+        }
+        return null;
+    }
+
+    private static class ImagePanel extends JPanel {
+        private final Image image;
+
+        ImagePanel(Image image) {
+            this.image = image;
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (image != null) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.drawImage(image, 0, 0, getWidth(), getHeight(), this);
+                g2.setColor(new Color(25, 25, 25, 90));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        }
     }
 }

@@ -23,7 +23,9 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
+import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
+import com.sixstars.model.Account;
 import com.sixstars.model.Role;
 
 public class CreateAccountPage extends JPanel {
@@ -178,7 +180,7 @@ public class CreateAccountPage extends JPanel {
                     roleSet = (Role) roleComboBox.getSelectedItem();
                 }
 
-                accountController.createAccount(firstName, lastName, email, password, roleSet);
+                Account createdAccount = accountController.createAccount(firstName, lastName, email, password, roleSet);
 
                 JOptionPane.showMessageDialog(
                         this,
@@ -191,6 +193,17 @@ public class CreateAccountPage extends JPanel {
                 lastNameField.setText("");
                 emailField.setText("");
                 passwordField.setText("");
+
+                if (!isAdmin) {
+                    AccountController.currentAccount = createdAccount;
+                    Main.headerBar.refreshInfo();
+                    Main.headerBar2.refreshInfo();
+
+                    if (Main.makeReservationPage.completePendingReservationIfAny()) {
+                        return;
+                    }
+                }
+
                 cardLayout.show(pages, "home");
 
             } catch (RuntimeException ex) {
