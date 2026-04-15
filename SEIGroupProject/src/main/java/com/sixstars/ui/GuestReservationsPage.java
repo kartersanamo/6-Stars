@@ -1,0 +1,148 @@
+package com.sixstars.ui;
+
+import com.sixstars.controller.AccountController;
+import com.sixstars.model.Reservation;
+import com.sixstars.model.Room;
+import com.sixstars.service.ReservationService;
+import com.sixstars.app.Main;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.time.LocalDate;
+import java.util.List;
+
+public class GuestReservationsPage extends JPanel {
+    private DefaultListModel<Reservation> listModel;
+    private JList<Reservation> resList;
+    private ReservationService resService;
+
+    public GuestReservationsPage(JPanel pages, CardLayout cardLayout, ReservationService resService) {
+        this.resService = resService;
+
+        setLayout(new BorderLayout(15, 15));
+        setBackground(UITheme.PAGE_BACKGROUND);
+        setBorder(new EmptyBorder(25, 25, 25, 25));
+
+        // 1. Top Bar
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+
+        JLabel title = new JLabel("My Reservations");
+        title.setFont(UITheme.TITLE_FONT);
+
+        JButton btnBack = createButton("Back", 100);
+        btnBack.addActionListener(e -> cardLayout.show(pages, "menu page"));
+
+        topPanel.add(title, BorderLayout.WEST);
+        topPanel.add(btnBack, BorderLayout.EAST);
+        add(topPanel, BorderLayout.NORTH);
+
+        // 2. The List
+        listModel = new DefaultListModel<>();
+        resList = new JList<>(listModel);
+        resList.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        resList.setFixedCellHeight(35);
+        resList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        resList.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // --- ADDED: Selection Listener ---
+        // This detects when a user clicks a row in your list
+        resList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                Reservation selected = resList.getSelectedValue();
+                if (selected != null) {
+                    System.out.println("Guest selected reservation ID: " + selected.getId());
+                }
+            }
+        });
+
+        add(new JScrollPane(resList), BorderLayout.CENTER);
+
+        // 3. Bottom Actions
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bottomPanel.setOpaque(false);
+
+        JButton btnModify = createButton("Modify Dates", 160);
+        JButton btnCancel = createButton("Cancel Booking", 160);
+
+        btnModify.addActionListener(e -> handleModify());
+        btnCancel.addActionListener(e -> handleCancel());
+
+        bottomPanel.add(btnCancel);
+        bottomPanel.add(btnModify);
+        add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    public void refresh() {
+        listModel.clear();
+        if (AccountController.currentAccount != null) {
+            List<Reservation> userBookings = resService.getGuestReservations(AccountController.currentAccount.getEmail());
+            for (Reservation r : userBookings) {
+                listModel.addElement(r);
+            }
+        }
+        revalidate();
+        repaint();
+    }
+
+    private void handleModify() {
+        Reservation selected = resList.getSelectedValue();
+        if (selected != null) {
+            // Simple pop-up inputs to get new dates
+            String newStartStr = JOptionPane.showInputDialog(this, "New Start Date (YYYY-MM-DD):", selected.getStartDate());
+            String newEndStr = JOptionPane.showInputDialog(this, "New End Date (YYYY-MM-DD):", selected.getEndDate());
+
+            if (newStartStr != null && newEndStr != null) {
+                try {
+                    LocalDate newStart = LocalDate.parse(newStartStr);
+                    LocalDate newEnd = LocalDate.parse(newEndStr);
+
+                    for (Room room : selected.getRooms()) {
+                        // We check the new dates against the database
+                        if (!resService.isRoomAvailable(room, newStart, newEnd)) {
+                            JOptionPane.showMessageDialog(this,
+                                    "Room " + room.getRoomNumber() + " is already booked for those new dates!");
+                            return; // Exit without updating
+                        }
+                    }
+
+                    // Call the service to update the DB
+                    resService.updateReservation(selected.getId(), newStart, newEnd);
+
+                    refresh(); // Update the list display
+                    JOptionPane.showMessageDialog(this, "Reservation dates updated successfully!");
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Invalid date format. Please use YYYY-MM-DD.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select a reservation to modify.");
+        }
+    }
+
+    private void handleCancel() {
+        Reservation selected = resList.getSelectedValue();
+        if (selected != null) {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to cancel reservation #" + selected.getId() + "?",
+                    "Confirm Cancellation", JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                resService.cancelBooking(selected.getId());
+                refresh();
+                JOptionPane.showMessageDialog(this, "Reservation cancelled.");
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select a reservation to cancel.");
+        }
+    }
+
+    private JButton createButton(String text, int width) {
+        JButton b = new JButton(text);
+        b.setPreferredSize(new Dimension(width, 40));
+        b.setFont(new Font("SansSerif", Font.BOLD, 13));
+        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return b;
+    }
+}

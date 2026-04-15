@@ -10,7 +10,7 @@ import java.util.List;
 public class ReservationDAO {
 
     public void saveReservation(Reservation res) {
-        String resSql = "INSERT INTO reservations(startDate, endDate) VALUES(?,?)";
+        String resSql = "INSERT INTO reservations(startDate, endDate, guestEmail) VALUES(?,?,?)";
         String joinSql = "INSERT INTO reservation_rooms(reservation_id, room_number) VALUES(?,?)";
 
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -20,6 +20,7 @@ public class ReservationDAO {
             try (PreparedStatement pstmt = conn.prepareStatement(resSql, Statement.RETURN_GENERATED_KEYS)) {
                 pstmt.setString(1, res.getStartDate().toString());
                 pstmt.setString(2, res.getEndDate().toString());
+                pstmt.setString(3, res.getGuestEmail());
                 pstmt.executeUpdate();
 
                 ResultSet rs = pstmt.getGeneratedKeys();
@@ -59,13 +60,14 @@ public class ReservationDAO {
                 int id = rs.getInt("id");
                 LocalDate start = LocalDate.parse(rs.getString("startDate"));
                 LocalDate end = LocalDate.parse(rs.getString("endDate"));
+                String email = rs.getString("guestEmail");
 
                 // Fetch the rooms associated with this specific reservation
                 List<Room> rooms = getRoomsForReservation(id);
 
                 // Manual ID management: Since your constructor sets ID automatically,
                 // you might need a setter or a specific constructor for DB loading.
-                Reservation res = new Reservation(start, end, rooms);
+                Reservation res = new Reservation(email, start, end, rooms);
                 // res.setId(id); // If you add a setter to Reservation.java
 
                 reservations.add(res);
@@ -109,6 +111,7 @@ public class ReservationDAO {
         String sql = "SELECT COUNT(*) FROM reservations r " +
                 "JOIN reservation_rooms rr ON r.id = rr.reservation_id " +
                 "WHERE rr.room_number = ? " +
+                "AND r.id != ?" +
                 "AND ? < r.endDate AND ? > r.startDate";
 
         try (Connection conn = DatabaseManager.getConnection();
@@ -127,5 +130,56 @@ public class ReservationDAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    // Method for the GuestReservationsPage list
+    public List<Reservation> getReservationsByEmail(String email) {
+        List<Reservation> list = new ArrayList<>();
+        String sql = "SELECT * FROM reservations WHERE guestEmail = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                LocalDate start = LocalDate.parse(rs.getString("startDate"));
+                LocalDate end = LocalDate.parse(rs.getString("endDate"));
+                List<Room> rooms = getRoomsForReservation(id);
+                Reservation res = new Reservation(email, start, end, rooms);
+                res.setId(id);
+                list.add(res);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    // Method for the Cancel button
+    public void cancelReservation(int id) {
+        // We delete from the join table first to maintain integrity
+        String sqlJoin = "DELETE FROM reservation_rooms WHERE reservation_id = ?";
+        String sqlRes = "DELETE FROM reservations WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement p1 = conn.prepareStatement(sqlJoin);
+                 PreparedStatement p2 = conn.prepareStatement(sqlRes)) {
+                p1.setInt(1, id);
+                p1.executeUpdate();
+                p2.setInt(1, id);
+                p2.executeUpdate();
+                conn.commit();
+            } catch (SQLException e) { conn.rollback(); throw e; }
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    // Method for the Modify/Update logic
+    public void updateReservationDates(int id, LocalDate start, LocalDate end) {
+        String sql = "UPDATE reservations SET startDate = ?, endDate = ? WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, start.toString());
+            pstmt.setString(2, end.toString());
+            pstmt.setInt(3, id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
     }
 }

@@ -122,6 +122,7 @@ public class LoginPage extends JPanel {
                 } else {
                     Main.menuPage.updateWelcomeMessage();
                     Main.headerBar.refreshInfo();
+                    Main.headerBar2.refreshInfo();
                     cardLayout.show(pages, "home");
                 }
             } else {

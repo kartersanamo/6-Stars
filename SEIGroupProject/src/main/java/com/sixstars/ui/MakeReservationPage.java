@@ -1,8 +1,6 @@
 package com.sixstars.ui;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.GridLayout;
+import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -35,7 +33,7 @@ public class MakeReservationPage extends JPanel {
     private ReservationService resService;
     private RoomService roomService;
 
-    private JTextField startField, endField, roomNumberField;
+    private JTextField startField, endField, roomNumberField, emailField;
     private JComboBox<Object> bedTypeBox;
     private JComboBox<Object> themeBox;
     private JComboBox<Object> qualityBox;
@@ -46,6 +44,7 @@ public class MakeReservationPage extends JPanel {
     private JLabel selectedRoomLabel;
     private JLabel selectedStartLabel;
     private JLabel selectedEndLabel;
+    private JLabel emailLabel;
 
     public MakeReservationPage(JPanel pages, CardLayout cardLayout, ReservationService resService, RoomService roomService) {
         this.pages = pages;
@@ -59,6 +58,7 @@ public class MakeReservationPage extends JPanel {
         startField = new JTextField(10);
         endField = new JTextField(10);
         roomNumberField = new JTextField(10);
+        emailField = new JTextField(20);
 
 
         bedTypeBox = new JComboBox<>();
@@ -91,6 +91,7 @@ public class MakeReservationPage extends JPanel {
         selectedRoomLabel = new JLabel("Selected Room: None");
         selectedStartLabel = new JLabel("Check-in: Not entered");
         selectedEndLabel = new JLabel("Check-out: Not entered");
+        emailLabel = new JLabel("Confirmation Email:");
 
         JPanel topPanel = new JPanel(new GridLayout(3, 4, 10, 10));
         topPanel.add(new JLabel("Check-in (YYYY-MM-DD):"));
@@ -128,11 +129,15 @@ public class MakeReservationPage extends JPanel {
         JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
 
-        JPanel summaryPanel = new JPanel(new GridLayout(4, 1));
+        JPanel summaryPanel = new JPanel(new GridLayout(5, 1));
         summaryPanel.setBorder(BorderFactory.createTitledBorder("Reservation Summary"));
         summaryPanel.add(selectedRoomLabel);
         summaryPanel.add(selectedStartLabel);
         summaryPanel.add(selectedEndLabel);
+        JPanel emailInputRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
+        emailInputRow.add(new JLabel("Confirmation Email: "));
+        emailInputRow.add(emailField);
+        summaryPanel.add(emailInputRow);
         summaryPanel.add(new JLabel("You can only reserve when both dates are valid."));
 
         JPanel buttonPanel = new JPanel();
@@ -215,6 +220,14 @@ public class MakeReservationPage extends JPanel {
 
         bookButton.addActionListener(e -> {
             Room selectedRoom = resultsList.getSelectedValue();
+            String guestEmail = emailField.getText().trim();
+
+            if (guestEmail.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter an email");
+                emailField.requestFocus(); // Pop the cursor back into the box
+                return;
+            }
+
             if (selectedRoom == null) {
                 JOptionPane.showMessageDialog(this, "Please select a room first!");
                 return;
@@ -240,7 +253,7 @@ public class MakeReservationPage extends JPanel {
                 return;
             }
 
-            resService.makeReservation(start, end, List.of(selectedRoom));
+            resService.makeReservation(guestEmail, start, end, List.of(selectedRoom));
             JOptionPane.showMessageDialog(this, "Reservation Successful!");
 
             resultsList.clearSelection();
