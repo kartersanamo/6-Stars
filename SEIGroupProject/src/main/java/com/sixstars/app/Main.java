@@ -60,7 +60,7 @@ public class Main {
         makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
         roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
         guestReservationsPage = new GuestReservationsPage(pages, cardLayout, reservationService);
-        AccountDetailsPage accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
+        accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
 
         pages.add(homeLandingPage, "home");
         pages.add(welcomePage, "welcome");

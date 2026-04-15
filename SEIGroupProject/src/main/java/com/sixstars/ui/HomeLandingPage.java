@@ -111,7 +111,13 @@ public class HomeLandingPage extends JPanel {
             Main.headerBar2.refreshInfo();
         }
     );
-        exploreButton.addActionListener(e -> cardLayout.show(pages, "welcome"));
+        exploreButton.addActionListener(e -> {
+            Main.menuPage.updateWelcomeMessage();
+
+            Main.headerBar.refreshInfo();
+            Main.headerBar2.refreshInfo();
+            cardLayout.show(pages, "menu page");
+        });
 
         heroActions.add(reserveButton);
         heroActions.add(exploreButton);

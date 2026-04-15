@@ -132,27 +132,28 @@ public class MenuPage extends JPanel {
     public void updateWelcomeMessage() {
         Account current = AccountController.currentAccount;
 
+        btnManageRooms.setVisible(false);
+        btnMyReservations.setVisible(false);
+
         if (current != null) {
             welcomeLabel.setText("Welcome, " + current.getFirstName() + "!");
+            Role role = current.getRole();
 
-            if (current.getRole() == Role.CLERK) {
+            if (role == Role.CLERK) {
                 btnManageRooms.setVisible(true);
-                btnMyReservations.setVisible(false); // Clerks use Room Management
-            } else if (current.getRole() == Role.GUEST) {
-                btnManageRooms.setVisible(false);
-                btnMyReservations.setVisible(true); // Guests use My Reservations
-            } else {
-                // For Admins or undefined roles, show both or handle accordingly
+            } else if (role == Role.GUEST) {
+                btnMyReservations.setVisible(true);
+            } else if (role == Role.ADMIN) {
+                // Admins get both
                 btnManageRooms.setVisible(true);
                 btnMyReservations.setVisible(true);
             }
+
         } else {
             welcomeLabel.setText("Welcome!");
-            btnManageRooms.setVisible(false);
-            btnMyReservations.setVisible(false);
         }
 
-        revalidate();
-        repaint();
+        this.revalidate();
+        this.repaint();
     }
 }
