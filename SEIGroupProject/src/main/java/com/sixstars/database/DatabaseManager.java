@@ -33,6 +33,14 @@ public class DatabaseManager {
                     "reservation_id INTEGER, room_number INTEGER, " +
                     "FOREIGN KEY(reservation_id) REFERENCES reservations(id), " +
                     "FOREIGN KEY(room_number) REFERENCES rooms(room_number))");
+            // Create Shop Items Table
+            stmt.execute("CREATE TABLE IF NOT EXISTS shop_items (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "name TEXT NOT NULL UNIQUE, " +
+                    "price REAL NOT NULL, " +
+                    "stock INTEGER NOT NULL, " +
+                    "imagePath TEXT)");
+
 
         } catch (SQLException e) {
             e.printStackTrace();
