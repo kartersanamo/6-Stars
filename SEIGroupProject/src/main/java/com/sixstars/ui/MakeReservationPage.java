@@ -349,10 +349,10 @@ public class MakeReservationPage extends JPanel {
                 BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
                 new EmptyBorder(0, 0, 0, 0)
         ));
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 240));
 
         ImagePanel imagePanel = new ImagePanel(roomCardImage);
-        imagePanel.setPreferredSize(new Dimension(340, 220));
+        imagePanel.setPreferredSize(new Dimension(340, 240));
         imagePanel.setLayout(new BorderLayout());
 
         JLabel imageRoomLabel = new JLabel("Room " + room.getRoomNumber());
@@ -366,7 +366,7 @@ public class MakeReservationPage extends JPanel {
         details.setBackground(Color.WHITE);
         details.setBorder(new EmptyBorder(16, 18, 16, 18));
 
-        JLabel title = new JLabel(room.toString());
+        JLabel title = new JLabel("Room " + room.getRoomNumber() + " - " + room.getBedType());
         title.setFont(new Font("SansSerif", Font.BOLD, 20));
         title.setForeground(UITheme.TEXT_DARK);
 
@@ -376,6 +376,24 @@ public class MakeReservationPage extends JPanel {
         );
         subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
         subtitle.setForeground(UITheme.TEXT_MEDIUM);
+
+        JLabel priceLabel = new JLabel("$" + room.getPricePerNight() + " per night");
+        priceLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+        priceLabel.setForeground(new Color(176, 132, 38));
+
+        String totalText = "Select dates to see total stay cost";
+        if (hasValidDateRange) {
+            LocalDate startDate = toLocalDate(checkInChooser.getDate());
+            LocalDate endDate = toLocalDate(checkOutChooser.getDate());
+            int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+            int estimatedTotal = room.getPricePerNight() * nights;
+            totalText = "Estimated stay total: $" + estimatedTotal + " for " + nights
+                    + " night" + (nights == 1 ? "" : "s");
+        }
+
+        JLabel totalLabel = new JLabel(totalText);
+        totalLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        totalLabel.setForeground(UITheme.TEXT_MEDIUM);
 
         JLabel availabilityLabel = new JLabel(
                 hasValidDateRange
@@ -394,6 +412,10 @@ public class MakeReservationPage extends JPanel {
         details.add(title);
         details.add(Box.createRigidArea(new Dimension(0, 8)));
         details.add(subtitle);
+        details.add(Box.createRigidArea(new Dimension(0, 10)));
+        details.add(priceLabel);
+        details.add(Box.createRigidArea(new Dimension(0, 6)));
+        details.add(totalLabel);
         details.add(Box.createRigidArea(new Dimension(0, 14)));
         details.add(availabilityLabel);
         details.add(Box.createVerticalGlue());
@@ -516,9 +538,15 @@ public class MakeReservationPage extends JPanel {
         }
 
         reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room));
+
+        int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+        int total = room.getPricePerNight() * nights;
+
         JOptionPane.showMessageDialog(
                 this,
-                "Reservation successful for Room " + room.getRoomNumber() + ".",
+                "Reservation successful for Room " + room.getRoomNumber()
+                        + ". Total: $" + total + " for " + nights
+                        + " night" + (nights == 1 ? "" : "s") + ".",
                 "Booking Confirmed",
                 JOptionPane.INFORMATION_MESSAGE
         );
@@ -549,9 +577,15 @@ public class MakeReservationPage extends JPanel {
 
         Account currentAccount = AccountController.currentAccount;
         reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room));
+
+        int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+        int total = room.getPricePerNight() * nights;
+
         JOptionPane.showMessageDialog(
                 this,
-                "Welcome! Your reservation for Room " + room.getRoomNumber() + " is confirmed.",
+                "Welcome! Your reservation for Room " + room.getRoomNumber()
+                        + " is confirmed. Total: $" + total + " for " + nights
+                        + " night" + (nights == 1 ? "" : "s") + ".",
                 "Booking Confirmed",
                 JOptionPane.INFORMATION_MESSAGE
         );

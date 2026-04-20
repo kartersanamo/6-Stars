@@ -15,18 +15,19 @@ public class RoomDAO {
      * Saves a new room or updates an existing one based on the room number.
      */
     public void saveRoom(Room room) {
-        String sql = "INSERT OR REPLACE INTO rooms(roomNumber, bedType, theme, qualityLevel, isSmoking) VALUES(?,?,?,?,?)";
+        String sql = "INSERT INTO rooms (roomNumber, bedType, theme, qualityLevel, isSmoking, pricePerNight) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             PreparedStatement pStmt = conn.prepareStatement(sql)) {
 
-            pstmt.setInt(1, room.getRoomNumber());
-            pstmt.setString(2, room.getBedType().name()); // Store enum name as String
-            pstmt.setString(3, room.getTheme().name());   // Store enum name as String
-            pstmt.setString(4, room.getQualityLevel().name()); // Store enum name as String
-            pstmt.setInt(5, room.isSmoking() ? 1 : 0); // SQLite uses 1/0 for booleans
+            pStmt.setInt(1, room.getRoomNumber());
+            pStmt.setString(2, room.getBedType().name()); // Store enum name as String
+            pStmt.setString(3, room.getTheme().name());   // Store enum name as String
+            pStmt.setString(4, room.getQualityLevel().name()); // Store enum name as String
+            pStmt.setInt(5, room.isSmoking() ? 1 : 0); // SQLite uses 1/0 for booleans
+            pStmt.setInt(6, room.getPricePerNight());
 
-            pstmt.executeUpdate();
+            pStmt.executeUpdate();
         } catch (SQLException e) {
             System.err.println("Error saving room: " + e.getMessage());
         }
@@ -37,18 +38,27 @@ public class RoomDAO {
      */
     public List<Room> getAllRooms() {
         List<Room> rooms = new ArrayList<>();
-        String sql = "SELECT * FROM rooms";
+        String sql = "SELECT roomNumber, bedType, theme, qualityLevel, isSmoking, pricePerNight FROM rooms";
 
         try (Connection conn = DatabaseManager.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                rooms.add(mapResultSetToRoom(rs));
+                Room room = new Room(
+                        rs.getInt("roomNumber"),
+                        BedType.valueOf(rs.getString("bedType")),
+                        Theme.valueOf(rs.getString("theme")),
+                        QualityLevel.valueOf(rs.getString("qualityLevel")),
+                        rs.getInt("isSmoking") == 1,
+                        rs.getInt("pricePerNight")
+                );
+                rooms.add(room);
             }
         } catch (SQLException e) {
-            System.err.println("Error retrieving rooms: " + e.getMessage());
+            e.printStackTrace();
         }
+
         return rooms;
     }
 
