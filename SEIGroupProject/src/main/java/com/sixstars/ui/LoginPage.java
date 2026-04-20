@@ -116,13 +116,14 @@ public class LoginPage extends JPanel {
             if (a != null) {
                 AccountController.currentAccount = a;
 
+                Main.headerBar.refreshInfo();
+                Main.headerBar2.refreshInfo();
+
                 if (a.getRole() == Role.ADMIN) {
-                    JOptionPane.showMessageDialog(this, "Login successful! (Admin)");
-                    cardLayout.show(pages, "admin");
+                    cardLayout.show(pages, "admin page");
+                } else if (a.getRole() == Role.CLERK){
+                    cardLayout.show(pages, "clerk page");
                 } else {
-                    Main.menuPage.updateWelcomeMessage();
-                    Main.headerBar.refreshInfo();
-                    Main.headerBar2.refreshInfo();
                     cardLayout.show(pages, "home");
                 }
             } else {

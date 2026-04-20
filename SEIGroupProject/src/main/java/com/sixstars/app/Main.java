@@ -17,7 +17,7 @@ import com.sixstars.model.Room;
 public class Main {
 
     public static CreateAccountPage createAccountPage;
-    public static MenuPage menuPage;
+    public static ClerkPage clerkPage;
     public static MakeReservationPage makeReservationPage;
     public static RoomManagementPage roomManagementPage;
     public static GuestReservationsPage guestReservationsPage;
@@ -50,7 +50,7 @@ public class Main {
         WelcomePage welcomePage = new WelcomePage(pages, cardLayout);
         LoginPage loginPage = new LoginPage(pages, cardLayout, accountService);
         createAccountPage = new CreateAccountPage(pages, cardLayout);
-        menuPage = new MenuPage(pages, cardLayout);
+        clerkPage = new ClerkPage(pages, cardLayout);
         makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
         roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
         guestReservationsPage = new GuestReservationsPage(pages, cardLayout, reservationService);
@@ -60,9 +60,9 @@ public class Main {
         pages.add(homeLandingPage, "home");
         pages.add(welcomePage, "welcome");
         pages.add(loginPage, "login");
-        pages.add(new AdminPage(pages, cardLayout), "admin");
+        pages.add(new AdminPage(pages, cardLayout), "admin page");
         pages.add(createAccountPage, "create account");
-        pages.add(menuPage, "menu page");
+        pages.add(clerkPage, "clerk page");
         pages.add(makeReservationPage, "make reservation");
         pages.add(roomManagementPage, "room management");
         pages.add(guestReservationsPage, "guest reservations");

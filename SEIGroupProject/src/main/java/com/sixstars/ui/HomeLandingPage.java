@@ -96,7 +96,7 @@ public class HomeLandingPage extends JPanel {
         heroActions.setOpaque(false);
 
         JButton reserveButton = createPrimaryButton("Reserve Your Stay");
-        JButton exploreButton = createSecondaryButton("Enter Guest Portal");
+        JButton exploreButton = createSecondaryButton("Visit the Store");
 
         reserveButton.addActionListener(e -> {
             cardLayout.show(pages, "make reservation");
@@ -104,11 +104,9 @@ public class HomeLandingPage extends JPanel {
         }
     );
         exploreButton.addActionListener(e -> {
-            Main.menuPage.updateWelcomeMessage();
-
+            Main.shopPage.refreshInventory();
             Main.headerBar.refreshInfo();
-            Main.headerBar2.refreshInfo();
-            cardLayout.show(pages, "menu page");
+            cardLayout.show(pages, "shop");
         });
 
         heroActions.add(reserveButton);

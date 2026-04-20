@@ -216,7 +216,13 @@ public class CreateAccountPage extends JPanel {
             }
         });
 
-        backButton.addActionListener(e -> cardLayout.show(pages, "home"));
+        backButton.addActionListener(e -> {
+            if (isAdmin) { // This variable is set in refreshInfo()
+                cardLayout.show(pages, "admin page");
+            } else {
+                cardLayout.show(pages, "home");
+            }
+        });
     }
 
     private JLabel createCenteredLabel(String text) {

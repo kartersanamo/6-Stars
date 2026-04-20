@@ -61,7 +61,13 @@ public class AccountDetailsPage extends JPanel {
 
         back.addActionListener(e -> {
             Main.headerBar.refreshInfo();
-            cardLayout.show(pages, "home");
+            var account = com.sixstars.controller.AccountController.currentAccount;
+
+            if (account != null && (account.getRole() == com.sixstars.model.Role.CLERK)) {
+                cardLayout.show(pages, "clerk page");
+            } else {
+                cardLayout.show(pages, "home");
+            }
         });
 
         buttonPanel.add(back);
