@@ -1,6 +1,7 @@
 package com.sixstars.app;
 
 import java.awt.CardLayout;
+import java.time.LocalDate;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -21,6 +22,7 @@ import com.sixstars.ui.MenuPage;
 import com.sixstars.ui.RoomManagementPage;
 import com.sixstars.ui.GuestReservationsPage;
 import com.sixstars.ui.WelcomePage;
+import com.sixstars.model.Room;
 
 public class Main {
 
@@ -33,6 +35,7 @@ public class Main {
     public static HomeLandingPage homeLandingPage;
     public static HeaderBar headerBar;
     public static HeaderBar headerBar2;
+    private static PendingReservation pendingReservation;
 
     public static void createAndShowUI() {
         // create the .db file and tables if they don't already exist
@@ -79,5 +82,39 @@ public class Main {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Main::createAndShowUI);
+    }
+
+    public static void setPendingReservation(Room room, LocalDate startDate, LocalDate endDate) {
+        pendingReservation = new PendingReservation(room, startDate, endDate);
+    }
+
+    public static PendingReservation consumePendingReservation() {
+        PendingReservation reservation = pendingReservation;
+        pendingReservation = null;
+        return reservation;
+    }
+
+    public static class PendingReservation {
+        private final Room room;
+        private final LocalDate startDate;
+        private final LocalDate endDate;
+
+        public PendingReservation(Room room, LocalDate startDate, LocalDate endDate) {
+            this.room = room;
+            this.startDate = startDate;
+            this.endDate = endDate;
+        }
+
+        public Room getRoom() {
+            return room;
+        }
+
+        public LocalDate getStartDate() {
+            return startDate;
+        }
+
+        public LocalDate getEndDate() {
+            return endDate;
+        }
     }
 }
