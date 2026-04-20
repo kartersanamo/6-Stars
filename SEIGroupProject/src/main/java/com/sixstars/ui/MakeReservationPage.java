@@ -505,7 +505,7 @@ public class MakeReservationPage extends JPanel {
             return;
         }
 
-        reservationService.makeReservation(startDate, endDate, List.of(room));
+        reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room));
         JOptionPane.showMessageDialog(
                 this,
                 "Reservation successful for Room " + room.getRoomNumber() + ".",
@@ -537,7 +537,8 @@ public class MakeReservationPage extends JPanel {
             return true;
         }
 
-        reservationService.makeReservation(startDate, endDate, List.of(room));
+        Account currentAccount = AccountController.currentAccount;
+        reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room));
         JOptionPane.showMessageDialog(
                 this,
                 "Welcome! Your reservation for Room " + room.getRoomNumber() + " is confirmed.",
