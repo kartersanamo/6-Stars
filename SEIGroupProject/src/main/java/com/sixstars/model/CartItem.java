@@ -13,6 +13,10 @@ public class CartItem {
         quantity++;
     }
 
+    public void decrement() {
+        quantity--;
+    }
+
     public Item getItem() {
         return item;
     }

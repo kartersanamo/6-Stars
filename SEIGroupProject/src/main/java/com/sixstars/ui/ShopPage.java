@@ -22,7 +22,7 @@ public class ShopPage extends JPanel {
     private final ShopService shopService;
 
     private final JPanel inventoryPanel;
-    private final DefaultListModel<String> cartModel;
+    private JPanel cartItemsPanel;
     private final JLabel totalLabel;
     private final JLabel resultsInfoLabel;
     private final JTextField searchField;
@@ -37,7 +37,6 @@ public class ShopPage extends JPanel {
         setBackground(UITheme.PAGE_BACKGROUND);
 
         inventoryPanel = new JPanel();
-        cartModel = new DefaultListModel<>();
         totalLabel = new JLabel("Total: $0.00");
         resultsInfoLabel = new JLabel("0 items");
         searchField = createTextField("Search shop items");
@@ -48,6 +47,7 @@ public class ShopPage extends JPanel {
 
         attachSearchListener();
         refreshInventory();
+        updateCartDisplay();
     }
 
     private JPanel buildTopSection() {
@@ -162,7 +162,7 @@ public class ShopPage extends JPanel {
                 BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
                 new EmptyBorder(18, 18, 18, 18)
         ));
-        cartPanel.setPreferredSize(new Dimension(320, 0));
+        cartPanel.setPreferredSize(new Dimension(340, 0));
 
         JLabel cartTitle = new JLabel("Your Cart");
         cartTitle.setFont(new Font("Serif", Font.BOLD, 24));
@@ -180,11 +180,16 @@ public class ShopPage extends JPanel {
         top.add(cartTitle);
         top.add(Box.createRigidArea(new Dimension(0, 4)));
         top.add(cartSubtitle);
+        top.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        JList<String> cartList = new JList<>(cartModel);
-        cartList.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        cartList.setSelectionBackground(UITheme.SECONDARY_BUTTON);
-        cartList.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1));
+        cartItemsPanel = new JPanel();
+        cartItemsPanel.setLayout(new BoxLayout(cartItemsPanel, BoxLayout.Y_AXIS));
+        cartItemsPanel.setOpaque(false);
+
+        JScrollPane cartScroll = new JScrollPane(cartItemsPanel);
+        cartScroll.setBorder(BorderFactory.createEmptyBorder());
+        cartScroll.getViewport().setBackground(UITheme.CARD_BACKGROUND);
+        cartScroll.getVerticalScrollBar().setUnitIncrement(16);
 
         totalLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         totalLabel.setForeground(UITheme.TEXT_DARK);
@@ -193,6 +198,13 @@ public class ShopPage extends JPanel {
         JButton checkoutButton = createPrimaryButton("Checkout");
         checkoutButton.setForeground(Color.BLACK);
         checkoutButton.addActionListener(e -> handleCheckout());
+
+        JButton clearCartButton = createSecondaryButton("Clear Cart");
+        clearCartButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        clearCartButton.addActionListener(e -> {
+            cart.clear();
+            updateCartDisplay();
+        });
 
         JPanel bottom = new JPanel();
         bottom.setOpaque(false);
@@ -203,9 +215,11 @@ public class ShopPage extends JPanel {
         bottom.add(totalLabel);
         bottom.add(Box.createRigidArea(new Dimension(0, 12)));
         bottom.add(checkoutButton);
+        bottom.add(Box.createRigidArea(new Dimension(0, 8)));
+        bottom.add(clearCartButton);
 
         cartPanel.add(top, BorderLayout.NORTH);
-        cartPanel.add(new JScrollPane(cartList), BorderLayout.CENTER);
+        cartPanel.add(cartScroll, BorderLayout.CENTER);
         cartPanel.add(bottom, BorderLayout.SOUTH);
 
         return cartPanel;
@@ -357,6 +371,69 @@ public class ShopPage extends JPanel {
         return label;
     }
 
+    private JPanel createCartItemRow(CartItem cartItem) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setBackground(UITheme.CARD_BACKGROUND);
+        row.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(8, 10, 8, 10)
+        ));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false);
+
+        JLabel nameLabel = new JLabel(cartItem.getItem().getName() + " x" + cartItem.getQuantity());
+        nameLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        nameLabel.setForeground(UITheme.TEXT_DARK);
+
+        JLabel priceLabel = new JLabel("$" + String.format("%.2f", cartItem.getTotalPrice()));
+        priceLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        priceLabel.setForeground(UITheme.TEXT_MEDIUM);
+
+        textPanel.add(nameLabel);
+        textPanel.add(Box.createRigidArea(new Dimension(0, 3)));
+        textPanel.add(priceLabel);
+
+        JPanel buttonsPanel = new JPanel();
+        buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));
+        buttonsPanel.setOpaque(false);
+
+        JButton minusButton = new JButton("−");
+        styleSmallButton(minusButton, UITheme.SECONDARY_BUTTON, UITheme.TEXT_DARK);
+        minusButton.addActionListener(e -> {
+            cart.decrementItem(cartItem.getItem());
+            updateCartDisplay();
+        });
+
+        JButton removeButton = new JButton("Remove");
+        styleSmallButton(removeButton, new Color(200, 80, 80), Color.WHITE);
+        removeButton.addActionListener(e -> {
+            cart.removeItem(cartItem.getItem());
+            updateCartDisplay();
+        });
+
+        buttonsPanel.add(minusButton);
+        buttonsPanel.add(Box.createRigidArea(new Dimension(6, 0)));
+        buttonsPanel.add(removeButton);
+
+        row.add(textPanel, BorderLayout.CENTER);
+        row.add(buttonsPanel, BorderLayout.EAST);
+
+        return row;
+    }
+
+    private void styleSmallButton(JButton button, Color bg, Color fg) {
+        button.setFont(new Font("SansSerif", Font.BOLD, 12));
+        button.setBackground(bg);
+        button.setForeground(fg);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(85, 30));
+    }
+
     private JPanel createEmptyStateCard() {
         JPanel empty = new JPanel(new BorderLayout());
         empty.setBackground(UITheme.CARD_BACKGROUND);
@@ -375,16 +452,31 @@ public class ShopPage extends JPanel {
     }
 
     private void updateCartDisplay() {
-        cartModel.clear();
+        cartItemsPanel.removeAll();
 
-        for (CartItem cartItem : cart.getItems()) {
-            cartModel.addElement(
-                    cartItem.getItem().getName() + " x" + cartItem.getQuantity()
-                            + " - $" + String.format("%.2f", cartItem.getTotalPrice())
-            );
+        if (cart.isEmpty()) {
+            JPanel emptyCart = new JPanel(new BorderLayout());
+            emptyCart.setOpaque(false);
+            emptyCart.setBorder(new EmptyBorder(20, 10, 20, 10));
+
+            JLabel emptyLabel = new JLabel("Your cart is empty.");
+            emptyLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            emptyLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+            emptyLabel.setForeground(UITheme.TEXT_MEDIUM);
+
+            emptyCart.add(emptyLabel, BorderLayout.CENTER);
+            cartItemsPanel.add(emptyCart);
+        } else {
+            for (CartItem cartItem : cart.getItems()) {
+                cartItemsPanel.add(createCartItemRow(cartItem));
+                cartItemsPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+            }
         }
 
         totalLabel.setText("Total: $" + String.format("%.2f", cart.getTotal()));
+
+        cartItemsPanel.revalidate();
+        cartItemsPanel.repaint();
     }
 
     private void handleCheckout() {
@@ -423,12 +515,30 @@ public class ShopPage extends JPanel {
 
     private JButton createPrimaryButton(String text) {
         JButton button = new JButton(text);
+
         button.setFont(UITheme.BUTTON_FONT);
         button.setBackground(UITheme.ACCENT_GOLD);
-        button.setForeground(Color.WHITE);
+        button.setForeground(Color.BLACK);
         button.setFocusPainted(false);
-        button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                BorderFactory.createEmptyBorder(8, 16, 8, 16)
+        ));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(UITheme.ACCENT_GOLD.darker());
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(UITheme.ACCENT_GOLD);
+            }
+        });
+
         return button;
     }
 
