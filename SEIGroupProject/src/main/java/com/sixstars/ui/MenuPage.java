@@ -62,7 +62,7 @@ public class MenuPage extends JPanel {
         btnMyReservations.setVisible(false);
 
         btnReserve.addActionListener(e -> cardLayout.show(pages, "make reservation"));
-        btnShop.addActionListener(e -> JOptionPane.showMessageDialog(this, "Store coming soon"));
+        btnShop.addActionListener(e -> cardLayout.show(pages, "shop"));
         btnAccount.addActionListener(e -> {
             Main.accountDetailsPage.refreshInfo();
             cardLayout.show(pages, "account details");
