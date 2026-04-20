@@ -61,8 +61,8 @@ public class ShopPage extends JPanel {
                 new EmptyBorder(16, 24, 16, 24)
         ));
 
-        JButton backButton = createSecondaryButton("Back to Menu");
-        backButton.addActionListener(e -> cardLayout.show(pages, "menu page"));
+        JButton backButton = createSecondaryButton("Back to Home");
+        backButton.addActionListener(e -> cardLayout.show(pages, "home"));
 
         JLabel title = new JLabel("Hotel Shop");
         title.setFont(new Font("Serif", Font.BOLD, 28));

@@ -32,7 +32,7 @@ public class GuestReservationsPage extends JPanel {
         title.setFont(UITheme.TITLE_FONT);
 
         JButton btnBack = createButton("Back", 100);
-        btnBack.addActionListener(e -> cardLayout.show(pages, "menu page"));
+        btnBack.addActionListener(e -> cardLayout.show(pages, "home"));
 
         topPanel.add(title, BorderLayout.WEST);
         topPanel.add(btnBack, BorderLayout.EAST);

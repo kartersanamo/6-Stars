@@ -16,6 +16,8 @@ import javax.swing.JPopupMenu;
 
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
+import com.sixstars.model.Account;
+import com.sixstars.model.Role;
 
 public class HeaderBar extends JPanel {
 
@@ -23,6 +25,7 @@ public class HeaderBar extends JPanel {
     private JButton createAccountButton;
     private JButton btnAccount;
     private JPanel navPanel;
+    private JButton btnMyReservations;
 
     private JPanel pages;
     private CardLayout cardLayout;
@@ -49,6 +52,12 @@ public class HeaderBar extends JPanel {
         bookNowButton.addActionListener(e -> {
             cardLayout.show(pages, "make reservation");
             Main.headerBar2.refreshInfo();
+        });
+
+        btnMyReservations = createButton("My Reservations");
+        btnMyReservations.addActionListener(e -> {
+            Main.guestReservationsPage.refresh();
+            cardLayout.show(pages, "guest reservations");
         });
 
         loginButton = createButton("Login");
@@ -86,6 +95,7 @@ public class HeaderBar extends JPanel {
         );
 
         navPanel.add(bookNowButton);
+        navPanel.add(btnMyReservations);
         navPanel.add(loginButton);
         navPanel.add(createAccountButton);
         navPanel.add(btnAccount);
@@ -97,11 +107,18 @@ public class HeaderBar extends JPanel {
     }
 
     public void refreshInfo() {
-        boolean loggedIn = AccountController.currentAccount != null;
+        Account current = AccountController.currentAccount;
+        boolean loggedIn = (current != null);
 
         loginButton.setVisible(!loggedIn);
         createAccountButton.setVisible(!loggedIn);
         btnAccount.setVisible(loggedIn);
+
+        if (loggedIn) {
+            btnMyReservations.setVisible(current.getRole() == Role.GUEST);
+        } else {
+            btnMyReservations.setVisible(false);
+        }
 
         revalidate();
         repaint();
