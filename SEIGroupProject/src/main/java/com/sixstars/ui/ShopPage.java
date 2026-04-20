@@ -1,107 +1,133 @@
 package com.sixstars.ui;
 
-import com.sixstars.model.CartItem;
-import com.sixstars.model.Item;
-import com.sixstars.model.ShoppingCart;
+import com.sixstars.model.*;
 import com.sixstars.service.ShopService;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.io.File;
 import java.util.List;
 
 public class ShopPage extends JPanel {
 
-    private final ShoppingCart cart;
-    private final ShopService shopService;
+    private ShoppingCart cart = new ShoppingCart();
+    private ShopService shopService = new ShopService();
 
-    private final DefaultListModel<String> cartModel;
-    private final JLabel totalLabel;
-    private final JPanel inventoryPanel;
-    private final JPanel pages;
-    private final CardLayout cardLayout;
+    private DefaultListModel<String> cartModel = new DefaultListModel<>();
+    private JLabel totalLabel = new JLabel("Total: $0.00");
+
+    private JPanel inventoryPanel = new JPanel();
 
     public ShopPage(JPanel pages, CardLayout cardLayout) {
-        this.pages = pages;
-        this.cardLayout = cardLayout;
-        this.cart = new ShoppingCart();
-        this.shopService = new ShopService();
 
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topPanel.setBackground(Color.WHITE);
+        // ===== TOP =====
+        JPanel top = new JPanel(new BorderLayout());
+        top.setBorder(new EmptyBorder(15, 20, 10, 20));
 
-        JButton backButton = new JButton("← Back to Menu");
-        backButton.addActionListener(e -> cardLayout.show(pages, "menu page"));
-        topPanel.add(backButton);
+        JButton back = new JButton("← Back");
+        back.addActionListener(e -> cardLayout.show(pages, "menu page"));
 
-        add(topPanel, BorderLayout.NORTH);
+        JLabel title = new JLabel("Hotel Shop", SwingConstants.CENTER);
+        title.setFont(new Font("SansSerif", Font.BOLD, 22));
 
-        inventoryPanel = new JPanel();
-        inventoryPanel.setLayout(new BoxLayout(inventoryPanel, BoxLayout.Y_AXIS));
-        inventoryPanel.setBorder(BorderFactory.createTitledBorder("Shop Items"));
+        top.add(back, BorderLayout.WEST);
+        top.add(title, BorderLayout.CENTER);
 
-        JScrollPane inventoryScroll = new JScrollPane(inventoryPanel);
+        add(top, BorderLayout.NORTH);
 
-        JPanel rightPanel = new JPanel(new BorderLayout());
-        rightPanel.setBorder(BorderFactory.createTitledBorder("Your Cart"));
+        // ===== INVENTORY GRID =====
+        inventoryPanel.setLayout(new GridLayout(0, 3, 15, 15));
+        inventoryPanel.setBorder(new EmptyBorder(10, 20, 20, 20));
+        inventoryPanel.setBackground(Color.WHITE);
 
-        cartModel = new DefaultListModel<>();
+        JScrollPane scroll = new JScrollPane(inventoryPanel);
+
+        // ===== CART =====
+        JPanel cartPanel = new JPanel(new BorderLayout());
+        cartPanel.setPreferredSize(new Dimension(300, 0));
+
         JList<String> cartList = new JList<>(cartModel);
 
-        totalLabel = new JLabel("Total: $0.00");
-        totalLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        JButton checkout = new JButton("Checkout");
+        checkout.addActionListener(e -> handleCheckout());
 
-        JButton checkoutButton = new JButton("Checkout");
-        checkoutButton.addActionListener(e -> handleCheckout());
+        cartPanel.add(new JLabel("Cart", SwingConstants.CENTER), BorderLayout.NORTH);
+        cartPanel.add(new JScrollPane(cartList), BorderLayout.CENTER);
+        cartPanel.add(totalLabel, BorderLayout.SOUTH);
+        cartPanel.add(checkout, BorderLayout.PAGE_END);
 
-        rightPanel.add(totalLabel, BorderLayout.NORTH);
-        rightPanel.add(new JScrollPane(cartList), BorderLayout.CENTER);
-        rightPanel.add(checkoutButton, BorderLayout.SOUTH);
-
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, inventoryScroll, rightPanel);
-        splitPane.setDividerLocation(500);
-
-        add(splitPane, BorderLayout.CENTER);
+        add(scroll, BorderLayout.CENTER);
+        add(cartPanel, BorderLayout.EAST);
 
         refreshInventory();
     }
 
-    public void refreshInventory() {
+    private void refreshInventory() {
         inventoryPanel.removeAll();
 
         List<Item> items = shopService.getInventory();
 
         for (Item item : items) {
-            JButton itemButton = new JButton(
-                    item.getName() + " - $" + String.format("%.2f", item.getPrice()) +
-                            " (" + item.getStock() + " left)"
-            );
-
-            itemButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            itemButton.addActionListener(e -> {
-                cart.addItem(item);
-                updateCartDisplay();
-            });
-
-            inventoryPanel.add(itemButton);
-            inventoryPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            inventoryPanel.add(createItemCard(item));
         }
 
         inventoryPanel.revalidate();
         inventoryPanel.repaint();
     }
 
-    private void updateCartDisplay() {
+    private JPanel createItemCard(Item item) {
+
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout());
+        card.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+
+        // ===== IMAGE =====
+        JLabel imageLabel;
+
+        File file = new File(item.getImagePath());
+        if (file.exists()) {
+            ImageIcon icon = new ImageIcon(item.getImagePath());
+            Image scaled = icon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
+            imageLabel = new JLabel(new ImageIcon(scaled));
+        } else {
+            imageLabel = new JLabel("No Image", SwingConstants.CENTER);
+        }
+
+        imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // ===== INFO =====
+        JLabel name = new JLabel(item.getName(), SwingConstants.CENTER);
+        JLabel price = new JLabel("$" + item.getPrice(), SwingConstants.CENTER);
+        JLabel stock = new JLabel(item.getStock() + " left", SwingConstants.CENTER);
+
+        JButton add = new JButton("Add");
+        add.addActionListener(e -> {
+            cart.addItem(item);
+            updateCart();
+        });
+
+        JPanel info = new JPanel();
+        info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
+        info.add(name);
+        info.add(price);
+        info.add(stock);
+        info.add(add);
+
+        card.add(imageLabel, BorderLayout.CENTER);
+        card.add(info, BorderLayout.SOUTH);
+
+        return card;
+    }
+
+    private void updateCart() {
         cartModel.clear();
 
-        for (CartItem cartItem : cart.getItems()) {
-            cartModel.addElement(
-                    cartItem.getItem().getName() + " x" + cartItem.getQuantity() +
-                            " - $" + String.format("%.2f", cartItem.getTotalPrice())
-            );
+        for (CartItem ci : cart.getItems()) {
+            cartModel.addElement(ci.getItem().getName() + " x" + ci.getQuantity());
         }
 
         totalLabel.setText("Total: $" + String.format("%.2f", cart.getTotal()));
@@ -109,20 +135,15 @@ public class ShopPage extends JPanel {
 
     private void handleCheckout() {
         if (cart.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Your cart is empty.");
+            JOptionPane.showMessageDialog(this, "Cart is empty");
             return;
         }
 
-        try {
-            double total = shopService.checkout(cart);
-            JOptionPane.showMessageDialog(this,
-                    "Purchase successful.\nTotal: $" + String.format("%.2f", total));
+        double total = shopService.checkout(cart);
 
-            updateCartDisplay();
-            refreshInventory();
+        JOptionPane.showMessageDialog(this, "Purchased! $" + total);
 
-        } catch (IllegalStateException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage());
-        }
+        updateCart();
+        refreshInventory();
     }
 }

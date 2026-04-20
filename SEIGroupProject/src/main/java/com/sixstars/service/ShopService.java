@@ -10,41 +10,27 @@ import java.util.List;
 
 public class ShopService {
 
-    private ShopItemDAO shopItemDAO;
-
-    public ShopService() {
-        shopItemDAO = new ShopItemDAO();
-    }
+    private ShopItemDAO dao = new ShopItemDAO();
 
     public List<Item> getInventory() {
-        List<Item> allItems = shopItemDAO.getAllItems();
-        List<Item> availableItems = new ArrayList<>();
+        List<Item> available = new ArrayList<>();
 
-        for (Item item : allItems) {
+        for (Item item : dao.getAllItems()) {
             if (item.getStock() > 0) {
-                availableItems.add(item);
+                available.add(item);
             }
         }
 
-        return availableItems;
+        return available;
     }
 
     public double checkout(ShoppingCart cart) {
         double total = cart.getTotal();
 
-        for (CartItem cartItem : cart.getItems()) {
-            Item dbItem = shopItemDAO.getItemById(cartItem.getItem().getId());
-
-            if (dbItem == null) {
-                throw new IllegalStateException("Item not found: " + cartItem.getItem().getName());
-            }
-
-            if (dbItem.getStock() < cartItem.getQuantity()) {
-                throw new IllegalStateException("Not enough stock for " + dbItem.getName());
-            }
-
-            int newStock = dbItem.getStock() - cartItem.getQuantity();
-            shopItemDAO.updateStock(dbItem.getId(), newStock);
+        for (CartItem ci : cart.getItems()) {
+            Item item = ci.getItem();
+            int newStock = item.getStock() - ci.getQuantity();
+            dao.updateStock(item.getId(), newStock);
         }
 
         cart.clear();
