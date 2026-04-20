@@ -33,6 +33,19 @@ public class DatabaseManager {
                     "reservation_id INTEGER, room_number INTEGER, " +
                     "FOREIGN KEY(reservation_id) REFERENCES reservations(id), " +
                     "FOREIGN KEY(room_number) REFERENCES rooms(room_number))");
+            // Create Shop Items Table
+            stmt.execute("CREATE TABLE IF NOT EXISTS shop_items (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "name TEXT NOT NULL UNIQUE, " +
+                    "price REAL NOT NULL, " +
+                    "stock INTEGER NOT NULL)");
+
+            // Seed starter shop items if missing
+            stmt.execute("INSERT OR IGNORE INTO shop_items(name, price, stock) VALUES ('Water Bottle', 2.50, 25)");
+            stmt.execute("INSERT OR IGNORE INTO shop_items(name, price, stock) VALUES ('Chips', 3.00, 20)");
+            stmt.execute("INSERT OR IGNORE INTO shop_items(name, price, stock) VALUES ('Toothbrush Kit', 5.00, 15)");
+            stmt.execute("INSERT OR IGNORE INTO shop_items(name, price, stock) VALUES ('Travel Shampoo', 4.50, 18)");
+            stmt.execute("INSERT OR IGNORE INTO shop_items(name, price, stock) VALUES ('Hotel Mug', 12.00, 10)");
 
         } catch (SQLException e) {
             e.printStackTrace();

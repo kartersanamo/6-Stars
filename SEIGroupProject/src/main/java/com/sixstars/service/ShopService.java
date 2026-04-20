@@ -1,5 +1,7 @@
 package com.sixstars.service;
 
+import com.sixstars.database.ShopItemDAO;
+import com.sixstars.model.CartItem;
 import com.sixstars.model.Item;
 import com.sixstars.model.ShoppingCart;
 
@@ -7,24 +9,45 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ShopService {
-    private List<Item> inventory = new ArrayList<>();
+
+    private ShopItemDAO shopItemDAO;
 
     public ShopService() {
-        // Sample hotel shop items
-        inventory.add(new Item("Water Bottle", 2.50));
-        inventory.add(new Item("Snacks", 3.00));
-        inventory.add(new Item("Toothbrush Kit", 5.00));
-        inventory.add(new Item("Hotel T-Shirt", 15.00));
-        inventory.add(new Item("Sunscreen", 8.00));
+        shopItemDAO = new ShopItemDAO();
     }
 
     public List<Item> getInventory() {
-        return inventory;
+        List<Item> allItems = shopItemDAO.getAllItems();
+        List<Item> availableItems = new ArrayList<>();
+
+        for (Item item : allItems) {
+            if (item.getStock() > 0) {
+                availableItems.add(item);
+            }
+        }
+
+        return availableItems;
     }
 
     public double checkout(ShoppingCart cart) {
         double total = cart.getTotal();
-        cart.clear(); // simulate purchase
+
+        for (CartItem cartItem : cart.getItems()) {
+            Item dbItem = shopItemDAO.getItemById(cartItem.getItem().getId());
+
+            if (dbItem == null) {
+                throw new IllegalStateException("Item not found: " + cartItem.getItem().getName());
+            }
+
+            if (dbItem.getStock() < cartItem.getQuantity()) {
+                throw new IllegalStateException("Not enough stock for " + dbItem.getName());
+            }
+
+            int newStock = dbItem.getStock() - cartItem.getQuantity();
+            shopItemDAO.updateStock(dbItem.getId(), newStock);
+        }
+
+        cart.clear();
         return total;
     }
 }

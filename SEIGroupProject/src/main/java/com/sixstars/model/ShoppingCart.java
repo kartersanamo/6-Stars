@@ -7,9 +7,9 @@ public class ShoppingCart {
     private List<CartItem> items = new ArrayList<>();
 
     public void addItem(Item item) {
-        for (CartItem ci : items) {
-            if (ci.getItem().getName().equals(item.getName())) {
-                ci.increment();
+        for (CartItem cartItem : items) {
+            if (cartItem.getItem().getId() == item.getId()) {
+                cartItem.increment();
                 return;
             }
         }
@@ -21,11 +21,15 @@ public class ShoppingCart {
     }
 
     public double getTotal() {
-        double total = 0;
-        for (CartItem ci : items) {
-            total += ci.getTotalPrice();
+        double total = 0.0;
+        for (CartItem cartItem : items) {
+            total += cartItem.getTotalPrice();
         }
         return total;
+    }
+
+    public boolean isEmpty() {
+        return items.isEmpty();
     }
 
     public void clear() {

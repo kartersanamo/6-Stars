@@ -13,8 +13,13 @@ public class CartItem {
         quantity++;
     }
 
-    public Item getItem() { return item; }
-    public int getQuantity() { return quantity; }
+    public Item getItem() {
+        return item;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
 
     public double getTotalPrice() {
         return item.getPrice() * quantity;

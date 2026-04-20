@@ -7,51 +7,43 @@ import com.sixstars.service.ShopService;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 public class ShopPage extends JPanel {
 
-    private ShoppingCart cart;
-    private ShopService shopService;
+    private final ShoppingCart cart;
+    private final ShopService shopService;
 
-    private DefaultListModel<String> cartModel;
-    private JLabel totalLabel;
+    private final DefaultListModel<String> cartModel;
+    private final JLabel totalLabel;
+    private final JPanel inventoryPanel;
+    private final JPanel pages;
+    private final CardLayout cardLayout;
 
     public ShopPage(JPanel pages, CardLayout cardLayout) {
+        this.pages = pages;
+        this.cardLayout = cardLayout;
         this.cart = new ShoppingCart();
         this.shopService = new ShopService();
 
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
-        // ===== TOP PANEL (Back Button) =====
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.setBackground(Color.WHITE);
 
         JButton backButton = new JButton("← Back to Menu");
         backButton.addActionListener(e -> cardLayout.show(pages, "menu page"));
-
         topPanel.add(backButton);
+
         add(topPanel, BorderLayout.NORTH);
 
-        // ===== LEFT PANEL (SHOP ITEMS) =====
-        JPanel leftPanel = new JPanel();
-        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
-        leftPanel.setBorder(BorderFactory.createTitledBorder("Shop Items"));
+        inventoryPanel = new JPanel();
+        inventoryPanel.setLayout(new BoxLayout(inventoryPanel, BoxLayout.Y_AXIS));
+        inventoryPanel.setBorder(BorderFactory.createTitledBorder("Shop Items"));
 
-        for (Item item : shopService.getInventory()) {
-            JButton btn = new JButton(item.getName() + " - $" + item.getPrice());
-            btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JScrollPane inventoryScroll = new JScrollPane(inventoryPanel);
 
-            btn.addActionListener(e -> {
-                cart.addItem(item);
-                updateCartDisplay();
-            });
-
-            leftPanel.add(btn);
-            leftPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        }
-
-        // ===== RIGHT PANEL (CART) =====
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBorder(BorderFactory.createTitledBorder("Your Cart"));
 
@@ -61,36 +53,76 @@ public class ShopPage extends JPanel {
         totalLabel = new JLabel("Total: $0.00");
         totalLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JButton checkoutBtn = new JButton("Checkout");
-        checkoutBtn.addActionListener(e -> {
-            if (cart.getItems().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Cart is empty.");
-                return;
-            }
-
-            double total = shopService.checkout(cart);
-            JOptionPane.showMessageDialog(this, "Purchase successful! Total: $" + total);
-            updateCartDisplay();
-        });
+        JButton checkoutButton = new JButton("Checkout");
+        checkoutButton.addActionListener(e -> handleCheckout());
 
         rightPanel.add(totalLabel, BorderLayout.NORTH);
         rightPanel.add(new JScrollPane(cartList), BorderLayout.CENTER);
-        rightPanel.add(checkoutBtn, BorderLayout.SOUTH);
+        rightPanel.add(checkoutButton, BorderLayout.SOUTH);
 
-        // ===== MAIN SPLIT =====
-        add(leftPanel, BorderLayout.WEST);
-        add(rightPanel, BorderLayout.CENTER);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, inventoryScroll, rightPanel);
+        splitPane.setDividerLocation(500);
+
+        add(splitPane, BorderLayout.CENTER);
+
+        refreshInventory();
+    }
+
+    public void refreshInventory() {
+        inventoryPanel.removeAll();
+
+        List<Item> items = shopService.getInventory();
+
+        for (Item item : items) {
+            JButton itemButton = new JButton(
+                    item.getName() + " - $" + String.format("%.2f", item.getPrice()) +
+                            " (" + item.getStock() + " left)"
+            );
+
+            itemButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            itemButton.addActionListener(e -> {
+                cart.addItem(item);
+                updateCartDisplay();
+            });
+
+            inventoryPanel.add(itemButton);
+            inventoryPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        }
+
+        inventoryPanel.revalidate();
+        inventoryPanel.repaint();
     }
 
     private void updateCartDisplay() {
         cartModel.clear();
 
-        for (CartItem ci : cart.getItems()) {
+        for (CartItem cartItem : cart.getItems()) {
             cartModel.addElement(
-                    ci.getItem().getName() + " x" + ci.getQuantity()
+                    cartItem.getItem().getName() + " x" + cartItem.getQuantity() +
+                            " - $" + String.format("%.2f", cartItem.getTotalPrice())
             );
         }
 
         totalLabel.setText("Total: $" + String.format("%.2f", cart.getTotal()));
+    }
+
+    private void handleCheckout() {
+        if (cart.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Your cart is empty.");
+            return;
+        }
+
+        try {
+            double total = shopService.checkout(cart);
+            JOptionPane.showMessageDialog(this,
+                    "Purchase successful.\nTotal: $" + String.format("%.2f", total));
+
+            updateCartDisplay();
+            refreshInventory();
+
+        } catch (IllegalStateException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage());
+        }
     }
 }
