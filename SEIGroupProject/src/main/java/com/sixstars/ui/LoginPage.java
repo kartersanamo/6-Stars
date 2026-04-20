@@ -117,7 +117,6 @@ public class LoginPage extends JPanel {
                 AccountController.currentAccount = a;
 
                 Main.headerBar.refreshInfo();
-                Main.headerBar2.refreshInfo();
 
                 if (a.getRole() == Role.ADMIN) {
                     cardLayout.show(pages, "admin page");

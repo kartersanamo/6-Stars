@@ -1,27 +1,41 @@
 package com.sixstars.ui;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.Image;
 import java.time.LocalDate;
-import java.util.List;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 
-import javax.swing.*;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.border.EmptyBorder;
 
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
@@ -100,8 +114,7 @@ public class MakeReservationPage extends JPanel {
         JPanel top = new JPanel(new BorderLayout());
         top.setBackground(UITheme.PAGE_BACKGROUND);
 
-        Main.headerBar2.refreshInfo();
-        top.add(Main.headerBar2, BorderLayout.NORTH);
+        Main.headerBar.refreshInfo();
         top.add(buildSearchSummaryPanel(), BorderLayout.CENTER);
         return top;
     }
@@ -120,10 +133,7 @@ public class MakeReservationPage extends JPanel {
         fields.add(createFieldCard("Check Out", checkOutChooser));
         fields.add(createFieldCard("Room Number", roomNumberField));
 
-        JButton refreshButton = createPrimaryButton("Update Search");
-        refreshButton.setForeground(Color.BLACK);
-        refreshButton.addActionListener(e -> refreshListings());
-        fields.add(createFieldCard("Search", refreshButton));
+        
 
         JPanel filtersRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         filtersRow.setOpaque(false);
