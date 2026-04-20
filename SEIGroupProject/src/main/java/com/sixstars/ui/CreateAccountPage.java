@@ -197,7 +197,6 @@ public class CreateAccountPage extends JPanel {
                 if (!isAdmin) {
                     AccountController.currentAccount = createdAccount;
                     Main.headerBar.refreshInfo();
-                    Main.headerBar2.refreshInfo();
 
                     if (Main.makeReservationPage.completePendingReservationIfAny()) {
                         return;

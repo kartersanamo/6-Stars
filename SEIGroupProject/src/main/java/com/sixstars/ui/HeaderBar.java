@@ -8,7 +8,6 @@ import java.awt.Font;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -41,9 +40,19 @@ public class HeaderBar extends JPanel {
                 BorderFactory.createEmptyBorder(16, 28, 16, 28)
         ));
 
-        JLabel brandLabel = new JLabel("6 Stars Hotel");
-        brandLabel.setFont(new Font("Serif", Font.BOLD, 30));
-        brandLabel.setForeground(UITheme.TEXT_DARK);
+        JButton brandButton = new JButton("6 Stars Hotel");
+        brandButton.setFont(new Font("Serif", Font.BOLD, 30));
+        brandButton.setForeground(UITheme.TEXT_DARK);
+
+        // Make it look like a label
+        brandButton.setBorderPainted(false);
+        brandButton.setContentAreaFilled(false);
+        brandButton.setFocusPainted(false);
+        brandButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        brandButton.addActionListener(e -> {
+            cardLayout.show(pages, "home");
+        });
 
         navPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         navPanel.setOpaque(false);
@@ -51,7 +60,7 @@ public class HeaderBar extends JPanel {
         JButton bookNowButton = createButton("Book Now");
         bookNowButton.addActionListener(e -> {
             cardLayout.show(pages, "make reservation");
-            Main.headerBar2.refreshInfo();
+            Main.headerBar.refreshInfo();
         });
 
         btnMyReservations = createButton("My Reservations");
@@ -84,11 +93,30 @@ public class HeaderBar extends JPanel {
         logout.addActionListener(e -> {
             AccountController.currentAccount = null;
             refreshInfo();
+            cardLayout.show(pages, "home");
             JOptionPane.showMessageDialog(this, "Logged out successfully");
         });
 
+        JMenuItem dashboard = new JMenuItem("Dashboard");
+        dashboard.addActionListener(e -> {
+            if (AccountController.currentAccount != null && AccountController.currentAccount.getRole() == Role.CLERK) {
+                refreshInfo();
+                cardLayout.show(pages, "clerk page");
+            }
+            else if (AccountController.currentAccount != null && AccountController.currentAccount.getRole() == Role.ADMIN) {
+                refreshInfo();
+                cardLayout.show(pages, "admin page");
+            }
+            else if (AccountController.currentAccount != null) {
+                refreshInfo();
+                cardLayout.show(pages, "guest reservations");
+            }
+        });
+
         menu.add(view);
+        menu.add(dashboard);
         menu.add(logout);
+        
 
         btnAccount.addActionListener(e ->
                 menu.show(btnAccount, 0, btnAccount.getHeight())
@@ -100,7 +128,7 @@ public class HeaderBar extends JPanel {
         navPanel.add(createAccountButton);
         navPanel.add(btnAccount);
 
-        add(brandLabel, BorderLayout.WEST);
+        add(brandButton, BorderLayout.WEST);
         add(navPanel, BorderLayout.EAST);
 
         refreshInfo();

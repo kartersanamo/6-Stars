@@ -45,7 +45,6 @@ public class HomeLandingPage extends JPanel {
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
 
-        add(Main.headerBar, BorderLayout.NORTH);
         add(buildContentScrollPane(pages, cardLayout), BorderLayout.CENTER);
         add(buildFooter(), BorderLayout.SOUTH);
         Main.headerBar.refreshInfo();
@@ -100,7 +99,7 @@ public class HomeLandingPage extends JPanel {
 
         reserveButton.addActionListener(e -> {
             cardLayout.show(pages, "make reservation");
-            Main.headerBar2.refreshInfo();
+            Main.headerBar.refreshInfo();
         }
     );
         exploreButton.addActionListener(e -> {
@@ -135,7 +134,7 @@ public class HomeLandingPage extends JPanel {
         viewAllButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         viewAllButton.addActionListener(e -> {
             cardLayout.show(pages, "make reservation");
-            Main.headerBar2.refreshInfo();
+            Main.headerBar.refreshInfo();
         });
 
         JPanel highlightsPanel = new JPanel(new GridLayout(1, 3, 16, 0));

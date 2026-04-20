@@ -1,5 +1,6 @@
 package com.sixstars.app;
 
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.time.LocalDate;
 
@@ -8,11 +9,22 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import com.sixstars.database.DatabaseManager;
+import com.sixstars.model.Room;
 import com.sixstars.service.AccountService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
-import com.sixstars.ui.*;
-import com.sixstars.model.Room;
+import com.sixstars.ui.AccountDetailsPage;
+import com.sixstars.ui.AdminPage;
+import com.sixstars.ui.ClerkPage;
+import com.sixstars.ui.CreateAccountPage;
+import com.sixstars.ui.GuestReservationsPage;
+import com.sixstars.ui.HeaderBar;
+import com.sixstars.ui.HomeLandingPage;
+import com.sixstars.ui.LoginPage;
+import com.sixstars.ui.MakeReservationPage;
+import com.sixstars.ui.RoomManagementPage;
+import com.sixstars.ui.ShopPage;
+import com.sixstars.ui.WelcomePage;
 
 public class Main {
 
@@ -24,7 +36,6 @@ public class Main {
     public static AccountDetailsPage accountDetailsPage;
     public static HomeLandingPage homeLandingPage;
     public static HeaderBar headerBar;
-    public static HeaderBar headerBar2;
     private static PendingReservation pendingReservation;
     public static ShopPage shopPage;
 
@@ -43,9 +54,7 @@ public class Main {
         
         CardLayout cardLayout = new CardLayout();
         JPanel pages = new JPanel(cardLayout);
-        
         headerBar = new HeaderBar(pages, cardLayout);
-        headerBar2 = new HeaderBar(pages, cardLayout);
         homeLandingPage = new HomeLandingPage(pages, cardLayout);
         WelcomePage welcomePage = new WelcomePage(pages, cardLayout);
         LoginPage loginPage = new LoginPage(pages, cardLayout, accountService);
@@ -69,7 +78,11 @@ public class Main {
         pages.add(accountDetailsPage, "account details");
         pages.add(shopPage, "shop");
 
-        frame.add(pages);
+        frame.setLayout(new BorderLayout());
+  
+
+        frame.add(headerBar, BorderLayout.NORTH);
+        frame.add(pages, BorderLayout.CENTER);
         frame.setVisible(true);
     }
 
