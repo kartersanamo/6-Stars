@@ -467,14 +467,10 @@ public class MakeReservationPage extends JPanel {
             return false;
         }
 
-        if (!roomNumberText.isEmpty()) {
-            try {
-                int roomNumber = Integer.parseInt(roomNumberText);
-                return room.getRoomNumber() == roomNumber;
-            } catch (NumberFormatException ex) {
-                return false;
-            }
+        if (!roomNumberText.isBlank()){
+            return (String.valueOf(room.getRoomNumber()).startsWith(roomNumberText));
         }
+
         return true;
     }
 
