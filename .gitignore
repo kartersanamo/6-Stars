@@ -1,7 +1,6 @@
-.DS_Store
 
-# IDE
+# Local IDE files
 .idea/
 .vscode/
-.DS_Store
 *.iml
+.DS_Store
