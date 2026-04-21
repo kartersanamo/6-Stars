@@ -109,7 +109,8 @@ public class HeaderBar extends JPanel {
             }
             else if (AccountController.currentAccount != null) {
                 refreshInfo();
-                cardLayout.show(pages, "guest reservations");
+                Main.billingPage.refresh();
+                cardLayout.show(pages, "billing page");
             }
         });
 
