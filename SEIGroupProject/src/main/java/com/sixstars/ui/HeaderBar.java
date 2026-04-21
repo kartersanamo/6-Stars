@@ -108,6 +108,7 @@ public class HeaderBar extends JPanel {
                 cardLayout.show(pages, "admin page");
             }
             else if (AccountController.currentAccount != null) {
+                dashboard.setText("test");
                 refreshInfo();
                 Main.billingPage.refresh();
                 cardLayout.show(pages, "billing page");
