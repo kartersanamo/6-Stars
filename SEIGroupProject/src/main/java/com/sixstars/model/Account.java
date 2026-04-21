@@ -6,13 +6,15 @@ public class Account {
     private String email;
     private String passwordHash;
     private Role role;
+    private double totalBill;
 
-    public Account(String firstName, String lastName, String email, String passwordHash, Role role) {
+    public Account(String firstName, String lastName, String email, String passwordHash, Role role, double totalBill) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
+        this.totalBill = totalBill;
     }
 
     public String getFirstName() {
@@ -33,5 +35,9 @@ public class Account {
 
     public Role getRole() {
         return role;
+    }
+
+    public double getTotalBill() {
+        return totalBill;
     }
 }

@@ -18,12 +18,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
 public class AccountService {
-//    private static final String FILE_PATH = "accounts.json";
-//    private final Gson gson;
     private final AccountDAO accountDAO;
 
     public AccountService() {
-//        gson = new GsonBuilder().setPrettyPrinting().create();
         accountDAO = new AccountDAO();
     }
 
@@ -33,64 +30,12 @@ public class AccountService {
         }
 
         String passwordHash = hashPassword(password);
-        Account guestAccount = new Account(firstName, lastName, email, passwordHash, role);
+        Account guestAccount = new Account(firstName, lastName, email, passwordHash, role, 0);
         accountDAO.saveAccount(guestAccount);
 
         return guestAccount;
 
-//        ArrayList<Account> accounts = loadAccounts();
-//
-//        for (Account acc : accounts) {
-//            if (acc.getEmail().equalsIgnoreCase(email)) {
-//                throw new RuntimeException("An account with that email already exists.");
-//            }
-//        }
-//
-//        String passwordHash = hashPassword(password);
-//
-//        Account guestAccount = new Account(
-//                firstName,
-//                lastName,
-//                email,
-//                passwordHash,
-//                role
-//        );
-//
-//        accounts.add(guestAccount);
-//        saveAccounts(accounts);
-//
-//        return guestAccount;
     }
-
-//    private ArrayList<Account> loadAccounts() {
-//        File file = new File(FILE_PATH);
-//
-//        if (!file.exists()) {
-//            return new ArrayList<>();
-//        }
-//
-//        try (FileReader reader = new FileReader(file)) {
-//            Type listType = new TypeToken<ArrayList<Account>>() {}.getType();
-//            ArrayList<Account> accounts = gson.fromJson(reader, listType);
-//
-//            if (accounts == null) {
-//                return new ArrayList<>();
-//            }
-//
-//            return accounts;
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return new ArrayList<>();
-//        }
-//    }
-
-//    private void saveAccounts(ArrayList<Account> accounts) {
-//        try (FileWriter writer = new FileWriter(FILE_PATH)) {
-//            gson.toJson(accounts, writer);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
 
     public String hashPassword(String password) {
         try {

@@ -5,7 +5,7 @@ import java.sql.*;
 
 public class AccountDAO {
     public void saveAccount(Account account) {
-        String sql = "INSERT OR REPLACE INTO accounts(email, firstName, lastName, passwordHash, role) VALUES(?,?,?,?,?)";
+        String sql = "INSERT OR REPLACE INTO accounts(email, firstName, lastName, passwordHash, role, totalBill) VALUES(?,?,?,?,?,?)";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -14,6 +14,7 @@ public class AccountDAO {
             pstmt.setString(3, account.getLastName());
             pstmt.setString(4, account.getPasswordHash());
             pstmt.setString(5, account.getRole().name());
+            pstmt.setDouble(6, account.getTotalBill());
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -33,7 +34,8 @@ public class AccountDAO {
                             rs.getString("lastName"),
                             rs.getString("email"),
                             rs.getString("passwordHash"),
-                            com.sixstars.model.Role.valueOf(rs.getString("role"))
+                            com.sixstars.model.Role.valueOf(rs.getString("role")),
+                            rs.getDouble("totalBill")
                     );
                 }
             }

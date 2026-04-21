@@ -17,7 +17,7 @@ public class DatabaseManager {
             // Create Accounts Table
             stmt.execute("CREATE TABLE IF NOT EXISTS accounts (" +
                     "email TEXT PRIMARY KEY, firstName TEXT, lastName TEXT, " +
-                    "passwordHash TEXT, role TEXT)");
+                    "passwordHash TEXT, role TEXT, totalBill REAL DEFAULT 0.0)");
 
             // Create Rooms Table
             stmt.execute("CREATE TABLE IF NOT EXISTS rooms (" +
