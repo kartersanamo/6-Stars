@@ -1,8 +1,8 @@
 package com.sixstars.ui;
 
-import com.sixstars.model.CartItem;
-import com.sixstars.model.Item;
-import com.sixstars.model.ShoppingCart;
+import com.sixstars.app.Main;
+import com.sixstars.controller.AccountController;
+import com.sixstars.model.*;
 import com.sixstars.service.ShopService;
 
 import javax.swing.*;
@@ -485,8 +485,30 @@ public class ShopPage extends JPanel {
             return;
         }
 
+        Account currentAccount = AccountController.currentAccount;
+        if (currentAccount == null) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please log in as a Guest before checking out.",
+                    "Login Required",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        if (currentAccount.getRole() != Role.GUEST) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Only Guest accounts can make shop purchases.",
+                    "Guest Account Required",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
         try {
-            double total = shopService.checkout(cart);
+            double total = shopService.checkout(currentAccount.getEmail(), cart);
+
             JOptionPane.showMessageDialog(
                     this,
                     "Purchase successful.\nTotal: $" + String.format("%.2f", total),
@@ -497,8 +519,17 @@ public class ShopPage extends JPanel {
             updateCartDisplay();
             refreshInventory();
 
+            if (Main.billingPage != null) {
+                Main.billingPage.refresh();
+            }
+
         } catch (IllegalStateException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    ex.getMessage(),
+                    "Checkout Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
     }
 

@@ -88,36 +88,71 @@ public class GuestReservationsPage extends JPanel {
 
     private void handleModify() {
         Reservation selected = resList.getSelectedValue();
-        if (selected != null) {
-            // Simple pop-up inputs to get new dates
-            String newStartStr = JOptionPane.showInputDialog(this, "New Start Date (YYYY-MM-DD):", selected.getStartDate());
-            String newEndStr = JOptionPane.showInputDialog(this, "New End Date (YYYY-MM-DD):", selected.getEndDate());
-
-            if (newStartStr != null && newEndStr != null) {
-                try {
-                    LocalDate newStart = LocalDate.parse(newStartStr);
-                    LocalDate newEnd = LocalDate.parse(newEndStr);
-
-                    for (Room room : selected.getRooms()) {
-                        // We check the new dates against the database
-                        if (!resService.isRoomAvailable(room, newStart, newEnd)) {
-                            JOptionPane.showMessageDialog(this,
-                                    "Room " + room.getRoomNumber() + " is already booked for those new dates!");
-                            return; // Exit without updating
-                        }
-                    }
-
-                    // Call the service to update the DB
-                    resService.updateReservation(selected.getId(), newStart, newEnd);
-
-                    refresh(); // Update the list display
-                    JOptionPane.showMessageDialog(this, "Reservation dates updated successfully!");
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(this, "Invalid date format. Please use YYYY-MM-DD.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        } else {
+        if (selected == null) {
             JOptionPane.showMessageDialog(this, "Please select a reservation to modify.");
+            return;
+        }
+
+        String newStartStr = JOptionPane.showInputDialog(
+                this,
+                "New Start Date (YYYY-MM-DD):",
+                selected.getStartDate()
+        );
+        if (newStartStr == null) {
+            return;
+        }
+
+        String newEndStr = JOptionPane.showInputDialog(
+                this,
+                "New End Date (YYYY-MM-DD):",
+                selected.getEndDate()
+        );
+        if (newEndStr == null) {
+            return;
+        }
+
+        try {
+            LocalDate newStart = LocalDate.parse(newStartStr);
+            LocalDate newEnd = LocalDate.parse(newEndStr);
+
+            if (!newStart.isBefore(newEnd)) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Check-out date must be after check-in date.",
+                        "Invalid Date Range",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+
+            if (newStart.isBefore(LocalDate.now())) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Check-in date cannot be in the past.",
+                        "Invalid Date",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+
+            resService.updateReservation(selected.getId(), newStart, newEnd, selected.getRooms());
+
+            refresh();
+            JOptionPane.showMessageDialog(this, "Reservation dates updated successfully!");
+        } catch (IllegalStateException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    ex.getMessage(),
+                    "Unable to Update Reservation",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Invalid date format. Please use YYYY-MM-DD.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
     }
 

@@ -25,6 +25,7 @@ public class HeaderBar extends JPanel {
     private JButton btnAccount;
     private JPanel navPanel;
     private JButton btnMyReservations;
+    private JMenuItem dashboardMenuItem;
 
     private JPanel pages;
     private CardLayout cardLayout;
@@ -44,7 +45,6 @@ public class HeaderBar extends JPanel {
         brandButton.setFont(new Font("Serif", Font.BOLD, 30));
         brandButton.setForeground(UITheme.TEXT_DARK);
 
-        // Make it look like a label
         brandButton.setBorderPainted(false);
         brandButton.setContentAreaFilled(false);
         brandButton.setFocusPainted(false);
@@ -80,7 +80,6 @@ public class HeaderBar extends JPanel {
 
         btnAccount = createButton("My Account");
 
-        // Dropdown menu
         JPopupMenu menu = new JPopupMenu();
 
         JMenuItem view = new JMenuItem("View Account");
@@ -97,8 +96,8 @@ public class HeaderBar extends JPanel {
             JOptionPane.showMessageDialog(this, "Logged out successfully");
         });
 
-        JMenuItem dashboard = new JMenuItem("Dashboard");
-        dashboard.addActionListener(e -> {
+        dashboardMenuItem = new JMenuItem();
+        dashboardMenuItem.addActionListener(e -> {
             if (AccountController.currentAccount != null && AccountController.currentAccount.getRole() == Role.CLERK) {
                 refreshInfo();
                 cardLayout.show(pages, "clerk page");
@@ -109,14 +108,14 @@ public class HeaderBar extends JPanel {
             }
             else if (AccountController.currentAccount != null) {
                 refreshInfo();
-                cardLayout.show(pages, "guest reservations");
+                Main.billingPage.refresh();
+                cardLayout.show(pages, "billing page");
             }
         });
 
         menu.add(view);
-        menu.add(dashboard);
+        menu.add(dashboardMenuItem);
         menu.add(logout);
-        
 
         btnAccount.addActionListener(e ->
                 menu.show(btnAccount, 0, btnAccount.getHeight())
@@ -144,8 +143,15 @@ public class HeaderBar extends JPanel {
 
         if (loggedIn) {
             btnMyReservations.setVisible(current.getRole() == Role.GUEST);
+
+            if (current.getRole() == Role.GUEST) {
+                dashboardMenuItem.setText("Billing & Purchases");
+            } else {
+                dashboardMenuItem.setText("Dashboard");
+            }
         } else {
             btnMyReservations.setVisible(false);
+            dashboardMenuItem.setText("Dashboard");
         }
 
         revalidate();

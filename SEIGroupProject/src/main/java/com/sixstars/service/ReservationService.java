@@ -119,32 +119,39 @@ public List<Room> filterAvailableRooms(LocalDate start, LocalDate end, BedType t
      * Logic to finalize and save a booking.
      */
     public Reservation makeReservation(String guestEmail, LocalDate start, LocalDate end, List<Room> selectedRooms) {
+        // 1. Validate availability (unchanged)
         for (Room r : selectedRooms) {
-            // The Service asks the DAO to do the work
             if (!reservationDAO.isRoomAvailable(r.getRoomNumber(), start, end)) {
                 throw new IllegalStateException("Room " + r.getRoomNumber() + " is already booked for these dates.");
             }
         }
 
-        // If all checks pass, the Service proceeds with business logic
+        // 2. Calculate pricing (NEW LOGIC)
+        int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(start, end);
+        if (nights < 0) {
+            nights = 0;
+        }
+
+        int nightlyRate = 0;
+        if (selectedRooms != null && !selectedRooms.isEmpty()) {
+            // Assuming 1 room per reservation (matches your current UI)
+            nightlyRate = selectedRooms.get(0).getPricePerNight();
+        }
+
+        int totalCost = nightlyRate * nights;
+
+        // 3. Create reservation (same constructor, but now we override values)
         Reservation newBooking = new Reservation(guestEmail, start, end, selectedRooms);
+
+        // 4. Explicitly set billing fields (IMPORTANT)
+        newBooking.setNightlyRate(nightlyRate);
+        newBooking.setNights(nights);
+        newBooking.setTotalCost(totalCost);
+
+        // 5. Save
         reservationDAO.saveReservation(newBooking);
+
         return newBooking;
-//        ArrayList<Reservation> allReservations = loadReservations();
-//
-//        for (Room r : selectedRooms) {
-//            if (!isRoomAvailableInternal(r, start, end, allReservations)) {
-//                throw new IllegalStateException("Room " + r.getRoomNumber() + " is no longer available.");
-//            }
-//        }
-//
-//        Reservation newBooking = new Reservation(start, end, selectedRooms);
-//        allReservations.add(newBooking);
-//
-//        saveReservations(allReservations);
-//
-//        System.out.println("Reservation created with ID: " + newBooking.getId());
-//        return newBooking;
     }
 
     public List<Reservation> getAllReservations() {
@@ -163,9 +170,27 @@ public List<Room> filterAvailableRooms(LocalDate start, LocalDate end, BedType t
     }
 
     // Updates existing reservation
-    public void updateReservation(int id, LocalDate start, LocalDate end) {
-        // Business Logic: You could add a check here to ensure the new dates
-        // are available before calling the DAO!
+    public void updateReservation(int id, LocalDate start, LocalDate end, List<Room> rooms) {
+        if (start == null || end == null) {
+            throw new IllegalStateException("Start date and end date are required.");
+        }
+
+        if (!start.isBefore(end)) {
+            throw new IllegalStateException("Check-out date must be after check-in date.");
+        }
+
+        if (start.isBefore(LocalDate.now())) {
+            throw new IllegalStateException("Check-in date cannot be in the past.");
+        }
+
+        for (Room room : rooms) {
+            if (!reservationDAO.isRoomAvailable(room.getRoomNumber(), start, end, id)) {
+                throw new IllegalStateException(
+                        "Room " + room.getRoomNumber() + " is already booked for those dates."
+                );
+            }
+        }
+
         reservationDAO.updateReservationDates(id, start, end);
     }
 }
