@@ -403,9 +403,8 @@ public class MakeReservationPage extends JPanel {
         availabilityLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
         availabilityLabel.setForeground(isAvailable ? new Color(44, 122, 72) : new Color(161, 62, 47));
 
-        JButton reserveButton = createPrimaryButton("Reserve This Room");
-        reserveButton.setForeground(Color.BLACK);
-        reserveButton.setEnabled(hasValidDateRange && isAvailable);
+        JButton reserveButton = createReserveButton();
+        styleReserveButtonState(reserveButton, hasValidDateRange, isAvailable);
         reserveButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         reserveButton.addActionListener(e -> reserveRoom(room));
 
@@ -667,6 +666,55 @@ public class MakeReservationPage extends JPanel {
         button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return button;
+    }
+
+    private JButton createReserveButton() {
+        JButton button = createPrimaryButton("Reserve This Room");
+        button.setFont(new Font("SansSerif", Font.BOLD, 15));
+        button.setForeground(Color.WHITE);
+        button.setBackground(new Color(191, 139, 33));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(120, 85, 20), 2),
+                new EmptyBorder(10, 24, 10, 24)
+        ));
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        return button;
+    }
+
+    private void styleReserveButtonState(JButton button, boolean hasValidDateRange, boolean isAvailable) {
+        if (!hasValidDateRange) {
+            button.setText("Select Dates to Reserve");
+            button.setEnabled(false);
+            button.setForeground(new Color(95, 98, 104));
+            button.setBackground(new Color(233, 236, 240));
+            button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(190, 195, 201), 2),
+                    new EmptyBorder(10, 24, 10, 24)
+            ));
+            return;
+        }
+
+        if (!isAvailable) {
+            button.setText("Unavailable for Dates");
+            button.setEnabled(false);
+            button.setForeground(Color.WHITE);
+            button.setBackground(new Color(166, 54, 46));
+            button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(114, 35, 30), 2),
+                    new EmptyBorder(10, 24, 10, 24)
+            ));
+            return;
+        }
+
+        button.setText("Reserve This Room");
+        button.setEnabled(true);
+        button.setForeground(Color.WHITE);
+        button.setBackground(new Color(191, 139, 33));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(120, 85, 20), 2),
+                new EmptyBorder(10, 24, 10, 24)
+        ));
     }
 
     private Date todayAtMidnight() {

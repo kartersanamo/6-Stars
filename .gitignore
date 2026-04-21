@@ -1,1 +1,7 @@
 .DS_Store
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+*.iml
