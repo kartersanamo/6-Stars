@@ -108,18 +108,20 @@ public class ReservationDAO {
         return rooms;
     }
 
-    public boolean isRoomAvailable(int roomNumber, LocalDate start, LocalDate end) {
+    public boolean isRoomAvailable(int roomNumber, LocalDate start, LocalDate end, int excludeReservationId) {
         String sql = "SELECT COUNT(*) FROM reservations r " +
                 "JOIN reservation_rooms rr ON r.id = rr.reservation_id " +
                 "WHERE rr.room_number = ? " +
+                "AND r.id != ? " +
                 "AND ? < r.endDate AND ? > r.startDate";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, roomNumber);
-            pstmt.setString(2, start.toString());
-            pstmt.setString(3, end.toString());
+            pstmt.setInt(2, excludeReservationId);
+            pstmt.setString(3, start.toString());
+            pstmt.setString(4, end.toString());
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -130,6 +132,10 @@ public class ReservationDAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public boolean isRoomAvailable(int roomNumber, LocalDate start, LocalDate end) {
+        return isRoomAvailable(roomNumber, start, end, -1);
     }
 
     public List<Reservation> getReservationsByEmail(String email) {
@@ -202,6 +208,7 @@ public class ReservationDAO {
             if (nights < 0) {
                 nights = 0;
             }
+
             int totalCost = nightlyRate * nights;
 
             try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {

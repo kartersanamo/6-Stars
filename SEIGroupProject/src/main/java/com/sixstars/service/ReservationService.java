@@ -170,9 +170,27 @@ public List<Room> filterAvailableRooms(LocalDate start, LocalDate end, BedType t
     }
 
     // Updates existing reservation
-    public void updateReservation(int id, LocalDate start, LocalDate end) {
-        // Business Logic: You could add a check here to ensure the new dates
-        // are available before calling the DAO!
+    public void updateReservation(int id, LocalDate start, LocalDate end, List<Room> rooms) {
+        if (start == null || end == null) {
+            throw new IllegalStateException("Start date and end date are required.");
+        }
+
+        if (!start.isBefore(end)) {
+            throw new IllegalStateException("Check-out date must be after check-in date.");
+        }
+
+        if (start.isBefore(LocalDate.now())) {
+            throw new IllegalStateException("Check-in date cannot be in the past.");
+        }
+
+        for (Room room : rooms) {
+            if (!reservationDAO.isRoomAvailable(room.getRoomNumber(), start, end, id)) {
+                throw new IllegalStateException(
+                        "Room " + room.getRoomNumber() + " is already booked for those dates."
+                );
+            }
+        }
+
         reservationDAO.updateReservationDates(id, start, end);
     }
 }
