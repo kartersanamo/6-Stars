@@ -10,17 +10,19 @@ import java.util.List;
 public class ReservationDAO {
 
     public void saveReservation(Reservation res) {
-        String resSql = "INSERT INTO reservations(startDate, endDate, guestEmail) VALUES(?,?,?)";
+        String resSql = "INSERT INTO reservations(startDate, endDate, guestEmail, nightlyRate, nights, totalCost) VALUES(?,?,?,?,?,?)";
         String joinSql = "INSERT INTO reservation_rooms(reservation_id, room_number) VALUES(?,?)";
 
         try (Connection conn = DatabaseManager.getConnection()) {
-            conn.setAutoCommit(false); // Start Transaction
+            conn.setAutoCommit(false);
 
-            // 1. Insert the Reservation and get the generated ID
             try (PreparedStatement pstmt = conn.prepareStatement(resSql, Statement.RETURN_GENERATED_KEYS)) {
                 pstmt.setString(1, res.getStartDate().toString());
                 pstmt.setString(2, res.getEndDate().toString());
                 pstmt.setString(3, res.getGuestEmail());
+                pstmt.setInt(4, res.getNightlyRate());
+                pstmt.setInt(5, res.getNights());
+                pstmt.setInt(6, res.getTotalCost());
                 pstmt.executeUpdate();
 
                 ResultSet rs = pstmt.getGeneratedKeys();
@@ -28,19 +30,19 @@ public class ReservationDAO {
                     int generatedId = rs.getInt(1);
                     res.setId(generatedId);
 
-                    // 2. Insert each room into the join table
                     try (PreparedStatement joinPstmt = conn.prepareStatement(joinSql)) {
                         for (Room room : res.getRooms()) {
                             joinPstmt.setInt(1, generatedId);
                             joinPstmt.setInt(2, room.getRoomNumber());
-                            joinPstmt.addBatch(); // Batching for performance
+                            joinPstmt.addBatch();
                         }
                         joinPstmt.executeBatch();
                     }
                 }
-                conn.commit(); // Save everything
+
+                conn.commit();
             } catch (SQLException e) {
-                conn.rollback(); // Undo if error occurs
+                conn.rollback();
                 throw e;
             }
         } catch (SQLException e) {
@@ -61,14 +63,14 @@ public class ReservationDAO {
                 LocalDate start = LocalDate.parse(rs.getString("startDate"));
                 LocalDate end = LocalDate.parse(rs.getString("endDate"));
                 String email = rs.getString("guestEmail");
+                int nightlyRate = rs.getInt("nightlyRate");
+                int nights = rs.getInt("nights");
+                int totalCost = rs.getInt("totalCost");
 
-                // Fetch the rooms associated with this specific reservation
                 List<Room> rooms = getRoomsForReservation(id);
 
-                // Manual ID management: Since your constructor sets ID automatically,
-                // you might need a setter or a specific constructor for DB loading.
-                Reservation res = new Reservation(email, start, end, rooms);
-                // res.setId(id); // If you add a setter to Reservation.java
+                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost);
+                res.setId(id);
 
                 reservations.add(res);
             }
@@ -78,7 +80,6 @@ public class ReservationDAO {
         return reservations;
     }
 
-    // Helper method to handle the many-to-many relationship
     private List<Room> getRoomsForReservation(int reservationId) {
         List<Room> rooms = new ArrayList<>();
         String sql = "SELECT r.* FROM rooms r " +
@@ -96,7 +97,8 @@ public class ReservationDAO {
                             com.sixstars.model.BedType.valueOf(rs.getString("bedType")),
                             com.sixstars.model.Theme.valueOf(rs.getString("theme")),
                             com.sixstars.model.QualityLevel.valueOf(rs.getString("qualityLevel")),
-                            rs.getInt("isSmoking") == 1
+                            rs.getInt("isSmoking") == 1,
+                            rs.getInt("pricePerNight")
                     ));
                 }
             }
@@ -107,11 +109,9 @@ public class ReservationDAO {
     }
 
     public boolean isRoomAvailable(int roomNumber, LocalDate start, LocalDate end) {
-        // This query checks if any existing reservation overlaps with the requested dates
         String sql = "SELECT COUNT(*) FROM reservations r " +
                 "JOIN reservation_rooms rr ON r.id = rr.reservation_id " +
                 "WHERE rr.room_number = ? " +
-                "AND r.id != ?" +
                 "AND ? < r.endDate AND ? > r.startDate";
 
         try (Connection conn = DatabaseManager.getConnection();
@@ -123,7 +123,7 @@ public class ReservationDAO {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt(1) == 0; // If count is 0, the room is free
+                    return rs.getInt(1) == 0;
                 }
             }
         } catch (SQLException e) {
@@ -132,32 +132,39 @@ public class ReservationDAO {
         return false;
     }
 
-    // Method for the GuestReservationsPage list
     public List<Reservation> getReservationsByEmail(String email) {
         List<Reservation> list = new ArrayList<>();
         String sql = "SELECT * FROM reservations WHERE guestEmail = ?";
+
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, email);
             ResultSet rs = pstmt.executeQuery();
+
             while (rs.next()) {
                 int id = rs.getInt("id");
                 LocalDate start = LocalDate.parse(rs.getString("startDate"));
                 LocalDate end = LocalDate.parse(rs.getString("endDate"));
+                int nightlyRate = rs.getInt("nightlyRate");
+                int nights = rs.getInt("nights");
+                int totalCost = rs.getInt("totalCost");
+
                 List<Room> rooms = getRoomsForReservation(id);
-                Reservation res = new Reservation(email, start, end, rooms);
+
+                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost);
                 res.setId(id);
                 list.add(res);
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
-    // Method for the Cancel button
     public void cancelReservation(int id) {
-        // We delete from the join table first to maintain integrity
         String sqlJoin = "DELETE FROM reservation_rooms WHERE reservation_id = ?";
         String sqlRes = "DELETE FROM reservations WHERE id = ?";
+
         try (Connection conn = DatabaseManager.getConnection()) {
             conn.setAutoCommit(false);
             try (PreparedStatement p1 = conn.prepareStatement(sqlJoin);
@@ -167,19 +174,46 @@ public class ReservationDAO {
                 p2.setInt(1, id);
                 p2.executeUpdate();
                 conn.commit();
-            } catch (SQLException e) { conn.rollback(); throw e; }
-        } catch (SQLException e) { e.printStackTrace(); }
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
-    // Method for the Modify/Update logic
     public void updateReservationDates(int id, LocalDate start, LocalDate end) {
-        String sql = "UPDATE reservations SET startDate = ?, endDate = ? WHERE id = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, start.toString());
-            pstmt.setString(2, end.toString());
-            pstmt.setInt(3, id);
-            pstmt.executeUpdate();
-        } catch (SQLException e) { e.printStackTrace(); }
+        String selectSql = "SELECT nightlyRate FROM reservations WHERE id = ?";
+        String updateSql = "UPDATE reservations SET startDate = ?, endDate = ?, nights = ?, totalCost = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseManager.getConnection()) {
+            int nightlyRate = 0;
+
+            try (PreparedStatement selectStmt = conn.prepareStatement(selectSql)) {
+                selectStmt.setInt(1, id);
+                ResultSet rs = selectStmt.executeQuery();
+                if (rs.next()) {
+                    nightlyRate = rs.getInt("nightlyRate");
+                }
+            }
+
+            int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(start, end);
+            if (nights < 0) {
+                nights = 0;
+            }
+            int totalCost = nightlyRate * nights;
+
+            try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                updateStmt.setString(1, start.toString());
+                updateStmt.setString(2, end.toString());
+                updateStmt.setInt(3, nights);
+                updateStmt.setInt(4, totalCost);
+                updateStmt.setInt(5, id);
+                updateStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
