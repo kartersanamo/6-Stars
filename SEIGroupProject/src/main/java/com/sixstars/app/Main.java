@@ -28,6 +28,7 @@ public class Main {
     private static PendingReservation pendingReservation;
     public static ShopPage shopPage;
     public static BillingPage billingPage;
+    public static CheckInPage checkInPage;
 
     public static void createAndShowUI() {
         // create the .db file and tables if they don't already exist
@@ -56,6 +57,7 @@ public class Main {
         accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
         shopPage = new ShopPage(pages, cardLayout);
         billingPage = new BillingPage();
+        checkInPage = new CheckInPage(pages, cardLayout, reservationService);
 
         pages.add(homeLandingPage, "home");
         pages.add(welcomePage, "welcome");
@@ -69,6 +71,7 @@ public class Main {
         pages.add(accountDetailsPage, "account details");
         pages.add(shopPage, "shop");
         pages.add(billingPage, "billing page");
+        pages.add(checkInPage, "check in");
 
         frame.setLayout(new BorderLayout());
   

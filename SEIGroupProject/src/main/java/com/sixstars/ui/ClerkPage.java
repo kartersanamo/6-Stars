@@ -41,6 +41,7 @@ public class ClerkPage extends JPanel {
         btnManageRooms = createThemedButton("Room Management");
         JButton btnAccount = createThemedButton("My Account");
         JButton btnLogout = createThemedButton("Logout");
+        JButton btnCheckIn = createThemedButton("Guest Check-In");
 
         // --- Listeners ---
         btnReserve.addActionListener(e -> cardLayout.show(pages, "make reservation"));
@@ -58,6 +59,8 @@ public class ClerkPage extends JPanel {
             cardLayout.show(pages, "home");
         });
 
+        btnCheckIn.addActionListener(e-> cardLayout.show(pages, "check in"));
+
         // --- Build UI ---
         card.add(Box.createVerticalGlue());
         card.add(titleLabel);
@@ -66,6 +69,8 @@ public class ClerkPage extends JPanel {
         card.add(Box.createRigidArea(new Dimension(0, 35)));
 
         card.add(btnReserve);
+        card.add(Box.createRigidArea(new Dimension(0, 14)));
+        card.add(btnCheckIn);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnAccount);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
