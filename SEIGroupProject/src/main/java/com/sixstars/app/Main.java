@@ -13,7 +13,20 @@ import com.sixstars.model.Room;
 import com.sixstars.service.AccountService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
-import com.sixstars.ui.*;
+import com.sixstars.ui.AccountDetailsPage;
+import com.sixstars.ui.AdminPage;
+import com.sixstars.ui.BillingPage;
+import com.sixstars.ui.ChangePasswordPage;
+import com.sixstars.ui.ClerkPage;
+import com.sixstars.ui.CreateAccountPage;
+import com.sixstars.ui.GuestReservationsPage;
+import com.sixstars.ui.HeaderBar;
+import com.sixstars.ui.HomeLandingPage;
+import com.sixstars.ui.LoginPage;
+import com.sixstars.ui.MakeReservationPage;
+import com.sixstars.ui.RoomManagementPage;
+import com.sixstars.ui.ShopPage;
+import com.sixstars.ui.WelcomePage;
 
 public class Main {
 
@@ -28,6 +41,7 @@ public class Main {
     private static PendingReservation pendingReservation;
     public static ShopPage shopPage;
     public static BillingPage billingPage;
+    public static ChangePasswordPage changePasswordPage;
 
     public static void createAndShowUI() {
         // create the .db file and tables if they don't already exist
@@ -54,6 +68,7 @@ public class Main {
         roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
         guestReservationsPage = new GuestReservationsPage(pages, cardLayout, reservationService);
         accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
+        changePasswordPage = new ChangePasswordPage(pages, cardLayout, accountService);
         shopPage = new ShopPage(pages, cardLayout);
         billingPage = new BillingPage();
 
@@ -62,6 +77,7 @@ public class Main {
         pages.add(loginPage, "login");
         pages.add(new AdminPage(pages, cardLayout), "admin page");
         pages.add(createAccountPage, "create account");
+        pages.add(changePasswordPage, "reset password");
         pages.add(clerkPage, "clerk page");
         pages.add(makeReservationPage, "make reservation");
         pages.add(roomManagementPage, "room management");
