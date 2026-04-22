@@ -20,4 +20,9 @@ public class AccountController {
     public Account getCurrentAccount() {
         return currentAccount;
     }
+
+    public void updateProfile(String firstName, String lastName, String newPassword) {
+        accountService.updateProfile(currentAccount, firstName, lastName, newPassword);
+        currentAccount = accountService.getAccountByEmail(currentAccount.getEmail());
+    }
 }

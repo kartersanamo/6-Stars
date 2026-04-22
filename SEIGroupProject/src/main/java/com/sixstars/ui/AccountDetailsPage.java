@@ -6,17 +6,36 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
 import com.sixstars.app.Main;
+import com.sixstars.controller.AccountController;
+import com.sixstars.model.Account;
+import com.sixstars.model.Role;
 
 public class AccountDetailsPage extends JPanel {
-    static JLabel firstName = new JLabel("Unknown");
-    static JLabel lastName = new JLabel("Unknown");
-    static JLabel email = new JLabel("Unknown");
-    static JLabel role = new JLabel("Unknown");
+    // Labels (View Mode)
+    private JLabel firstNameVal = new JLabel("Unknown");
+    private JLabel lastNameVal = new JLabel("Unknown");
+    private JLabel emailVal = new JLabel("Unknown");
+    private JLabel roleVal = new JLabel("Unknown");
 
-    public AccountDetailsPage(JPanel pages, CardLayout cardLayout) {
+    // Fields (Edit Mode)
+    private JTextField firstNameField = new JTextField();
+    private JTextField lastNameField = new JTextField();
+    private JPasswordField passField = new JPasswordField();
+
+    // Labels for Password (Hidden by default)
+    private JLabel passLabel = new JLabel("New Password:");
+
+    private JButton editBtn;
+    private JButton backBtn;
+    private boolean isEditMode = false;
+    private final AccountController accountController;
+
+    public AccountDetailsPage(JPanel pages, CardLayout cardLayout, AccountController accountController) {
+        this.accountController = accountController;
         setLayout(new GridBagLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
 
+        // Main Card Panel
         JPanel cardPanel = new JPanel();
         cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
         cardPanel.setBackground(UITheme.CARD_BACKGROUND);
@@ -24,7 +43,7 @@ public class AccountDetailsPage extends JPanel {
                 new LineBorder(UITheme.BORDER_COLOR, 1, true),
                 new EmptyBorder(30, 40, 30, 40)
         ));
-        cardPanel.setPreferredSize(new Dimension(500, 330));
+        cardPanel.setPreferredSize(new Dimension(500, 400)); // Slightly taller for password row
 
         // Title
         JLabel title = new JLabel("Account Details");
@@ -37,96 +56,142 @@ public class AccountDetailsPage extends JPanel {
         formPanel.setBackground(UITheme.CARD_BACKGROUND);
         formPanel.setBorder(new EmptyBorder(25, 0, 25, 0));
 
-        styleValue(firstName);
-        styleValue(lastName);
-        styleValue(email);
-        styleValue(role);
+        // Style the values
+        styleValue(firstNameVal); styleValue(lastNameVal);
+        styleValue(emailVal); styleValue(roleVal);
+        styleField(firstNameField); styleField(lastNameField); styleField(passField);
 
-        addRow(formPanel, 0, "First Name:", firstName);
-        addRow(formPanel, 1, "Last Name:", lastName);
-        addRow(formPanel, 2, "Email:", email);
-        addRow(formPanel, 3, "Role:", role);
+        // Add Rows
+        addRow(formPanel, 0, "First Name:", firstNameVal, firstNameField);
+        addRow(formPanel, 1, "Last Name:", lastNameVal, lastNameField);
+        addRow(formPanel, 2, "Email:", emailVal, null);
+        addRow(formPanel, 3, "Role:", roleVal, null);
+
+        // Password row - specifically using passLabel so we can hide/show the text too
+        addRow(formPanel, 4, passLabel, null, passField);
 
         // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         buttonPanel.setBackground(UITheme.CARD_BACKGROUND);
 
-        JButton back = new JButton("Back");
-        back.setFont(UITheme.BUTTON_FONT);
-        back.setForeground(Color.WHITE);
-        back.setBackground(UITheme.ACCENT_GOLD);
-        back.setFocusPainted(false);
-        back.setBorder(BorderFactory.createEmptyBorder(10, 24, 10, 24));
-        back.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        editBtn = new JButton("Edit Profile");
+        styleGoldButton(editBtn);
+        editBtn.addActionListener(e -> handleEditAction());
 
-        back.addActionListener(e -> {
-            Main.headerBar.refreshInfo();
-            var account = com.sixstars.controller.AccountController.currentAccount;
-
-            if (account != null && (account.getRole() == com.sixstars.model.Role.CLERK)) {
+        backBtn = new JButton("Back");
+        styleGoldButton(backBtn);
+        backBtn.addActionListener(e -> {
+            var account = AccountController.currentAccount;
+            if (account != null && (account.getRole() == Role.CLERK)) {
                 cardLayout.show(pages, "clerk page");
             } else {
                 cardLayout.show(pages, "home");
             }
         });
 
-        buttonPanel.add(back);
+        buttonPanel.add(editBtn);
+        buttonPanel.add(backBtn);
 
         cardPanel.add(title);
         cardPanel.add(formPanel);
         cardPanel.add(buttonPanel);
 
         add(cardPanel);
+
+        // Initial state
+        toggleFields(false);
     }
 
-    void refreshInfo() {
-        try {
-            var account = com.sixstars.controller.AccountController.currentAccount;
-
-            if (account != null) {
-                firstName.setText(account.getFirstName() != null ? account.getFirstName() : "Unknown");
-                lastName.setText(account.getLastName() != null ? account.getLastName() : "Unknown");
-                email.setText(account.getEmail() != null ? account.getEmail() : "Unknown");
-
-                String roleText = account.getRole() != null ? account.getRole().toString() : "Unknown";
-                role.setText(formatRole(roleText));
-            } else {
-                firstName.setText("Unknown");
-                lastName.setText("Unknown");
-                email.setText("Unknown");
-                role.setText("Unknown");
-            }
-
-            revalidate();
-            repaint();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    ex.getMessage(),
-                    "Failed to Refresh Account Details",
-                    JOptionPane.ERROR_MESSAGE
-            );
+    private void handleEditAction() {
+        if (!isEditMode) {
+            isEditMode = true;
+            editBtn.setText("Save Changes");
+            toggleFields(true);
+        } else {
+            saveChanges();
         }
     }
 
-    private void addRow(JPanel panel, int row, String labelText, JLabel valueLabel) {
+    private void saveChanges() {
+        try {
+            accountController.updateProfile(
+                    firstNameField.getText().trim(),
+                    lastNameField.getText().trim(),
+                    new String(passField.getPassword())
+            );
+
+            JOptionPane.showMessageDialog(this, "Profile Updated Successfully!");
+            isEditMode = false;
+            editBtn.setText("Edit Profile");
+            toggleFields(false);
+            refreshInfo();
+            Main.headerBar.refreshInfo();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+        }
+    }
+
+    private void toggleFields(boolean editing) {
+        // Values show when NOT editing
+        firstNameVal.setVisible(!editing);
+        lastNameVal.setVisible(!editing);
+
+        // Fields show ONLY when editing
+        firstNameField.setVisible(editing);
+        lastNameField.setVisible(editing);
+
+        // Password row visibility
+        passLabel.setVisible(editing);
+        passField.setVisible(editing);
+
+        revalidate();
+        repaint();
+    }
+
+    public void refreshInfo() {
+        Account acc = AccountController.currentAccount;
+        if (acc != null) {
+            firstNameVal.setText(acc.getFirstName());
+            lastNameVal.setText(acc.getLastName());
+            emailVal.setText(acc.getEmail());
+            roleVal.setText(formatRole(acc.getRole().toString()));
+
+            firstNameField.setText(acc.getFirstName());
+            lastNameField.setText(acc.getLastName());
+            passField.setText("");
+
+            // Only clerks get the edit button
+            editBtn.setVisible(acc.getRole() == Role.CLERK);
+        }
+    }
+
+    private void addRow(JPanel panel, int row, Object labelObj, JLabel valueLabel, JComponent editField) {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.anchor = GridBagConstraints.WEST;
+        gbc.gridy = row;
 
-        JLabel label = new JLabel(labelText);
-        label.setFont(UITheme.LABEL_FONT);
-        label.setForeground(UITheme.TEXT_MEDIUM);
+        // Label handling (can be String or existing JLabel)
+        JLabel l;
+        if (labelObj instanceof String) {
+            l = new JLabel((String) labelObj);
+            l.setFont(UITheme.LABEL_FONT);
+            l.setForeground(UITheme.TEXT_MEDIUM);
+        } else {
+            l = (JLabel) labelObj;
+            l.setFont(UITheme.LABEL_FONT);
+            l.setForeground(UITheme.TEXT_MEDIUM);
+        }
 
         gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.weightx = 0;
-        panel.add(label, gbc);
+        panel.add(l, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(valueLabel, gbc);
+
+        if (valueLabel != null) panel.add(valueLabel, gbc);
+        if (editField != null) panel.add(editField, gbc);
     }
 
     private void styleValue(JLabel label) {
@@ -134,11 +199,22 @@ public class AccountDetailsPage extends JPanel {
         label.setForeground(UITheme.TEXT_DARK);
     }
 
-    private String formatRole(String text) {
-        if (text == null || text.isBlank()) {
-            return "Unknown";
-        }
+    private void styleField(JTextField field) {
+        field.setFont(UITheme.INPUT_FONT);
+        field.setPreferredSize(new Dimension(200, 30));
+    }
 
+    private void styleGoldButton(JButton button) {
+        button.setFont(UITheme.BUTTON_FONT);
+        button.setForeground(Color.WHITE);
+        button.setBackground(UITheme.ACCENT_GOLD);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 24, 10, 24));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private String formatRole(String text) {
+        if (text == null || text.isBlank()) return "Unknown";
         text = text.toLowerCase();
         return Character.toUpperCase(text.charAt(0)) + text.substring(1);
     }
