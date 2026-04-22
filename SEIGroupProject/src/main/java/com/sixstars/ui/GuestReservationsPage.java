@@ -2,12 +2,14 @@ package com.sixstars.ui;
 
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Reservation;
+import com.sixstars.model.Role;
 import com.sixstars.model.Room;
 import com.sixstars.service.ReservationService;
 import com.sixstars.app.Main;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -16,55 +18,59 @@ public class GuestReservationsPage extends JPanel {
     private DefaultListModel<Reservation> listModel;
     private JList<Reservation> resList;
     private ReservationService resService;
+    private JLabel titleLabel;
 
     public GuestReservationsPage(JPanel pages, CardLayout cardLayout, ReservationService resService) {
         this.resService = resService;
 
-        setLayout(new BorderLayout(15, 15));
+        setLayout(new BorderLayout(20, 20));
         setBackground(UITheme.PAGE_BACKGROUND);
-        setBorder(new EmptyBorder(25, 25, 25, 25));
+        setBorder(new EmptyBorder(40, 40, 40, 40));
 
-        // 1. Top Bar
+        // 1. Top Panel (Title and Back Button)
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
 
-        JLabel title = new JLabel("My Reservations");
-        title.setFont(UITheme.TITLE_FONT);
+        titleLabel = new JLabel("Reservations");
+        titleLabel.setFont(UITheme.TITLE_FONT);
+        titleLabel.setForeground(UITheme.TEXT_DARK);
 
-        JButton btnBack = createButton("Back", 100);
-        btnBack.addActionListener(e -> cardLayout.show(pages, "home"));
-
-        topPanel.add(title, BorderLayout.WEST);
-        topPanel.add(btnBack, BorderLayout.EAST);
-        add(topPanel, BorderLayout.NORTH);
-
-        // 2. The List
-        listModel = new DefaultListModel<>();
-        resList = new JList<>(listModel);
-        resList.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        resList.setFixedCellHeight(35);
-        resList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        resList.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        // --- ADDED: Selection Listener ---
-        // This detects when a user clicks a row in your list
-        resList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                Reservation selected = resList.getSelectedValue();
-                if (selected != null) {
-                    System.out.println("Guest selected reservation ID: " + selected.getId());
-                }
+        JButton btnBack = new JButton("Back");
+        styleGoldButton(btnBack);
+        btnBack.addActionListener(e -> {
+            var acc = AccountController.currentAccount;
+            if (acc != null && acc.getRole() == Role.CLERK) {
+                cardLayout.show(pages, "clerk page");
+            } else {
+                cardLayout.show(pages, "home");
             }
         });
 
-        add(new JScrollPane(resList), BorderLayout.CENTER);
+        topPanel.add(titleLabel, BorderLayout.WEST);
+        topPanel.add(btnBack, BorderLayout.EAST);
+        add(topPanel, BorderLayout.NORTH);
 
-        // 3. Bottom Actions
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        // 2. The List Container (Card Look)
+        listModel = new DefaultListModel<>();
+        resList = new JList<>(listModel);
+        resList.setFont(UITheme.INPUT_FONT);
+        resList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        resList.setFixedCellHeight(50);
+        resList.setBackground(Color.WHITE);
+
+        JScrollPane scrollPane = new JScrollPane(resList);
+        scrollPane.setBorder(new LineBorder(UITheme.BORDER_COLOR, 1));
+        add(scrollPane, BorderLayout.CENTER);
+
+        // 3. Bottom Action Bar
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         bottomPanel.setOpaque(false);
 
-        JButton btnModify = createButton("Modify Dates", 160);
-        JButton btnCancel = createButton("Cancel Booking", 160);
+        JButton btnModify = new JButton("Modify Dates");
+        JButton btnCancel = new JButton("Cancel Booking");
+
+        styleGoldButton(btnModify);
+        styleGoldButton(btnCancel);
 
         btnModify.addActionListener(e -> handleModify());
         btnCancel.addActionListener(e -> handleCancel());
@@ -76,9 +82,21 @@ public class GuestReservationsPage extends JPanel {
 
     public void refresh() {
         listModel.clear();
-        if (AccountController.currentAccount != null) {
-            List<Reservation> userBookings = resService.getGuestReservations(AccountController.currentAccount.getEmail());
-            for (Reservation r : userBookings) {
+        var current = AccountController.currentAccount;
+
+        if (current != null) {
+            List<Reservation> reservations;
+
+            // LOGIC: If Clerk, show ALL reservations. If Guest, only show THEIRS.
+            if (current.getRole() == Role.CLERK) {
+                titleLabel.setText("All Hotel Reservations");
+                reservations = resService.getAllReservations(); // You'll need to add this to your service
+            } else {
+                titleLabel.setText("My Reservations");
+                reservations = resService.getGuestReservations(current.getEmail());
+            }
+
+            for (Reservation r : reservations) {
                 listModel.addElement(r);
             }
         }
@@ -158,26 +176,32 @@ public class GuestReservationsPage extends JPanel {
 
     private void handleCancel() {
         Reservation selected = resList.getSelectedValue();
-        if (selected != null) {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "Are you sure you want to cancel reservation #" + selected.getId() + "?",
-                    "Confirm Cancellation", JOptionPane.YES_NO_OPTION);
+        if (selected == null) {
+            JOptionPane.showMessageDialog(this, "Please select a reservation to cancel.");
+            return;
+        }
 
-            if (confirm == JOptionPane.YES_OPTION) {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Confirm cancellation for Reservation #" + selected.getId() + "?",
+                "Cancellation Request", JOptionPane.YES_NO_OPTION);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
                 resService.cancelBooking(selected.getId());
                 refresh();
-                JOptionPane.showMessageDialog(this, "Reservation cancelled.");
+                JOptionPane.showMessageDialog(this, "Reservation has been successfully cancelled.");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Cancellation Failed: " + ex.getMessage());
             }
-        } else {
-            JOptionPane.showMessageDialog(this, "Please select a reservation to cancel.");
         }
     }
 
-    private JButton createButton(String text, int width) {
-        JButton b = new JButton(text);
-        b.setPreferredSize(new Dimension(width, 40));
-        b.setFont(new Font("SansSerif", Font.BOLD, 13));
-        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return b;
+    private void styleGoldButton(JButton button) {
+        button.setFont(UITheme.BUTTON_FONT);
+        button.setForeground(Color.WHITE);
+        button.setBackground(UITheme.ACCENT_GOLD);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 }
