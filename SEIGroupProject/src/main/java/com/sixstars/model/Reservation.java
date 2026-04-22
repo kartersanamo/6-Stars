@@ -11,12 +11,14 @@ public class Reservation {
     int nightlyRate;
     int nights;
     int totalCost;
+    String status;
 
-    public Reservation(String guestEmail, LocalDate startDate, LocalDate endDate, List<Room> rooms) {
+    public Reservation(String guestEmail, LocalDate startDate, LocalDate endDate, List<Room> rooms, String status) {
         this.guestEmail = guestEmail;
         this.startDate = startDate;
         this.endDate = endDate;
         this.rooms = rooms;
+        this.status = status;
 
         if (rooms != null && !rooms.isEmpty()) {
             this.nightlyRate = rooms.get(0).getPricePerNight();
@@ -33,7 +35,7 @@ public class Reservation {
     }
 
     public Reservation(String guestEmail, LocalDate startDate, LocalDate endDate,
-                       List<Room> rooms, int nightlyRate, int nights, int totalCost) {
+                       List<Room> rooms, int nightlyRate, int nights, int totalCost, String status) {
         this.guestEmail = guestEmail;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -41,6 +43,7 @@ public class Reservation {
         this.nightlyRate = nightlyRate;
         this.nights = nights;
         this.totalCost = totalCost;
+        this.status = status;
     }
 
     @Override
@@ -111,4 +114,8 @@ public class Reservation {
     public void setTotalCost(int totalCost) {
         this.totalCost = totalCost;
     }
+
+    public String getStatus(){ return status; }
+
+    public void setStatus(String status){ this.status = status; }
 }

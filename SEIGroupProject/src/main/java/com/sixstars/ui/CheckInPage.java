@@ -76,15 +76,21 @@ public class CheckInPage extends JPanel {
         btnCheckIn.setBorderPainted(false);
 
         btnCheckIn.addActionListener(e -> {
-            int selectedRow = reservationTable.getSelectedRow();
-            if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(this, "Please select a reservation to check in.");
-                return;
-            }
+            try {
+                int selectedRow = reservationTable.getSelectedRow();
+                if (selectedRow != -1) {
+                    int resId = (int) tableModel.getValueAt(selectedRow, 0);
 
-            int resId = (int) tableModel.getValueAt(selectedRow, 0);
-            // Here you would typically update a status in the database
-            JOptionPane.showMessageDialog(this, "Guest for Reservation #" + resId + " checked in successfully!");
+                    // Call the service logic we just wrote
+                    reservationService.updateStatus(resId, "CHECKED_IN");
+
+                    JOptionPane.showMessageDialog(this, "Guest successfully checked in!");
+                    refreshTable();
+                }
+            } catch (IllegalStateException ex) {
+                // This catches our "not today" error
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Check-In Denied", JOptionPane.WARNING_MESSAGE);
+            }
         });
 
         footer.add(btnCheckIn);

@@ -58,7 +58,7 @@ public class ReservationService {
         int totalCost = nightlyRate * nights;
 
         // 3. Create reservation (same constructor, but now we override values)
-        Reservation newBooking = new Reservation(guestEmail, start, end, selectedRooms);
+        Reservation newBooking = new Reservation(guestEmail, start, end, selectedRooms, "BOOKED");
 
         // 4. Explicitly set billing fields (IMPORTANT)
         newBooking.setNightlyRate(nightlyRate);
@@ -108,5 +108,24 @@ public class ReservationService {
         }
 
         reservationDAO.updateReservationDates(id, start, end);
+    }
+
+    public void updateStatus(int reservationId, String status) {
+        // 1. Fetch the reservation to check its dates
+        Reservation res = reservationDAO.getAllReservations().stream()
+                .filter(r -> r.getId() == reservationId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
+
+        // 2. Validate same-day check-in
+        if ("CHECKED_IN".equalsIgnoreCase(status)) {
+            LocalDate today = LocalDate.now();
+            if (!today.equals(res.getStartDate())) {
+                throw new IllegalStateException("Check-in is only permitted on the scheduled start date: " + res.getStartDate());
+            }
+        }
+
+        // 3. Persist the change
+        reservationDAO.updateReservationStatus(reservationId, status);
     }
 }

@@ -10,7 +10,7 @@ import java.util.List;
 public class ReservationDAO {
 
     public void saveReservation(Reservation res) {
-        String resSql = "INSERT INTO reservations(startDate, endDate, guestEmail, nightlyRate, nights, totalCost) VALUES(?,?,?,?,?,?)";
+        String resSql = "INSERT INTO reservations(startDate, endDate, guestEmail, nightlyRate, nights, totalCost, status) VALUES(?,?,?,?,?,?,?)";
         String joinSql = "INSERT INTO reservation_rooms(reservation_id, room_number) VALUES(?,?)";
 
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -23,6 +23,7 @@ public class ReservationDAO {
                 pstmt.setInt(4, res.getNightlyRate());
                 pstmt.setInt(5, res.getNights());
                 pstmt.setInt(6, res.getTotalCost());
+                pstmt.setString(7, res.getStatus());
                 pstmt.executeUpdate();
 
                 ResultSet rs = pstmt.getGeneratedKeys();
@@ -66,10 +67,11 @@ public class ReservationDAO {
                 int nightlyRate = rs.getInt("nightlyRate");
                 int nights = rs.getInt("nights");
                 int totalCost = rs.getInt("totalCost");
+                String status = rs.getString("status");
 
                 List<Room> rooms = getRoomsForReservation(id);
 
-                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost);
+                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost, status);
                 res.setId(id);
 
                 reservations.add(res);
@@ -154,10 +156,11 @@ public class ReservationDAO {
                 int nightlyRate = rs.getInt("nightlyRate");
                 int nights = rs.getInt("nights");
                 int totalCost = rs.getInt("totalCost");
+                String status = rs.getString("status");
 
                 List<Room> rooms = getRoomsForReservation(id);
 
-                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost);
+                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost, status);
                 res.setId(id);
                 list.add(res);
             }
@@ -219,6 +222,17 @@ public class ReservationDAO {
                 updateStmt.setInt(5, id);
                 updateStmt.executeUpdate();
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    public void updateReservationStatus(int id, String status) {
+        String sql = "UPDATE reservations SET status = ? WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, status);
+            pstmt.setInt(2, id);
+            pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
