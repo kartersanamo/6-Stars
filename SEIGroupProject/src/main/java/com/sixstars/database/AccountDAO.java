@@ -1,7 +1,13 @@
 package com.sixstars.database;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.sixstars.model.Account;
-import java.sql.*;
 
 public class AccountDAO {
     public void saveAccount(Account account) {
@@ -41,5 +47,29 @@ public class AccountDAO {
             e.printStackTrace();
         }
         return null; // Return null if user isn't found
+    }
+
+    public List<Account> getAllAccounts() {
+        String sql = "SELECT * FROM accounts";
+        List<Account> aList = new ArrayList<>();
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Account a = new Account(
+                        rs.getString("firstName"),
+                        rs.getString("lastName"),
+                        rs.getString("email"),
+                        rs.getString("passwordHash"),
+                        com.sixstars.model.Role.valueOf(rs.getString("role"))
+                    );
+                    aList.add(a);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return aList;
     }
 }

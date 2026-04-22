@@ -1,9 +1,21 @@
 package com.sixstars.ui;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.CardLayout;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagLayout;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 
@@ -40,7 +52,7 @@ public class AdminPage extends JPanel {
 
         JButton btnResetPass = createThemedButton("Reset User Password");
         btnResetPass.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Opening Password Reset Module...");
+            cardLayout.show(pages, "reset password");
         });
 
         JButton btnLogout = createThemedButton("Logout");

@@ -1,12 +1,13 @@
 package com.sixstars.service;
 
-import com.sixstars.database.AccountDAO;
-import com.sixstars.model.Account;
-import com.sixstars.model.Role;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
+
+import com.sixstars.database.AccountDAO;
+import com.sixstars.model.Account;
+import com.sixstars.model.Role;
 
 public class AccountService {
     private final AccountDAO accountDAO;
@@ -48,5 +49,13 @@ public class AccountService {
             return account;
         }
         return null;
+    }
+
+    public List<Account> getAllAccounts() {
+        return accountDAO.getAllAccounts();
+    }
+
+    public void updateAccount(Account account) {
+        accountDAO.saveAccount(account);
     }
 }
