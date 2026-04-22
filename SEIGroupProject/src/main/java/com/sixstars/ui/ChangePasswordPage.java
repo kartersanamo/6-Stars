@@ -12,10 +12,15 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.ListSelectionModel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
@@ -24,7 +29,8 @@ import com.sixstars.service.AccountService;
 
 public class ChangePasswordPage extends JPanel {
 
-    private JPanel listPanel;
+    private JList<Account> accountJList;
+    private DefaultListModel<Account> listModel;
 
     private static AccountService accountService;
 
@@ -51,14 +57,59 @@ public class ChangePasswordPage extends JPanel {
         subtitle.setForeground(UITheme.TEXT_MEDIUM);
         subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Panel that will hold account list
-        listPanel = new JPanel();
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-        listPanel.setBackground(UITheme.CARD_BACKGROUND);
 
-        JScrollPane scrollPane = new JScrollPane(listPanel);
-        scrollPane.setBorder(null);
-        scrollPane.setPreferredSize(new Dimension(450, 250));
+
+        listModel = new DefaultListModel<>();
+        accountJList = new JList<>(listModel);
+        accountJList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        accountJList.setBackground(UITheme.PAGE_BACKGROUND);
+        accountJList.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+        accountJList.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index,
+                    boolean isSelected, boolean cellHasFocus) {
+
+                JLabel label = (JLabel) super.getListCellRendererComponent(
+                        list, value, index, isSelected, cellHasFocus);
+
+                Account acc = (Account) value;
+                label.setText("User: " + acc.getFirstName() + " " + acc.getLastName());
+                return label;
+            }
+        });
+
+
+        JScrollPane scrollPane = new JScrollPane(accountJList);
+        scrollPane.setPreferredSize(new Dimension(660, 250));
+
+        JButton btnReset = createThemedButton("Enter New Password");
+
+        btnReset.addActionListener(e -> {
+            Account selected = accountJList.getSelectedValue();
+
+            if (selected == null) {
+                JOptionPane.showMessageDialog(this, "Please select a user.");
+                return;
+            }
+
+            String newPassword = JOptionPane.showInputDialog(
+                    this,
+                    "Enter new password for " + selected.getFirstName() + " " + selected.getLastName() + ":"
+            );
+
+            if (newPassword != null && !newPassword.trim().isEmpty()) {
+                // For now just print (since you said wait on functionality)
+                System.out.println("Reset password for " 
+                    + selected.getFirstName() + " to: " + newPassword);
+
+                // Later:
+                AccountService aService = new AccountService();
+                Account newA = new Account(selected.getFirstName(), selected.getLastName(), selected.getEmail(), aService.hashPassword(newPassword), selected.getRole());
+                accountService.updateAccount(newA);
+            }
+});
 
         JButton btnBack = createThemedButton("Back");
         btnBack.addActionListener(e -> {
@@ -72,9 +123,13 @@ public class ChangePasswordPage extends JPanel {
         card.add(subtitle);
         card.add(Box.createRigidArea(new Dimension(0, 25)));
         card.add(scrollPane);
-        card.add(Box.createRigidArea(new Dimension(0, 25)));
+        card.add(Box.createRigidArea(new Dimension(0, 20)));
+        card.add(btnReset);
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
         card.add(btnBack);
+        
         card.add(Box.createVerticalGlue());
+        card.add(scrollPane);
 
         add(card);
 
@@ -84,17 +139,13 @@ public class ChangePasswordPage extends JPanel {
 
     // Call this whenever page is opened
     public void refreshAccounts() {
-        listPanel.removeAll();
+        listModel.clear();
 
         List<Account> accounts = accountService.getAllAccounts();
 
         for (Account acc : accounts) {
-            listPanel.add(createAccountRow(acc));
-            listPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            listModel.addElement(acc);
         }
-
-        listPanel.revalidate();
-        listPanel.repaint();
     }
 
     private JPanel createAccountRow(Account acc) {

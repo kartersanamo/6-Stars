@@ -54,4 +54,8 @@ public class AccountService {
     public List<Account> getAllAccounts() {
         return accountDAO.getAllAccounts();
     }
+
+    public void updateAccount(Account account) {
+        accountDAO.saveAccount(account);
+    }
 }
