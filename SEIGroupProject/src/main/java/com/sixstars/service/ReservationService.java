@@ -128,4 +128,18 @@ public class ReservationService {
         // 3. Persist the change
         reservationDAO.updateReservationStatus(reservationId, status);
     }
+
+    public String getRoomStatus(Room room, List<Reservation> allReservations) {
+        LocalDate today = LocalDate.now();
+
+        for (Reservation res : allReservations) {
+            boolean roomInRes = res.getRooms().stream()
+                    .anyMatch(r -> r.getRoomNumber() == room.getRoomNumber());
+            if (roomInRes) {
+                if ("CHECKED_IN".equalsIgnoreCase(res.getStatus())) return "Occupied";
+                if (!today.isBefore(res.getStartDate()) && today.isBefore(res.getEndDate())) return "Booked";
+            }
+        }
+        return "Vacant";
+    }
 }

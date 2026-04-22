@@ -52,7 +52,7 @@ public class Main {
         createAccountPage = new CreateAccountPage(pages, cardLayout);
         clerkPage = new ClerkPage(pages, cardLayout);
         makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
-        roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService);
+        roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService, reservationService);
         guestReservationsPage = new GuestReservationsPage(pages, cardLayout, reservationService);
         accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
         shopPage = new ShopPage(pages, cardLayout);
