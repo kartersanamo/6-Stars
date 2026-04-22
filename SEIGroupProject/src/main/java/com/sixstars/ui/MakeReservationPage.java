@@ -59,22 +59,14 @@ public class MakeReservationPage extends JPanel {
 
     private final JDateChooser checkInChooser;
     private final JDateChooser checkOutChooser;
-    private JTextField startField, endField, roomNumberField, guestEmailField;
+    private JTextField roomNumberField;
     private final JComboBox<Object> bedTypeBox;
     private final JComboBox<Object> themeBox;
     private final JComboBox<Object> qualityBox;
     private final JComboBox<Object> smokingBox;
     private final JCheckBox onlyAvailableCheck;
-    private JButton bookButton, logoutButton, backButton;
-    private JList<Room> resultsList;
-    private DefaultListModel<Room> listModel;
-    private JLabel selectedRoomLabel;
-    private JLabel selectedStartLabel;
-    private JLabel selectedEndLabel;
-    private JLabel emailLabel;
     private final JLabel resultsInfoLabel;
     private final JPanel roomCardsContainer;
-    private JPanel clerkEmailPanel;
     private final Image roomCardImage;
 
     public MakeReservationPage(JPanel pages, CardLayout cardLayout, ReservationService reservationService, RoomService roomService) {
@@ -133,10 +125,6 @@ public class MakeReservationPage extends JPanel {
         fields.add(createFieldCard("Check In", checkInChooser));
         fields.add(createFieldCard("Check Out", checkOutChooser));
         fields.add(createFieldCard("Room Number", roomNumberField));
-
-        guestEmailField = createTextField("guest@email.com");
-        clerkEmailPanel = createFieldCard("Guest Email", guestEmailField);
-        fields.add(clerkEmailPanel);
 
         JPanel filtersRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         filtersRow.setOpaque(false);
@@ -527,14 +515,20 @@ public class MakeReservationPage extends JPanel {
         }
 
         if (currentAccount.getRole() == Role.CLERK) {
-            // Clerk must provide the guest's email in the field we added
-            targetEmail = guestEmailField.getText().trim();
+            // Show a popup to ask for the email
+            String input = JOptionPane.showInputDialog(
+                    this,
+                    "Enter Guest Email for Room " + room.getRoomNumber() + ":",
+                    "Guest Information Required",
+                    JOptionPane.QUESTION_MESSAGE
+            );
 
-            if (targetEmail.isEmpty() || !targetEmail.contains("@")) {
-                JOptionPane.showMessageDialog(this,
-                        "As a Clerk, you must enter a valid Guest email to make a reservation.",
-                        "Guest Email Required",
-                        JOptionPane.WARNING_MESSAGE);
+            if (input == null || input.trim().isEmpty()) return; // User cancelled
+            targetEmail = input.trim().toLowerCase();
+
+            // Validate the email against the database
+            if (!reservationService.isValidGuest(targetEmail)) {
+                JOptionPane.showMessageDialog(this, "No Guest account found for: " + targetEmail);
                 return;
             }
         } else if (currentAccount.getRole() == Role.GUEST) {
@@ -787,22 +781,5 @@ public class MakeReservationPage extends JPanel {
                 g2.dispose();
             }
         }
-    }
-
-    public void refreshForRole() {
-        Account current = AccountController.currentAccount;
-        // Show email field only if logged in as a Clerk
-        boolean isClerk = (current != null && current.getRole() == Role.CLERK);
-
-        if (clerkEmailPanel != null) {
-            clerkEmailPanel.setVisible(isClerk);
-        }
-
-        if (isClerk) {
-            guestEmailField.setText(""); // Clear field for fresh input
-        }
-
-        revalidate();
-        repaint();
     }
 }
