@@ -58,4 +58,22 @@ public class AccountService {
     public void updateAccount(Account account) {
         accountDAO.saveAccount(account);
     }
+
+    public void updateProfile(Account performer, String fName, String lName, String newPass) {
+        // Basic verification
+        if (performer == null || performer.getRole() != Role.CLERK) {
+            throw new RuntimeException("Only clerks can edit profiles.");
+        }
+
+        String passwordHash = (newPass != null && !newPass.isBlank())
+                ? hashPassword(newPass)
+                : performer.getPasswordHash();
+
+        Account updated = new Account(fName, lName, performer.getEmail(), passwordHash, performer.getRole());
+        accountDAO.saveAccount(updated);
+    }
+
+    public Account getAccountByEmail(String email) {
+        return accountDAO.getAccountByEmail(email);
+    }
 }
