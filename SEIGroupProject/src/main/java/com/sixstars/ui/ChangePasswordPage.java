@@ -128,8 +128,7 @@ public class ChangePasswordPage extends JPanel {
         card.add(Box.createRigidArea(new Dimension(0, 10)));
         card.add(btnBack);
         
-        card.add(Box.createVerticalGlue());
-        card.add(scrollPane);
+   
 
         add(card);
 
