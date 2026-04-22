@@ -59,7 +59,7 @@ public class MakeReservationPage extends JPanel {
 
     private final JDateChooser checkInChooser;
     private final JDateChooser checkOutChooser;
-    private JTextField startField, endField, roomNumberField, emailField;
+    private JTextField startField, endField, roomNumberField, guestEmailField;
     private final JComboBox<Object> bedTypeBox;
     private final JComboBox<Object> themeBox;
     private final JComboBox<Object> qualityBox;
@@ -74,6 +74,7 @@ public class MakeReservationPage extends JPanel {
     private JLabel emailLabel;
     private final JLabel resultsInfoLabel;
     private final JPanel roomCardsContainer;
+    private JPanel clerkEmailPanel;
     private final Image roomCardImage;
 
     public MakeReservationPage(JPanel pages, CardLayout cardLayout, ReservationService reservationService, RoomService roomService) {
@@ -133,7 +134,9 @@ public class MakeReservationPage extends JPanel {
         fields.add(createFieldCard("Check Out", checkOutChooser));
         fields.add(createFieldCard("Room Number", roomNumberField));
 
-        
+        guestEmailField = createTextField("guest@email.com");
+        clerkEmailPanel = createFieldCard("Guest Email", guestEmailField);
+        fields.add(clerkEmailPanel);
 
         JPanel filtersRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         filtersRow.setOpaque(false);
@@ -239,10 +242,15 @@ public class MakeReservationPage extends JPanel {
         helperText.setFont(new Font("SansSerif", Font.PLAIN, 13));
         helperText.setForeground(UITheme.TEXT_MEDIUM);
 
-        JButton backButton = createSecondaryButton("Back to Home");
+        JButton backButton = createSecondaryButton("Back");
         backButton.addActionListener(e -> {
             Main.headerBar.refreshInfo();
-            cardLayout.show(pages, "home");
+            Account current = AccountController.currentAccount;
+            if (current != null && current.getRole() == Role.CLERK) {
+                cardLayout.show(pages, "clerk page");
+            } else {
+                cardLayout.show(pages, "home");
+            }
         });
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -509,30 +517,36 @@ public class MakeReservationPage extends JPanel {
         }
 
         Account currentAccount = AccountController.currentAccount;
+        String targetEmail;
+
         if (currentAccount == null) {
             Main.setPendingReservation(room, startDate, endDate);
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Please create a Guest account to complete this reservation.",
-                    "Guest Account Required",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
-            Main.createAccountPage.refreshInfo();
+            JOptionPane.showMessageDialog(this, "Please create a Guest account to complete this reservation.");
             cardLayout.show(pages, "create account");
             return;
         }
 
-        if (currentAccount.getRole() != Role.GUEST) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Only Guest accounts can reserve rooms.",
-                    "Guest Account Required",
-                    JOptionPane.WARNING_MESSAGE
-            );
+        if (currentAccount.getRole() == Role.CLERK) {
+            // Clerk must provide the guest's email in the field we added
+            targetEmail = guestEmailField.getText().trim();
+
+            if (targetEmail.isEmpty() || !targetEmail.contains("@")) {
+                JOptionPane.showMessageDialog(this,
+                        "As a Clerk, you must enter a valid Guest email to make a reservation.",
+                        "Guest Email Required",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } else if (currentAccount.getRole() == Role.GUEST) {
+            // Normal Guest uses their own account email
+            targetEmail = currentAccount.getEmail();
+        } else {
+            // This handles any other roles (like Admin) that shouldn't be booking
+            JOptionPane.showMessageDialog(this, "Your account type cannot reserve rooms.");
             return;
         }
 
-        reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room));
+        reservationService.makeReservation(targetEmail, startDate, endDate, List.of(room));
 
         int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
         int total = room.getPricePerNight() * nights;
@@ -773,5 +787,22 @@ public class MakeReservationPage extends JPanel {
                 g2.dispose();
             }
         }
+    }
+
+    public void refreshForRole() {
+        Account current = AccountController.currentAccount;
+        // Show email field only if logged in as a Clerk
+        boolean isClerk = (current != null && current.getRole() == Role.CLERK);
+
+        if (clerkEmailPanel != null) {
+            clerkEmailPanel.setVisible(isClerk);
+        }
+
+        if (isClerk) {
+            guestEmailField.setText(""); // Clear field for fresh input
+        }
+
+        revalidate();
+        repaint();
     }
 }
