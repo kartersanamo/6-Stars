@@ -44,7 +44,9 @@ public class ClerkPage extends JPanel {
         JButton btnCheckIn = createThemedButton("Guest Check-In");
 
         // --- Listeners ---
-        btnReserve.addActionListener(e -> cardLayout.show(pages, "make reservation"));
+        btnReserve.addActionListener(e -> {
+            cardLayout.show(pages, "make reservation");
+        });
 
         btnAccount.addActionListener(e -> {
             Main.accountDetailsPage.refreshInfo();
@@ -89,7 +91,7 @@ public class ClerkPage extends JPanel {
         button.setPreferredSize(new Dimension(320, 44));
         button.setMaximumSize(new Dimension(320, 44));
         button.setFont(new Font("SansSerif", Font.PLAIN, 15));
-        button.setBackground(UITheme.SECONDARY_BUTTON); // The lighter color
+        button.setBackground(UITheme.SECONDARY_BUTTON);
         button.setForeground(UITheme.TEXT_DARK);
         button.setOpaque(true);
         button.setBorderPainted(false);

@@ -8,6 +8,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import com.sixstars.controller.AccountController;
 import com.sixstars.database.DatabaseManager;
 import com.sixstars.model.Room;
 import com.sixstars.service.AccountService;
@@ -29,6 +30,7 @@ public class Main {
     public static ShopPage shopPage;
     public static BillingPage billingPage;
     public static CheckInPage checkInPage;
+    public static ChangePasswordPage changePasswordPage;
 
     public static void createAndShowUI() {
         // create the .db file and tables if they don't already exist
@@ -37,6 +39,7 @@ public class Main {
         RoomService roomService = new RoomService();
         ReservationService reservationService = new ReservationService();
         AccountService accountService = new AccountService();
+        AccountController accountController = new AccountController();
 
         JFrame frame = new JFrame("6 Stars Hotel");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -54,7 +57,8 @@ public class Main {
         makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
         roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService, reservationService);
         guestReservationsPage = new GuestReservationsPage(pages, cardLayout, reservationService);
-        accountDetailsPage = new AccountDetailsPage(pages, cardLayout);
+        accountDetailsPage = new AccountDetailsPage(pages, cardLayout, accountController);
+        changePasswordPage = new ChangePasswordPage(pages, cardLayout, accountService);
         shopPage = new ShopPage(pages, cardLayout);
         billingPage = new BillingPage();
         checkInPage = new CheckInPage(pages, cardLayout, reservationService);
@@ -64,6 +68,7 @@ public class Main {
         pages.add(loginPage, "login");
         pages.add(new AdminPage(pages, cardLayout), "admin page");
         pages.add(createAccountPage, "create account");
+        pages.add(changePasswordPage, "reset password");
         pages.add(clerkPage, "clerk page");
         pages.add(makeReservationPage, "make reservation");
         pages.add(roomManagementPage, "room management");

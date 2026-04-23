@@ -180,4 +180,12 @@ public class ReservationService {
             }
         }
     }
+    public boolean isValidGuest(String email) {
+        // You can instantiate a new AccountService here to check the DB
+        com.sixstars.service.AccountService accountService = new com.sixstars.service.AccountService();
+        com.sixstars.model.Account account = accountService.getAccountByEmail(email);
+
+        // Returns true only if the account exists AND is a Guest
+        return account != null && account.getRole() == com.sixstars.model.Role.GUEST;
+    }
 }

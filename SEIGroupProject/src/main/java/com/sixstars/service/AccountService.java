@@ -1,12 +1,13 @@
 package com.sixstars.service;
 
-import com.sixstars.database.AccountDAO;
-import com.sixstars.model.Account;
-import com.sixstars.model.Role;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
+
+import com.sixstars.database.AccountDAO;
+import com.sixstars.model.Account;
+import com.sixstars.model.Role;
 
 public class AccountService {
     private final AccountDAO accountDAO;
@@ -48,5 +49,31 @@ public class AccountService {
             return account;
         }
         return null;
+    }
+
+    public List<Account> getAllAccounts() {
+        return accountDAO.getAllAccounts();
+    }
+
+    public void updateAccount(Account account) {
+        accountDAO.saveAccount(account);
+    }
+
+    public void updateProfile(Account performer, String fName, String lName, String newPass) {
+        // Basic verification
+        if (performer == null || performer.getRole() != Role.CLERK) {
+            throw new RuntimeException("Only clerks can edit profiles.");
+        }
+
+        String passwordHash = (newPass != null && !newPass.isBlank())
+                ? hashPassword(newPass)
+                : performer.getPasswordHash();
+
+        Account updated = new Account(fName, lName, performer.getEmail(), passwordHash, performer.getRole());
+        accountDAO.saveAccount(updated);
+    }
+
+    public Account getAccountByEmail(String email) {
+        return accountDAO.getAccountByEmail(email);
     }
 }
