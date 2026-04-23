@@ -7,6 +7,7 @@ public class Room {
     private QualityLevel qualityLevel;
     private boolean isSmoking;
     private int pricePerNight;
+    private String status = "Vacant";
 
     public Room(int roomNumber, BedType bedType, Theme theme, QualityLevel qualityLevel, boolean isSmoking) {
         this(roomNumber, bedType, theme, qualityLevel, isSmoking,
@@ -68,7 +69,7 @@ public class Room {
 
     @Override
     public String toString() {
-        return "Room " + roomNumber + " (" + bedType + "): " + theme
+        return "Room " + roomNumber + " (" + bedType + "): " + status.toUpperCase() + " - " + theme
                 + " (" + qualityLevel + ") - $" + pricePerNight + "/night";
     }
 
@@ -99,4 +100,8 @@ public class Room {
     public void setPricePerNight(int pricePerNight) {
         this.pricePerNight = pricePerNight;
     }
+
+    public String getStatus(){ return status; }
+
+    public void setStatus(String status) { this.status = status; }
 }

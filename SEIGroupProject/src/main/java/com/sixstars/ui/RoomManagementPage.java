@@ -1,10 +1,10 @@
 package com.sixstars.ui;
 
-import com.sixstars.model.BedType;
-import com.sixstars.model.QualityLevel;
-import com.sixstars.model.Room;
-import com.sixstars.model.Theme;
+import com.sixstars.model.*;
+import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
+import java.util.List;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -19,7 +19,7 @@ public class RoomManagementPage extends JPanel {
     private JComboBox<QualityLevel> qualityBox;
     private JCheckBox smokingCheckBox;
 
-    public RoomManagementPage(JPanel pages, CardLayout cardLayout, RoomService roomService) {
+    public RoomManagementPage(JPanel pages, CardLayout cardLayout, RoomService roomService, ReservationService reservationService) {
         // Match the background of the rest of the app
         setLayout(new BorderLayout(15, 15));
         setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
@@ -89,7 +89,7 @@ public class RoomManagementPage extends JPanel {
         listModel = new DefaultListModel<>();
         roomList = new JList<>(listModel);
         roomList.setFont(UITheme.INPUT_FONT);
-        refreshRoomList(roomService);
+        refreshRoomList(roomService, reservationService);
 
         JScrollPane scrollPane = new JScrollPane(roomList);
         scrollPane.setBorder(BorderFactory.createTitledBorder(
@@ -131,7 +131,7 @@ public class RoomManagementPage extends JPanel {
                 Room newRoom = new Room(num, type, theme, quality, smoking);
                 roomService.addRoom(newRoom);
 
-                refreshRoomList(roomService);
+                refreshRoomList(roomService, reservationService);
                 roomNumField.setText("");
                 JOptionPane.showMessageDialog(this, "Room " + num + " added!");
 
@@ -160,9 +160,13 @@ public class RoomManagementPage extends JPanel {
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 
-    private void refreshRoomList(RoomService roomService) {
+    private void refreshRoomList(RoomService roomService, ReservationService reservationService) {
         listModel.clear();
-        for (Room r : roomService.getAllRooms()) {
+        List<Room> rooms = roomService.getAllRooms();
+        List<Reservation> reservations = reservationService.getAllReservations();
+        for (Room r : rooms) {
+            String status = reservationService.getRoomStatus(r, reservations);
+            r.setStatus(status);
             listModel.addElement(r);
         }
     }

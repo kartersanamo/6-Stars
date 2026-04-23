@@ -19,6 +19,7 @@ public class DatabaseManager {
                     "email TEXT PRIMARY KEY, firstName TEXT, lastName TEXT, " +
                     "passwordHash TEXT, role TEXT)");
 
+//            stmt.execute("ALTER TABLE reservations ADD COLUMN status TEXT DEFAULT 'BOOKED'");
             // Create Rooms Table
             stmt.execute("CREATE TABLE IF NOT EXISTS rooms (" +
                     "roomNumber INTEGER PRIMARY KEY, bedType TEXT, " +
