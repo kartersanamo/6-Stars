@@ -111,35 +111,73 @@ public class ReservationService {
     }
 
     public void updateStatus(int reservationId, String status) {
-        // 1. Fetch the reservation to check its dates
         Reservation res = reservationDAO.getAllReservations().stream()
                 .filter(r -> r.getId() == reservationId)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
 
-        // 2. Validate same-day check-in
+        LocalDate today = LocalDate.now();
+
         if ("CHECKED_IN".equalsIgnoreCase(status)) {
-            LocalDate today = LocalDate.now();
-            if (!today.equals(res.getStartDate())) {
-                throw new IllegalStateException("Check-in is only permitted on the scheduled start date: " + res.getStartDate());
+            // Date validation for checking in
+            if (today.isBefore(res.getStartDate())) {
+                throw new IllegalStateException("Too early to check in.");
+            }
+            if (!today.isBefore(res.getEndDate())) {
+                throw new IllegalStateException("Reservation has already expired.");
+            }
+        }
+        else if ("CHECKED_OUT".equalsIgnoreCase(status)) {
+            // Only allow check-out if they are currently checked in
+            if (!"CHECKED_IN".equalsIgnoreCase(res.getStatus())) {
+                throw new IllegalStateException("Cannot check out a guest who is not checked in.");
             }
         }
 
-        // 3. Persist the change
         reservationDAO.updateReservationStatus(reservationId, status);
     }
 
     public String getRoomStatus(Room room, List<Reservation> allReservations) {
         LocalDate today = LocalDate.now();
+        String status = "Vacant";
 
         for (Reservation res : allReservations) {
-            boolean roomInRes = res.getRooms().stream()
+            boolean isRoomInRes = res.getRooms().stream()
                     .anyMatch(r -> r.getRoomNumber() == room.getRoomNumber());
-            if (roomInRes) {
-                if ("CHECKED_IN".equalsIgnoreCase(res.getStatus())) return "Occupied";
-                if (!today.isBefore(res.getStartDate()) && today.isBefore(res.getEndDate())) return "Booked";
+
+            if (isRoomInRes) {
+                // Priority 1: Physically in the room
+                if ("CHECKED_IN".equalsIgnoreCase(res.getStatus())) {
+                    return "Occupied";
+                }
+
+                // Priority 2: Manual Check-out happened today (the end date)
+                // This shows the clerk the room needs cleaning today.
+                if ("CHECKED_OUT".equalsIgnoreCase(res.getStatus()) && today.equals(res.getEndDate())) {
+                    return "Checked Out";
+                }
+
+                // Priority 3: Reserved for today but not yet arrived
+                if (!today.isBefore(res.getStartDate()) && today.isBefore(res.getEndDate())) {
+                    status = "Booked";
+                }
             }
         }
-        return "Vacant";
+
+        // Once today > res.getEndDate(), the logic above won't find a match,
+        // and the room naturally reverts to "Vacant".
+        return status;
+    }
+
+    public void processAutomaticCheckOuts() {
+        List<Reservation> all = reservationDAO.getAllReservations();
+        LocalDate today = LocalDate.now();
+
+        for (Reservation res : all) {
+            // If today is past the end date and status is not already checked out
+            if (today.isAfter(res.getEndDate()) && !"CHECKED_OUT".equalsIgnoreCase(res.getStatus())) {
+                reservationDAO.updateReservationStatus(res.getId(), "CHECKED_OUT");
+            }
+        }
     }
 }

@@ -79,6 +79,9 @@ public class Main {
         frame.add(headerBar, BorderLayout.NORTH);
         frame.add(pages, BorderLayout.CENTER);
         frame.setVisible(true);
+
+        // Clean up expired reservations immediately on startup
+        reservationService.processAutomaticCheckOuts();
     }
 
     public static void main(String[] args) {
