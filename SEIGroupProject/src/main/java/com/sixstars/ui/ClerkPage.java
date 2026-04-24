@@ -46,6 +46,7 @@ public class ClerkPage extends JPanel {
 
         // --- Listeners ---
         btnReserve.addActionListener(e -> {
+            Main.makeReservationPage.refreshPage();
             cardLayout.show(pages, "make reservation");
         });
 
