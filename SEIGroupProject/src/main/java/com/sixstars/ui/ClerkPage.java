@@ -39,6 +39,7 @@ public class ClerkPage extends JPanel {
         // --- THE FOUR BUTTONS (All now using the same theme) ---
         JButton btnReserve = createThemedButton("Make Guest Reservation");
         btnManageRooms = createThemedButton("Room Management");
+        JButton btnManageReservations = createThemedButton("Manage Reservations");
         JButton btnAccount = createThemedButton("My Account");
         JButton btnLogout = createThemedButton("Logout");
         JButton btnCheckIn = createThemedButton("Guest Check-In");
@@ -54,6 +55,10 @@ public class ClerkPage extends JPanel {
         });
 
         btnManageRooms.addActionListener(e -> cardLayout.show(pages, "room management"));
+        btnManageReservations.addActionListener(e -> {
+            Main.reservationsPage.refresh();
+            cardLayout.show(pages, "reservations");
+        });
 
         btnLogout.addActionListener(e -> {
             AccountController.currentAccount = null;
@@ -73,6 +78,8 @@ public class ClerkPage extends JPanel {
         card.add(btnReserve);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnCheckIn);
+        card.add(Box.createRigidArea(new Dimension(0, 14)));
+        card.add(btnManageReservations);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnAccount);
         card.add(Box.createRigidArea(new Dimension(0, 14)));

@@ -3,9 +3,7 @@ package com.sixstars.ui;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Reservation;
 import com.sixstars.model.Role;
-import com.sixstars.model.Room;
 import com.sixstars.service.ReservationService;
-import com.sixstars.app.Main;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,20 +12,19 @@ import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
 
-public class GuestReservationsPage extends JPanel {
+public class ReservationsPage extends JPanel {
     private DefaultListModel<Reservation> listModel;
     private JList<Reservation> resList;
     private ReservationService resService;
     private JLabel titleLabel;
 
-    public GuestReservationsPage(JPanel pages, CardLayout cardLayout, ReservationService resService) {
+    public ReservationsPage(JPanel pages, CardLayout cardLayout, ReservationService resService) {
         this.resService = resService;
 
         setLayout(new BorderLayout(20, 20));
         setBackground(UITheme.PAGE_BACKGROUND);
         setBorder(new EmptyBorder(40, 40, 40, 40));
 
-        // 1. Top Panel (Title and Back Button)
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
 
@@ -50,7 +47,6 @@ public class GuestReservationsPage extends JPanel {
         topPanel.add(btnBack, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
 
-        // 2. The List Container (Card Look)
         listModel = new DefaultListModel<>();
         resList = new JList<>(listModel);
         resList.setFont(UITheme.INPUT_FONT);
@@ -62,7 +58,6 @@ public class GuestReservationsPage extends JPanel {
         scrollPane.setBorder(new LineBorder(UITheme.BORDER_COLOR, 1));
         add(scrollPane, BorderLayout.CENTER);
 
-        // 3. Bottom Action Bar
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         bottomPanel.setOpaque(false);
 
@@ -87,10 +82,11 @@ public class GuestReservationsPage extends JPanel {
         if (current != null) {
             List<Reservation> reservations;
 
-            // LOGIC: If Clerk, show ALL reservations. If Guest, only show THEIRS.
             if (current.getRole() == Role.CLERK) {
                 titleLabel.setText("All Hotel Reservations");
-                reservations = resService.getAllReservations(); // You'll need to add this to your service
+                reservations = resService.getAllReservations().stream()
+                        .filter(r -> !"CANCELLED".equalsIgnoreCase(r.getStatus()))
+                        .toList();
             } else {
                 titleLabel.setText("My Reservations");
                 reservations = resService.getGuestReservations(current.getEmail());
@@ -187,9 +183,9 @@ public class GuestReservationsPage extends JPanel {
 
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                resService.cancelBooking(selected.getId());
+                String resultMessage = resService.cancelBooking(selected.getId());
                 refresh();
-                JOptionPane.showMessageDialog(this, "Reservation has been successfully cancelled.");
+                JOptionPane.showMessageDialog(this, resultMessage);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Cancellation Failed: " + ex.getMessage());
             }

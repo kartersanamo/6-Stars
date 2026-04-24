@@ -10,7 +10,7 @@ import java.util.List;
 public class ReservationDAO {
 
     public void saveReservation(Reservation res) {
-        String resSql = "INSERT INTO reservations(startDate, endDate, guestEmail, nightlyRate, nights, totalCost, status) VALUES(?,?,?,?,?,?,?)";
+        String resSql = "INSERT INTO reservations(startDate, endDate, guestEmail, nightlyRate, nights, totalCost, status, createdDate) VALUES(?,?,?,?,?,?,?,?)";
         String joinSql = "INSERT INTO reservation_rooms(reservation_id, room_number) VALUES(?,?)";
 
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -24,6 +24,7 @@ public class ReservationDAO {
                 pstmt.setInt(5, res.getNights());
                 pstmt.setInt(6, res.getTotalCost());
                 pstmt.setString(7, res.getStatus());
+                pstmt.setString(8, res.getCreatedDate().toString());
                 pstmt.executeUpdate();
 
                 ResultSet rs = pstmt.getGeneratedKeys();
@@ -68,10 +69,14 @@ public class ReservationDAO {
                 int nights = rs.getInt("nights");
                 int totalCost = rs.getInt("totalCost");
                 String status = rs.getString("status");
+                String createdDateRaw = rs.getString("createdDate");
+                LocalDate createdDate = (createdDateRaw == null || createdDateRaw.isBlank())
+                        ? LocalDate.now()
+                        : LocalDate.parse(createdDateRaw);
 
                 List<Room> rooms = getRoomsForReservation(id);
 
-                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost, status);
+                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost, status, createdDate);
                 res.setId(id);
 
                 reservations.add(res);
@@ -115,7 +120,8 @@ public class ReservationDAO {
                 "JOIN reservation_rooms rr ON r.id = rr.reservation_id " +
                 "WHERE rr.room_number = ? " +
                 "AND r.id != ? " +
-                "AND ? < r.endDate AND ? > r.startDate";
+                "AND ? < r.endDate AND ? > r.startDate " +
+                "AND (r.status IS NULL OR r.status != 'CANCELLED')";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -157,10 +163,14 @@ public class ReservationDAO {
                 int nights = rs.getInt("nights");
                 int totalCost = rs.getInt("totalCost");
                 String status = rs.getString("status");
+                String createdDateRaw = rs.getString("createdDate");
+                LocalDate createdDate = (createdDateRaw == null || createdDateRaw.isBlank())
+                        ? LocalDate.now()
+                        : LocalDate.parse(createdDateRaw);
 
                 List<Room> rooms = getRoomsForReservation(id);
 
-                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost, status);
+                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost, status, createdDate);
                 res.setId(id);
                 list.add(res);
             }
@@ -171,22 +181,13 @@ public class ReservationDAO {
     }
 
     public void cancelReservation(int id) {
-        String sqlJoin = "DELETE FROM reservation_rooms WHERE reservation_id = ?";
-        String sqlRes = "DELETE FROM reservations WHERE id = ?";
-
-        try (Connection conn = DatabaseManager.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement p1 = conn.prepareStatement(sqlJoin);
-                 PreparedStatement p2 = conn.prepareStatement(sqlRes)) {
-                p1.setInt(1, id);
-                p1.executeUpdate();
-                p2.setInt(1, id);
-                p2.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            }
+        String sql = "UPDATE reservations SET status = ?, totalCost = ? WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "CANCELLED");
+            pstmt.setInt(2, 0);
+            pstmt.setInt(3, id);
+            pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -231,6 +232,18 @@ public class ReservationDAO {
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, status);
+            pstmt.setInt(2, id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateReservationCost(int id, int newCost) {
+        String sql = "UPDATE reservations SET totalCost = ? WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, newCost); // This is the penalty amount
             pstmt.setInt(2, id);
             pstmt.executeUpdate();
         } catch (SQLException e) {

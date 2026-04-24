@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.ResultSet;
 
 public class DatabaseManager {
     private static final String URL = "jdbc:sqlite:hotel_reservation.db";
@@ -23,11 +24,13 @@ public class DatabaseManager {
             // Create Rooms Table
             stmt.execute("CREATE TABLE IF NOT EXISTS rooms (" +
                     "roomNumber INTEGER PRIMARY KEY, bedType TEXT, " +
-                    "theme TEXT, qualityLevel TEXT, isSmoking INTEGER)");
+                    "theme TEXT, qualityLevel TEXT, isSmoking INTEGER, pricePerNight INTEGER DEFAULT 0)");
 
             // Create Reservations Table
             stmt.execute("CREATE TABLE IF NOT EXISTS reservations (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT, startDate TEXT, endDate TEXT, guestEmail TEXT)");
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, startDate TEXT, endDate TEXT, guestEmail TEXT, " +
+                    "nightlyRate INTEGER DEFAULT 0, nights INTEGER DEFAULT 0, totalCost INTEGER DEFAULT 0, " +
+                    "status TEXT DEFAULT 'BOOKED', createdDate TEXT)");
 
             // Create Join Table for Reservation <-> Rooms (Many-to-Many)
             stmt.execute("CREATE TABLE IF NOT EXISTS reservation_rooms (" +
@@ -42,9 +45,37 @@ public class DatabaseManager {
                     "stock INTEGER NOT NULL, " +
                     "imagePath TEXT)");
 
+            addColumnIfMissing(conn, "rooms", "pricePerNight", "INTEGER DEFAULT 0");
+            addColumnIfMissing(conn, "reservations", "nightlyRate", "INTEGER DEFAULT 0");
+            addColumnIfMissing(conn, "reservations", "nights", "INTEGER DEFAULT 0");
+            addColumnIfMissing(conn, "reservations", "totalCost", "INTEGER DEFAULT 0");
+            addColumnIfMissing(conn, "reservations", "status", "TEXT DEFAULT 'BOOKED'");
+            addColumnIfMissing(conn, "reservations", "createdDate", "TEXT");
 
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void addColumnIfMissing(Connection conn, String tableName, String columnName, String columnDefinition)
+            throws SQLException {
+        String pragmaSql = "PRAGMA table_info(" + tableName + ")";
+        boolean columnExists = false;
+
+        try (Statement pragmaStmt = conn.createStatement();
+             ResultSet rs = pragmaStmt.executeQuery(pragmaSql)) {
+            while (rs.next()) {
+                if (columnName.equalsIgnoreCase(rs.getString("name"))) {
+                    columnExists = true;
+                    break;
+                }
+            }
+        }
+
+        if (!columnExists) {
+            try (Statement alterStmt = conn.createStatement()) {
+                alterStmt.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition);
+            }
         }
     }
 }

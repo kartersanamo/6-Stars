@@ -22,7 +22,7 @@ public class Main {
     public static ClerkPage clerkPage;
     public static MakeReservationPage makeReservationPage;
     public static RoomManagementPage roomManagementPage;
-    public static GuestReservationsPage guestReservationsPage;
+    public static ReservationsPage reservationsPage;
     public static AccountDetailsPage accountDetailsPage;
     public static HomeLandingPage homeLandingPage;
     public static HeaderBar headerBar;
@@ -56,7 +56,7 @@ public class Main {
         clerkPage = new ClerkPage(pages, cardLayout);
         makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
         roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService, reservationService);
-        guestReservationsPage = new GuestReservationsPage(pages, cardLayout, reservationService);
+        reservationsPage = new ReservationsPage(pages, cardLayout, reservationService);
         accountDetailsPage = new AccountDetailsPage(pages, cardLayout, accountController);
         changePasswordPage = new ChangePasswordPage(pages, cardLayout, accountService);
         shopPage = new ShopPage(pages, cardLayout);
@@ -72,7 +72,7 @@ public class Main {
         pages.add(clerkPage, "clerk page");
         pages.add(makeReservationPage, "make reservation");
         pages.add(roomManagementPage, "room management");
-        pages.add(guestReservationsPage, "guest reservations");
+        pages.add(reservationsPage, "reservations");
         pages.add(accountDetailsPage, "account details");
         pages.add(shopPage, "shop");
         pages.add(billingPage, "billing page");

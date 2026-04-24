@@ -178,38 +178,54 @@ public class BillingPage extends JPanel {
         ));
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        // Check if this is a cancelled booking
+        boolean isCancelled = "CANCELLED".equalsIgnoreCase(reservation.getStatus());
+
         String roomText = reservation.getRooms().stream()
-                .map(r -> "Room " + r.getRoomNumber() + " - " + r.getBedType())
+                .map(r -> "Room " + r.getRoomNumber())
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("No rooms");
 
-        JLabel top = new JLabel(roomText);
+        // Title: Show "CANCELLED" in red if applicable
+        JLabel top = new JLabel(isCancelled ? "CANCELLED: " + roomText : roomText);
         top.setFont(new Font("SansSerif", Font.BOLD, 18));
-        top.setForeground(UITheme.TEXT_DARK);
+        top.setForeground(isCancelled ? Color.RED : UITheme.TEXT_DARK);
 
         JLabel dates = new JLabel("Dates: " + reservation.getStartDate() + " to " + reservation.getEndDate());
         dates.setFont(new Font("SansSerif", Font.PLAIN, 14));
         dates.setForeground(UITheme.TEXT_MEDIUM);
 
-        JLabel nightly = new JLabel("Nightly Rate: $" + reservation.getNightlyRate() + ".00");
-        nightly.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        nightly.setForeground(UITheme.TEXT_MEDIUM);
-
-        JLabel nights = new JLabel("Nights: " + reservation.getNights());
-        nights.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        nights.setForeground(UITheme.TEXT_MEDIUM);
-
-        JLabel total = new JLabel("Reservation Total: $" + reservation.getTotalCost() + ".00");
-        total.setFont(new Font("SansSerif", Font.BOLD, 16));
-        total.setForeground(new Color(44, 122, 72));
-
         card.add(top);
         card.add(Box.createRigidArea(new Dimension(0, 6)));
         card.add(dates);
-        card.add(Box.createRigidArea(new Dimension(0, 4)));
-        card.add(nightly);
-        card.add(Box.createRigidArea(new Dimension(0, 4)));
-        card.add(nights);
+
+        // Only show Nightly Rate details if the reservation is ACTIVE
+        if (!isCancelled) {
+            JLabel nightly = new JLabel("Nightly Rate: $" + reservation.getNightlyRate() + ".00");
+            nightly.setFont(new Font("SansSerif", Font.PLAIN, 14));
+            nightly.setForeground(UITheme.TEXT_MEDIUM);
+
+            JLabel nights = new JLabel("Nights: " + reservation.getNights());
+            nights.setFont(new Font("SansSerif", Font.PLAIN, 14));
+            nights.setForeground(UITheme.TEXT_MEDIUM);
+
+            card.add(Box.createRigidArea(new Dimension(0, 4)));
+            card.add(nightly);
+            card.add(Box.createRigidArea(new Dimension(0, 4)));
+            card.add(nights);
+        }
+
+        // The Charge Label
+        JLabel total = new JLabel();
+        if (isCancelled) {
+            total.setText("Cancellation Penalty Fee: $" + reservation.getTotalCost() + ".00");
+            total.setForeground(Color.RED);
+        } else {
+            total.setText("Reservation Total: $" + reservation.getTotalCost() + ".00");
+            total.setForeground(new Color(44, 122, 72)); // Green
+        }
+        total.setFont(new Font("SansSerif", Font.BOLD, 16));
+
         card.add(Box.createRigidArea(new Dimension(0, 10)));
         card.add(total);
 

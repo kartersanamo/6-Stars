@@ -81,8 +81,13 @@ public class ReservationService {
     }
 
     // Cancels booking by id
-    public void cancelBooking(int id) {
-        reservationDAO.cancelReservation(id);
+    public String cancelBooking(int id) {
+        Reservation res = reservationDAO.getAllReservations().stream()
+                .filter(r -> r.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
+
+        return cancelWithPenalty(res);
     }
 
     // Updates existing reservation
@@ -187,5 +192,42 @@ public class ReservationService {
 
         // Returns true only if the account exists AND is a Guest
         return account != null && account.getRole() == com.sixstars.model.Role.GUEST;
+    }
+
+    public String cancelWithPenalty(Reservation res) {
+        if (res == null) {
+            throw new IllegalArgumentException("Reservation not found.");
+        }
+
+        if ("CANCELLED".equalsIgnoreCase(res.getStatus())) {
+            throw new IllegalStateException("This reservation is already cancelled.");
+        }
+
+        if ("CHECKED_IN".equalsIgnoreCase(res.getStatus()) || "CHECKED_OUT".equalsIgnoreCase(res.getStatus())) {
+            throw new IllegalStateException("Only upcoming reservations can be cancelled.");
+        }
+
+        LocalDate today = LocalDate.now();
+        if (!today.isBefore(res.getStartDate())) {
+            throw new IllegalStateException("Cancellation is only allowed before the reservation start date.");
+        }
+
+        long daysSinceCreated = java.time.temporal.ChronoUnit.DAYS.between(res.getCreatedDate(), today);
+        int penalty = 0;
+
+        if (daysSinceCreated > 2) {
+            penalty = (int) Math.round(res.getNightlyRate() * 0.8);
+        }
+
+        reservationDAO.updateReservationStatus(res.getId(), "CANCELLED");
+        reservationDAO.updateReservationCost(res.getId(), penalty);
+
+        if (penalty > 0) {
+            return String.format(
+                    "Cancelled. Penalty applied: $%d.00 (80%% of one night at the reservation rate).",
+                    penalty
+            );
+        }
+        return "Cancelled successfully. No fee applied (within 2 days of booking).";
     }
 }
