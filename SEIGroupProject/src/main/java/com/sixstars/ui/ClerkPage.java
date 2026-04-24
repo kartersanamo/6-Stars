@@ -43,6 +43,7 @@ public class ClerkPage extends JPanel {
         JButton btnAccount = createThemedButton("My Account");
         JButton btnLogout = createThemedButton("Logout");
         JButton btnCheckIn = createThemedButton("Guest Check-In");
+        styleLogoutButton(btnLogout);
 
         // --- Listeners ---
         btnReserve.addActionListener(e -> {
@@ -78,13 +79,13 @@ public class ClerkPage extends JPanel {
 
         card.add(btnReserve);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
-        card.add(btnCheckIn);
-        card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnManageReservations);
+        card.add(Box.createRigidArea(new Dimension(0, 14)));
+        card.add(btnManageRooms);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnAccount);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
-        card.add(btnManageRooms);
+        card.add(btnCheckIn);
         card.add(Box.createRigidArea(new Dimension(0, 25)));
         card.add(btnLogout);
         card.add(Box.createVerticalGlue());
@@ -106,5 +107,10 @@ public class ClerkPage extends JPanel {
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return button;
+    }
+
+    private void styleLogoutButton(JButton button) {
+        button.setBackground(UITheme.ACCENT_GOLD);
+        button.setForeground(Color.WHITE);
     }
 }
