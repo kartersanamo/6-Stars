@@ -85,7 +85,7 @@ public class ReservationsPage extends JPanel {
             if (current.getRole() == Role.CLERK) {
                 titleLabel.setText("All Hotel Reservations");
                 reservations = resService.getAllReservations().stream()
-                        .filter(r -> !"CANCELLED".equalsIgnoreCase(r.getStatus()))
+                        .filter(r -> (!"CANCELLED".equalsIgnoreCase(r.getStatus()) && !"CHECKED_OUT".equalsIgnoreCase(r.getStatus())))
                         .toList();
             } else {
                 titleLabel.setText("My Reservations");
