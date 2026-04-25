@@ -98,6 +98,7 @@ public class HomeLandingPage extends JPanel {
         JButton exploreButton = createSecondaryButton("Visit the Store");
 
         reserveButton.addActionListener(e -> {
+            Main.makeReservationPage.refreshPage();
             cardLayout.show(pages, "make reservation");
             Main.headerBar.refreshInfo();
         }
@@ -133,6 +134,7 @@ public class HomeLandingPage extends JPanel {
         JButton viewAllButton = createPrimaryButton("View All Rooms");
         viewAllButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         viewAllButton.addActionListener(e -> {
+            Main.makeReservationPage.refreshPage();
             cardLayout.show(pages, "make reservation");
             Main.headerBar.refreshInfo();
         });

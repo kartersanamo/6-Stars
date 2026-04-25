@@ -59,14 +59,15 @@ public class HeaderBar extends JPanel {
 
         JButton bookNowButton = createButton("Book Now");
         bookNowButton.addActionListener(e -> {
+            Main.makeReservationPage.refreshPage();
             cardLayout.show(pages, "make reservation");
             Main.headerBar.refreshInfo();
         });
 
         btnMyReservations = createButton("My Reservations");
         btnMyReservations.addActionListener(e -> {
-            Main.guestReservationsPage.refresh();
-            cardLayout.show(pages, "guest reservations");
+            Main.reservationsPage.refresh();
+            cardLayout.show(pages, "reservations");
         });
 
         loginButton = createButton("Login");

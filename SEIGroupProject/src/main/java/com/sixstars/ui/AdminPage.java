@@ -56,6 +56,7 @@ public class AdminPage extends JPanel {
         });
 
         JButton btnLogout = createThemedButton("Logout");
+        styleLogoutButton(btnLogout);
         btnLogout.addActionListener(e -> {
             AccountController.currentAccount = null;
             Main.headerBar.refreshInfo();
@@ -92,5 +93,10 @@ public class AdminPage extends JPanel {
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return button;
+    }
+
+    private void styleLogoutButton(JButton button) {
+        button.setBackground(UITheme.ACCENT_GOLD);
+        button.setForeground(java.awt.Color.WHITE);
     }
 }

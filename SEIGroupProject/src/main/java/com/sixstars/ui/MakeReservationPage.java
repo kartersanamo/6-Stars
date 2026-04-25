@@ -338,6 +338,10 @@ public class MakeReservationPage extends JPanel {
         roomCardsContainer.repaint();
     }
 
+    public void refreshPage() {
+        refreshListings();
+    }
+
     private JPanel createRoomCard(Room room, boolean isAvailable, boolean hasValidDateRange) {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(UITheme.CARD_BACKGROUND);
