@@ -14,7 +14,21 @@ import com.sixstars.model.Room;
 import com.sixstars.service.AccountService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
-import com.sixstars.ui.*;
+import com.sixstars.ui.AccountDetailsPage;
+import com.sixstars.ui.AdminPage;
+import com.sixstars.ui.BillingPage;
+import com.sixstars.ui.ChangePasswordPage;
+import com.sixstars.ui.CheckInPage;
+import com.sixstars.ui.ClerkPage;
+import com.sixstars.ui.CreateAccountPage;
+import com.sixstars.ui.HeaderBar;
+import com.sixstars.ui.HomeLandingPage;
+import com.sixstars.ui.LoginPage;
+import com.sixstars.ui.MakeReservationPage;
+import com.sixstars.ui.ReservationsPage;
+import com.sixstars.ui.RoomManagementPage;
+import com.sixstars.ui.ShopPage;
+import com.sixstars.ui.WelcomePage;
 
 public class Main {
 
@@ -43,7 +57,7 @@ public class Main {
 
         JFrame frame = new JFrame("6 Stars Hotel");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(1200, 700);
+        frame.setSize(1200, 900);
         frame.setLocationRelativeTo(null);
         
         CardLayout cardLayout = new CardLayout();

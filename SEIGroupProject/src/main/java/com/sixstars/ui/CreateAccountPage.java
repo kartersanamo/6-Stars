@@ -14,6 +14,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -34,6 +35,7 @@ public class CreateAccountPage extends JPanel {
     private JLabel roleLabel;
     private JComboBox<Role> roleComboBox;
     private boolean isAdmin;
+    JPasswordField passwordField;
 
     public CreateAccountPage(JPanel pages, CardLayout cardLayout) {
         accountController = new AccountController();
@@ -82,8 +84,20 @@ public class CreateAccountPage extends JPanel {
         styleTextField(emailField);
 
         JLabel passwordLabel = createCenteredLabel("Password");
-        JPasswordField passwordField = new JPasswordField();
+        passwordField = new JPasswordField();
         styleTextField(passwordField);
+        passwordField.setEchoChar('*');
+
+        JCheckBox showPassword = new JCheckBox("Show Password");
+        showPassword.setBackground(UITheme.CARD_BACKGROUND);
+
+        showPassword.addActionListener(e -> {
+            if (showPassword.isSelected()) {
+                passwordField.setEchoChar((char) 0); // show text
+            } else {
+                passwordField.setEchoChar('*'); // hide text again
+            }
+        });
 
         roleLabel = createCenteredLabel("Role");
         Role[] roles = {Role.GUEST, Role.CLERK, Role.ADMIN};
@@ -129,6 +143,10 @@ public class CreateAccountPage extends JPanel {
         gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 18, 0);
         formPanel.add(passwordField, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(showPassword, gbc);
 
         gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 10, 0);
@@ -246,6 +264,18 @@ public class CreateAccountPage extends JPanel {
         field.setHorizontalAlignment(SwingConstants.LEFT);
     }
 
+    private String generateRandomPassword(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
+        StringBuilder password = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+    
+        for (int i = 0; i < length; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
+        }
+    
+        return password.toString();
+    }
+
     private void styleComboBox(JComboBox<Role> comboBox) {
         comboBox.setPreferredSize(new Dimension(320, 42));
         comboBox.setMaximumSize(new Dimension(320, 42));
@@ -289,7 +319,11 @@ public class CreateAccountPage extends JPanel {
 
         roleLabel.setVisible(isAdmin);
         roleComboBox.setVisible(isAdmin);
-
+        if (isAdmin) {
+            passwordField.setText(generateRandomPassword(10));
+        } else {
+            passwordField.setText("");
+        }
         formPanel.revalidate();
         formPanel.repaint();
     }
