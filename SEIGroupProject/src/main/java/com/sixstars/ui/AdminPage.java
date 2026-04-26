@@ -44,7 +44,7 @@ public class AdminPage extends JPanel {
         subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // --- Action Buttons (All now using the lighter Secondary style) ---
-        JButton btnCreateClerk = createThemedButton("Create Clerk Account");
+        JButton btnCreateClerk = createThemedButton("Create an Account");
         btnCreateClerk.addActionListener(_ -> {
             Main.createAccountPage.refreshInfo();
             cardLayout.show(pages, "create account");
