@@ -108,6 +108,16 @@ public class LoginPage extends JPanel {
         gbc.insets = new Insets(0, 0, 0, 0);
         formPanel.add(backButton, gbc);
 
+        this.addHierarchyListener(e -> {
+            emailField.requestFocusInWindow();
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
+                javax.swing.JRootPane root = javax.swing.SwingUtilities.getRootPane(this);
+                if (root != null) {
+                    root.setDefaultButton(loginButton);
+                }
+            }
+        });
+
         loginButton.addActionListener(_ -> {
             String email = emailField.getText().trim();
             String password = new String(passwordField.getPassword());
