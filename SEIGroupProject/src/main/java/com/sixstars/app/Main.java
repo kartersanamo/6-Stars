@@ -5,6 +5,7 @@ import java.awt.CardLayout;
 import java.time.LocalDate;
 
 import javax.swing.JFrame;
+import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
@@ -56,6 +57,10 @@ public class Main {
         AccountController accountController = new AccountController();
 
         JFrame frame = new JFrame("6 Stars Hotel");
+        ImageIcon icon = new ImageIcon("assets/Logo.png");
+        if (icon.getIconWidth() > 0 && icon.getIconHeight() > 0) {
+            frame.setIconImage(icon.getImage());
+        }
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1200, 900);
         frame.setLocationRelativeTo(null);
