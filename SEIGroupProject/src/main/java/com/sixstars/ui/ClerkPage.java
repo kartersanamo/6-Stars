@@ -1,12 +1,23 @@
 package com.sixstars.ui;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagLayout;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
-import com.sixstars.model.Account;
-import com.sixstars.model.Role;
 
 public class ClerkPage extends JPanel {
     private JLabel titleLabel;

@@ -1,23 +1,49 @@
 package com.sixstars.ui;
 
-import com.sixstars.controller.AccountController;
-import com.sixstars.model.Reservation;
-import com.sixstars.model.Room;
-import com.sixstars.model.Role;
-import com.sixstars.service.ReservationService;
-
-import javax.swing.*;
-import javax.swing.plaf.basic.BasicGraphicsUtils;
-import javax.swing.plaf.basic.BasicButtonUI;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.GridLayout;
+import java.awt.Rectangle;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+
+import javax.swing.AbstractButton;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTextArea;
+import javax.swing.ListCellRenderer;
+import javax.swing.ListSelectionModel;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.plaf.basic.BasicButtonUI;
+import javax.swing.plaf.basic.BasicGraphicsUtils;
+
+import com.sixstars.controller.AccountController;
+import com.sixstars.model.Reservation;
+import com.sixstars.model.Role;
+import com.sixstars.model.Room;
+import com.sixstars.service.ReservationService;
 
 public class ReservationsPage extends JPanel {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US);
@@ -520,18 +546,16 @@ public class ReservationsPage extends JPanel {
     }
 
     private void styleGoldButton(JButton button) {
-        button.setUI(new GoldActionButtonUI());
-        button.setFont(UITheme.BUTTON_FONT);
-        button.setForeground(Color.WHITE);
-        button.setBackground(UITheme.ACCENT_GOLD);
-
-        button.setOpaque(true);
-        button.setContentAreaFilled(true);
-        button.setBorderPainted(false);
-
+        button.setPreferredSize(new Dimension(320, 44));
+        button.setMaximumSize(new Dimension(320, 44));
+        button.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        button.setBackground(UITheme.SECONDARY_BUTTON);
+        button.setForeground(UITheme.TEXT_DARK);
         button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        button.setBorderPainted(false);
+        button.setOpaque(true);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
     }
 
     private String formatDate(LocalDate date) {

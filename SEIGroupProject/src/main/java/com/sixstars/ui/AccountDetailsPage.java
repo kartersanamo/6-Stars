@@ -1,7 +1,23 @@
 package com.sixstars.ui;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.CardLayout;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
@@ -43,7 +59,7 @@ public class AccountDetailsPage extends JPanel {
                 new LineBorder(UITheme.BORDER_COLOR, 1, true),
                 new EmptyBorder(30, 40, 30, 40)
         ));
-        cardPanel.setPreferredSize(new Dimension(500, 400)); // Slightly taller for password row
+        cardPanel.setPreferredSize(new Dimension(500, 600)); // Slightly taller for password row
 
         // Title
         JLabel title = new JLabel("Account Details");
@@ -204,13 +220,17 @@ public class AccountDetailsPage extends JPanel {
         field.setPreferredSize(new Dimension(200, 30));
     }
 
+  
     private void styleGoldButton(JButton button) {
-        button.setFont(UITheme.BUTTON_FONT);
-        button.setForeground(Color.WHITE);
-        button.setBackground(UITheme.ACCENT_GOLD);
+        button.setPreferredSize(new Dimension(320, 44));
+        button.setMaximumSize(new Dimension(320, 44));
+        button.setBackground(UITheme.SECONDARY_BUTTON);
+        button.setForeground(UITheme.TEXT_DARK);
         button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 24, 10, 24));
+        button.setBorderPainted(false);
+        button.setOpaque(true);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
     }
 
     private String formatRole(String text) {
