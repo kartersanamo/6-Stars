@@ -196,6 +196,11 @@ public class ReservationsPage extends JPanel {
         button.setFont(UITheme.BUTTON_FONT);
         button.setForeground(Color.WHITE);
         button.setBackground(UITheme.ACCENT_GOLD);
+
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(false);
+
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
