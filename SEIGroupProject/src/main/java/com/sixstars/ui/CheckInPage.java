@@ -132,7 +132,12 @@ public class CheckInPage extends JPanel {
         add(centerPanel, BorderLayout.CENTER);
         add(footer, BorderLayout.SOUTH);
 
-        refreshTable();
+        this.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e) {
+                refreshTable();
+            }
+        });
     }
 
     private void refreshTable() {
