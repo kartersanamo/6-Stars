@@ -114,11 +114,16 @@ public class BillingPage extends JPanel {
             return;
         }
 
-        String email = current.getEmail();
+        refreshForEmail(current.getEmail());
+    }
+
+    public void refreshForEmail(String email) {
+        reservationsContainer.removeAll();
+        shopContainer.removeAll();
 
         List<Reservation> reservations = billingService.getReservationCharges(email);
         if (reservations.isEmpty()) {
-            reservationsContainer.add(createEmptyCard("No reservations found."));
+            reservationsContainer.add(createEmptyCard("No reservations found for " + email));
         } else {
             for (Reservation reservation : reservations) {
                 reservationsContainer.add(createReservationCard(reservation));
@@ -146,7 +151,6 @@ public class BillingPage extends JPanel {
 
         repaintAndRevalidate();
     }
-
     private JLabel createSectionTitle(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("SansSerif", Font.BOLD, 22));

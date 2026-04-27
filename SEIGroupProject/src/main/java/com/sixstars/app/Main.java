@@ -15,21 +15,7 @@ import com.sixstars.model.Room;
 import com.sixstars.service.AccountService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
-import com.sixstars.ui.AccountDetailsPage;
-import com.sixstars.ui.AdminPage;
-import com.sixstars.ui.BillingPage;
-import com.sixstars.ui.ChangePasswordPage;
-import com.sixstars.ui.CheckInPage;
-import com.sixstars.ui.ClerkPage;
-import com.sixstars.ui.CreateAccountPage;
-import com.sixstars.ui.HeaderBar;
-import com.sixstars.ui.HomeLandingPage;
-import com.sixstars.ui.LoginPage;
-import com.sixstars.ui.MakeReservationPage;
-import com.sixstars.ui.ReservationsPage;
-import com.sixstars.ui.RoomManagementPage;
-import com.sixstars.ui.ShopPage;
-import com.sixstars.ui.WelcomePage;
+import com.sixstars.ui.*;
 
 public class Main {
 
@@ -46,6 +32,7 @@ public class Main {
     public static BillingPage billingPage;
     public static CheckInPage checkInPage;
     public static ChangePasswordPage changePasswordPage;
+    public static ClerkBillingSearchPage clerkBillingSearchPage;
 
     public static void createAndShowUI() {
         // create the .db file and tables if they don't already exist
@@ -81,6 +68,8 @@ public class Main {
         shopPage = new ShopPage(pages, cardLayout);
         billingPage = new BillingPage();
         checkInPage = new CheckInPage(pages, cardLayout, reservationService);
+        clerkBillingSearchPage = new ClerkBillingSearchPage();
+
 
         pages.add(homeLandingPage, "home");
         pages.add(welcomePage, "welcome");
@@ -96,6 +85,7 @@ public class Main {
         pages.add(shopPage, "shop");
         pages.add(billingPage, "billing page");
         pages.add(checkInPage, "check in");
+        pages.add(clerkBillingSearchPage, "clerk billing");
 
         frame.setLayout(new BorderLayout());
   
