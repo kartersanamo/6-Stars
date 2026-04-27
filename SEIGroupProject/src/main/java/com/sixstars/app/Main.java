@@ -57,10 +57,7 @@ public class Main {
         AccountController accountController = new AccountController();
 
         JFrame frame = new JFrame("6 Stars Hotel");
-        ImageIcon icon = new ImageIcon("assets/Logo.png");
-        if (icon.getIconWidth() > 0 && icon.getIconHeight() > 0) {
-            frame.setIconImage(icon.getImage());
-        }
+        applyAppIcon(frame);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1200, 900);
         frame.setLocationRelativeTo(null);
@@ -106,6 +103,94 @@ public class Main {
 
         // Clean up expired reservations immediately on startup
         reservationService.processAutomaticCheckOuts();
+    }
+
+    // Load the application icon robustly (classpath first, then filesystem) and attempt to set
+    // it for both the JFrame and the OS taskbar/dock when possible.
+    private static void applyAppIcon(JFrame frame) {
+        java.awt.Image image = null;
+
+        // 1) Try classpath resource (recommended: put Logo.png in src/main/resources/assets/)
+        try {
+            java.net.URL res = Main.class.getResource("/assets/Logo.png");
+            if (res != null) {
+                image = new ImageIcon(res).getImage();
+            }
+        } catch (Throwable ignored) {
+        }
+
+        // 2) Fallback to file path (useful during development)
+        if (image == null) {
+            try {
+                java.io.File f = new java.io.File("assets/Logo.png");
+                if (f.exists()) {
+                    image = new ImageIcon(f.getAbsolutePath()).getImage();
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+
+        if (image == null) {
+            return; // nothing to apply
+        }
+
+        try {
+            // Create a rounded version of the image for a nicer Dock/Taskbar appearance
+            int preferredSize = 512; // size to render the rounded icon (keeps it crisp on HiDPI)
+            java.awt.Image roundedImage = makeRounded(image, preferredSize, Math.round(preferredSize * 0.18f));
+
+            // Always set the JFrame icon (use rounded image so it matches other icons)
+            frame.setIconImage(roundedImage != null ? roundedImage : image);
+
+            // Try java.awt.Taskbar (Java 9+) via reflection so code compiles on older JDKs
+            try {
+                Class<?> taskbarClass = Class.forName("java.awt.Taskbar");
+                java.lang.reflect.Method getTaskbar = taskbarClass.getMethod("getTaskbar");
+                Object taskbar = getTaskbar.invoke(null);
+                java.lang.reflect.Method setIconImage = taskbarClass.getMethod("setIconImage", java.awt.Image.class);
+                setIconImage.invoke(taskbar, roundedImage != null ? roundedImage : image);
+            } catch (Throwable t) {
+                // If Taskbar isn't available, try macOS-specific API (com.apple.eawt.Application)
+                try {
+                    Class<?> appClass = Class.forName("com.apple.eawt.Application");
+                    java.lang.reflect.Method getApplication = appClass.getMethod("getApplication");
+                    Object application = getApplication.invoke(null);
+                    java.lang.reflect.Method setDockIconImage = appClass.getMethod("setDockIconImage", java.awt.Image.class);
+                    setDockIconImage.invoke(application, roundedImage != null ? roundedImage : image);
+                } catch (Throwable ignored2) {
+                    // Last fallback: nothing else we can do
+                }
+            }
+        } catch (Throwable ignore) {
+            // Do not prevent app startup on icon errors
+        }
+    }
+
+    // Create a rounded BufferedImage from the provided image. Returns null on failure.
+    private static java.awt.Image makeRounded(java.awt.Image src, int size, int arc) {
+        try {
+            if (src == null) return null;
+
+            java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D g2 = out.createGraphics();
+            try {
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setComposite(java.awt.AlphaComposite.SrcOver);
+
+                // Draw rounded clipping area
+                java.awt.geom.RoundRectangle2D round = new java.awt.geom.RoundRectangle2D.Float(0, 0, size, size, arc, arc);
+                g2.setClip(round);
+
+                // Draw the source image scaled to the target size
+                g2.drawImage(src, 0, 0, size, size, null);
+            } finally {
+                g2.dispose();
+            }
+            return out;
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     public static void main(String[] args) {
