@@ -211,6 +211,7 @@ public class CreateAccountPage extends JPanel {
                 lastNameField.setText("");
                 emailField.setText("");
                 passwordField.setText("");
+                
 
                 if (!isAdmin) {
                     AccountController.currentAccount = createdAccount;
