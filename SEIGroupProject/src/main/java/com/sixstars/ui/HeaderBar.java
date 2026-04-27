@@ -20,15 +20,16 @@ import com.sixstars.model.Role;
 
 public class HeaderBar extends JPanel {
 
-    private JButton loginButton;
-    private JButton createAccountButton;
-    private JButton btnAccount;
-    private JPanel navPanel;
-    private JButton btnMyReservations;
-    private JMenuItem dashboardMenuItem;
+    private final JButton loginButton;
+    private final JButton createAccountButton;
+    private final JButton btnAccount;
+    private final JPanel navPanel;
+    private final JButton btnMyReservations;
+    private final JButton btnShop;
+    private final JMenuItem dashboardMenuItem;
 
-    private JPanel pages;
-    private CardLayout cardLayout;
+    private final JPanel pages;
+    private final CardLayout cardLayout;
 
     public HeaderBar(JPanel pages, CardLayout cardLayout) {
         this.pages = pages;
@@ -50,31 +51,37 @@ public class HeaderBar extends JPanel {
         brandButton.setFocusPainted(false);
         brandButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        brandButton.addActionListener(e -> {
-            cardLayout.show(pages, "home");
-        });
+        brandButton.addActionListener(_ -> cardLayout.show(pages, "home"));
 
         navPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         navPanel.setOpaque(false);
 
         JButton bookNowButton = createButton("Book Now");
-        bookNowButton.addActionListener(e -> {
+        bookNowButton.addActionListener(_ -> {
             Main.makeReservationPage.refreshPage();
             cardLayout.show(pages, "make reservation");
             Main.headerBar.refreshInfo();
         });
 
+        btnShop = createButton("View Shop");
+        btnShop.addActionListener(_ -> {
+            if (Main.shopPage != null) {
+                Main.shopPage.refreshInventory();
+            }
+            cardLayout.show(pages, "shop");
+        });
+
         btnMyReservations = createButton("My Reservations");
-        btnMyReservations.addActionListener(e -> {
+        btnMyReservations.addActionListener(_ -> {
             Main.reservationsPage.refresh();
             cardLayout.show(pages, "reservations");
         });
 
         loginButton = createButton("Login");
-        loginButton.addActionListener(e -> cardLayout.show(pages, "login"));
+        loginButton.addActionListener(_ -> cardLayout.show(pages, "login"));
 
         createAccountButton = createButton("Create Account");
-        createAccountButton.addActionListener(e -> {
+        createAccountButton.addActionListener(_ -> {
             Main.createAccountPage.refreshInfo();
             cardLayout.show(pages, "create account");
         });
@@ -84,13 +91,13 @@ public class HeaderBar extends JPanel {
         JPopupMenu menu = new JPopupMenu();
 
         JMenuItem view = new JMenuItem("View Account");
-        view.addActionListener(e -> {
+        view.addActionListener(_ -> {
             Main.accountDetailsPage.refreshInfo();
             cardLayout.show(pages, "account details");
         });
 
         JMenuItem logout = new JMenuItem("Logout");
-        logout.addActionListener(e -> {
+        logout.addActionListener(_ -> {
             AccountController.currentAccount = null;
             refreshInfo();
             cardLayout.show(pages, "home");
@@ -98,7 +105,7 @@ public class HeaderBar extends JPanel {
         });
 
         dashboardMenuItem = new JMenuItem();
-        dashboardMenuItem.addActionListener(e -> {
+        dashboardMenuItem.addActionListener(_ -> {
             if (AccountController.currentAccount != null && AccountController.currentAccount.getRole() == Role.CLERK) {
                 refreshInfo();
                 cardLayout.show(pages, "clerk page");
@@ -118,11 +125,12 @@ public class HeaderBar extends JPanel {
         menu.add(dashboardMenuItem);
         menu.add(logout);
 
-        btnAccount.addActionListener(e ->
+        btnAccount.addActionListener(_ ->
                 menu.show(btnAccount, 0, btnAccount.getHeight())
         );
 
         navPanel.add(bookNowButton);
+        navPanel.add(btnShop);
         navPanel.add(btnMyReservations);
         navPanel.add(loginButton);
         navPanel.add(createAccountButton);
