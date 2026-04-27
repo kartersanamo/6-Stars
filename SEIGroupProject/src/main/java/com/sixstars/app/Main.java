@@ -68,7 +68,7 @@ public class Main {
         shopPage = new ShopPage(pages, cardLayout);
         billingPage = new BillingPage();
         checkInPage = new CheckInPage(pages, cardLayout, reservationService);
-        clerkBillingSearchPage = new ClerkBillingSearchPage();
+        clerkBillingSearchPage = new ClerkBillingSearchPage(pages, cardLayout);
 
 
         pages.add(homeLandingPage, "home");

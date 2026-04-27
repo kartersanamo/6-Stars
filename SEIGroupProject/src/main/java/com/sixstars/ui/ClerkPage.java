@@ -89,9 +89,9 @@ public class ClerkPage extends JPanel {
         card.add(btnAccount);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnCheckIn);
-        card.add(Box.createRigidArea(new Dimension(0, 25)));
-        card.add(btnBillingSearch);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
+        card.add(btnBillingSearch);
+        card.add(Box.createRigidArea(new Dimension(0, 25)));
         card.add(btnLogout);
         card.add(Box.createVerticalGlue());
 

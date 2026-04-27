@@ -15,45 +15,41 @@ public class ClerkBillingSearchPage extends JPanel {
     private final BillingService billingService;
     private final JTextField emailField;
     private final JPanel resultsPanel;
-    private final BillingPage billingDisplayRenderer; // We reuse the rendering logic
 
-    public ClerkBillingSearchPage() {
+    public ClerkBillingSearchPage(JPanel pages, CardLayout cardLayout) {
         this.billingService = new BillingService();
-        this.billingDisplayRenderer = new BillingPage();
-
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
 
         // --- Search Header ---
-        JPanel searchHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
-        searchHeader.setBackground(UITheme.CARD_BACKGROUND);
-        searchHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER_COLOR));
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(UITheme.PAGE_BACKGROUND);
+        header.setBorder(new EmptyBorder(20, 40, 10, 40));
 
-        JLabel searchLabel = new JLabel("Enter Guest Email:");
-        searchLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+        JLabel title = new JLabel("Guest Billing Search");
+        title.setFont(UITheme.TITLE_FONT); // Use constant from UITheme
+        title.setForeground(UITheme.TEXT_DARK);
+        header.add(title, BorderLayout.WEST);
 
-        emailField = new JTextField(25);
-        emailField.setPreferredSize(new Dimension(200, 35));
+        // Back Button matching CheckInPage's "false" primary style
+        JButton btnBack = createThemedButton("Back to Dashboard", false);
+        btnBack.addActionListener(e -> cardLayout.show(pages, "clerk page"));
+        header.add(btnBack, BorderLayout.EAST);
 
-//        emailField.addHierarchyListener(new HierarchyListener() {
-//            @Override
-//            public void hierarchyChanged(HierarchyEvent e) {
-//                if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && emailField.isShowing()) {
-//                    emailField.requestFocusInWindow();
-//                }
-//            }
-//        });
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(UITheme.PAGE_BACKGROUND);
+        searchPanel.setBorder(new EmptyBorder(10, 40, 10, 40));
 
-        JButton btnSearch = new JButton("Generate Bill");
-        styleSearchButton(btnSearch);
+        JLabel searchLabel = new JLabel("Guest Email: ");
+        searchLabel.setFont(UITheme.LABEL_FONT);
+        searchPanel.add(searchLabel);
 
+        emailField = new JTextField(20);
+        emailField.setFont(UITheme.INPUT_FONT);
+        searchPanel.add(emailField);
+
+        JButton btnSearch = createThemedButton("Generate Bill", true);
         btnSearch.addActionListener(e -> performSearch(emailField.getText().trim()));
-//        SwingUtilities.invokeLater(() -> {
-//            JRootPane rootPane = SwingUtilities.getRootPane(btnSearch);
-//            if (rootPane != null) {
-//                rootPane.setDefaultButton(btnSearch);
-//            }
-//        });
         this.addHierarchyListener(e -> {
             emailField.requestFocusInWindow();
             if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
@@ -63,15 +59,20 @@ public class ClerkBillingSearchPage extends JPanel {
                 }
             }
         });
-        searchHeader.add(searchLabel);
-        searchHeader.add(emailField);
-        searchHeader.add(btnSearch);
+        searchPanel.add(btnSearch);
 
         // --- Results Area ---
         resultsPanel = new JPanel(new BorderLayout());
         resultsPanel.setOpaque(false);
+        resultsPanel.setBorder(new EmptyBorder(10, 40, 30, 40));
 
-        add(searchHeader, BorderLayout.NORTH);
+        JPanel topContainer = new JPanel();
+        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
+        topContainer.setOpaque(false);
+        topContainer.add(header);
+        topContainer.add(searchPanel);
+
+        add(topContainer, BorderLayout.NORTH);
         add(resultsPanel, BorderLayout.CENTER);
     }
 
@@ -82,9 +83,6 @@ public class ClerkBillingSearchPage extends JPanel {
         }
 
         resultsPanel.removeAll();
-
-        // We temporarily "force" the billing renderer to show a specific email's data
-        // Note: You may need to modify BillingPage.java slightly to accept an email parameter
         JPanel billingContent = createExternalBillingView(email);
         resultsPanel.add(billingContent, BorderLayout.CENTER);
 
@@ -93,23 +91,28 @@ public class ClerkBillingSearchPage extends JPanel {
     }
 
     private JPanel createExternalBillingView(String email) {
-        // Logic similar to BillingPage.refresh() but using the provided email
-        // Instead of AccountController.currentAccount.getEmail()
         BillingPage customView = new BillingPage();
-
-        // Since BillingPage's refresh() uses AccountController,
-        // you'll want to add a method to BillingPage called 'refreshForEmail(String email)'
-        // For now, let's assume we call a modified version:
-         customView.refreshForEmail(email);
+        customView.refreshForEmail(email);
 
         return customView;
     }
 
-    private void styleSearchButton(JButton btn) {
-        btn.setBackground(UITheme.ACCENT_GOLD);
-        btn.setForeground(Color.WHITE);
-        btn.setFocusPainted(false);
-        btn.setPreferredSize(new Dimension(150, 35));
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    private JButton createThemedButton(String text, boolean isPrimary) {
+        JButton button = new JButton(text);
+        button.setFont(UITheme.BUTTON_FONT);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(180, 40));
+
+        if (isPrimary) {
+            button.setBackground(UITheme.ACCENT_GOLD);
+            button.setForeground(Color.WHITE);
+        } else {
+            button.setBackground(UITheme.SECONDARY_BUTTON);
+            button.setForeground(UITheme.TEXT_DARK);
+        }
+        button.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_COLOR));
+        button.setOpaque(true);
+        return button;
     }
 }
