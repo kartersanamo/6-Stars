@@ -61,7 +61,8 @@ public class ShopPage extends JPanel {
                 new EmptyBorder(16, 24, 16, 24)
         ));
 
-        JButton backButton = createSecondaryButton("Back to Home");
+        JButton backButton = createSecondaryButton("Back");
+        styleGoldButton(backButton);
         backButton.addActionListener(e -> cardLayout.show(pages, "home"));
 
         JLabel title = new JLabel("Hotel Shop");
@@ -79,7 +80,7 @@ public class ShopPage extends JPanel {
         titleBlock.add(Box.createRigidArea(new Dimension(0, 4)));
         titleBlock.add(subtitle);
 
-        header.add(backButton, BorderLayout.WEST);
+        header.add(backButton, BorderLayout.EAST);
         header.add(titleBlock, BorderLayout.CENTER);
 
         JPanel searchPanel = new JPanel(new BorderLayout());
@@ -294,6 +295,16 @@ public class ShopPage extends JPanel {
             return true;
         }
         return item.getName().toLowerCase().contains(searchText);
+    }
+
+    private void styleGoldButton(JButton button) {
+        button.setPreferredSize(new Dimension(120, 40));
+        button.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        button.setBackground(UITheme.SECONDARY_BUTTON);
+        button.setForeground(UITheme.TEXT_DARK);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 
     private JPanel createItemCard(Item item) {
