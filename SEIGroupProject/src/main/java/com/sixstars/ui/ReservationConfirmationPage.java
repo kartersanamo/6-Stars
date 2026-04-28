@@ -3,6 +3,7 @@ package com.sixstars.ui;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -10,6 +11,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.awt.RenderingHints;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -130,43 +132,44 @@ public class ReservationConfirmationPage extends JPanel {
     }
 
     private JPanel buildContentArea() {
-        JPanel main = new JPanel(new BorderLayout());
-        main.setBackground(UITheme.PAGE_BACKGROUND);
-        main.setBorder(new EmptyBorder(20, 24, 20, 24));
+        BackgroundImagePanel backgroundPanel = new BackgroundImagePanel(roomImage);
+        backgroundPanel.setLayout(new BorderLayout());
+        backgroundPanel.setBorder(new EmptyBorder(20, 24, 20, 24));
 
-        // Room image panel on the left
-        ImagePanel imagePanel = new ImagePanel(roomImage);
-        imagePanel.setPreferredSize(new Dimension(380, 450));
-        imagePanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 180, 140), 3),
-                new EmptyBorder(0, 0, 0, 0)
-        ));
+        JPanel overlay = new JPanel(new BorderLayout(22, 0));
+        overlay.setOpaque(false);
 
-        // Content panel with details and summary
-        JPanel contentPanel = new JPanel(new GridLayout(1, 2, 20, 0));
-        contentPanel.setBackground(UITheme.PAGE_BACKGROUND);
-        contentPanel.add(buildDetailsPanel());
-        contentPanel.add(buildSummaryPanel());
+        JPanel details = buildDetailsPanel();
+        details.setPreferredSize(new Dimension(520, 0));
 
-        main.add(imagePanel, BorderLayout.WEST);
-        main.add(contentPanel, BorderLayout.CENTER);
+        JPanel summary = buildSummaryPanel();
+        summary.setPreferredSize(new Dimension(390, 0));
 
-        return main;
+        overlay.add(details, BorderLayout.CENTER);
+        overlay.add(summary, BorderLayout.EAST);
+
+        backgroundPanel.add(overlay, BorderLayout.CENTER);
+        return backgroundPanel;
     }
 
     private JPanel buildDetailsPanel() {
         JPanel details = new JPanel();
         details.setLayout(new BoxLayout(details, BoxLayout.Y_AXIS));
-        details.setBackground(UITheme.PAGE_BACKGROUND);
+        details.setOpaque(true);
+        details.setBackground(new Color(18, 18, 18, 150));
+        details.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 70), 1),
+                new EmptyBorder(18, 18, 18, 18)
+        ));
 
         // Room Details Section
         JPanel roomSection = createSectionPanel("Room Details");
         roomNumberLabel.setFont(new Font("Serif", Font.BOLD, 26));
-        roomNumberLabel.setForeground(new Color(151, 121, 66));
+        roomNumberLabel.setForeground(new Color(232, 199, 129));
         roomDetailsLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        roomDetailsLabel.setForeground(UITheme.TEXT_MEDIUM);
+        roomDetailsLabel.setForeground(new Color(236, 236, 236));
         roomQualityLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        roomQualityLabel.setForeground(UITheme.TEXT_MEDIUM);
+        roomQualityLabel.setForeground(new Color(236, 236, 236));
 
         roomSection.add(roomNumberLabel);
         roomSection.add(Box.createRigidArea(new Dimension(0, 8)));
@@ -180,11 +183,11 @@ public class ReservationConfirmationPage extends JPanel {
         // Dates Section
         JPanel datesSection = createSectionPanel("Check-In & Check-Out");
         checkInDateLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        checkInDateLabel.setForeground(UITheme.TEXT_MEDIUM);
+        checkInDateLabel.setForeground(new Color(236, 236, 236));
         checkOutDateLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        checkOutDateLabel.setForeground(UITheme.TEXT_MEDIUM);
+        checkOutDateLabel.setForeground(new Color(236, 236, 236));
         nightsLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
-        nightsLabel.setForeground(new Color(44, 122, 72));
+        nightsLabel.setForeground(new Color(181, 227, 188));
 
         datesSection.add(checkInDateLabel);
         datesSection.add(Box.createRigidArea(new Dimension(0, 4)));
@@ -198,7 +201,7 @@ public class ReservationConfirmationPage extends JPanel {
         // Booking For Section
         JPanel bookingSection = createSectionPanel("Booking For");
         bookingForLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        bookingForLabel.setForeground(UITheme.TEXT_MEDIUM);
+        bookingForLabel.setForeground(new Color(236, 236, 236));
         bookingSection.add(bookingForLabel);
 
         details.add(bookingSection);
@@ -208,17 +211,22 @@ public class ReservationConfirmationPage extends JPanel {
     }
 
     private JPanel buildSummaryPanel() {
+        JPanel summaryCard = new JPanel(new BorderLayout());
+        summaryCard.setBackground(UITheme.CARD_BACKGROUND);
+        summaryCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 180, 140), 2),
+                new EmptyBorder(0, 0, 0, 0)
+        ));
+
         JPanel summary = new JPanel();
         summary.setLayout(new BoxLayout(summary, BoxLayout.Y_AXIS));
         summary.setBackground(UITheme.CARD_BACKGROUND);
-        summary.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 180, 140), 2),
-                new EmptyBorder(22, 20, 22, 20)
-        ));
+        summary.setBorder(new EmptyBorder(22, 20, 22, 20));
 
         JLabel title = new JLabel("Pricing & Summary");
         title.setFont(new Font("SansSerif", Font.BOLD, 16));
         title.setForeground(new Color(151, 121, 66));
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
         summary.add(title);
         summary.add(Box.createRigidArea(new Dimension(0, 14)));
 
@@ -257,21 +265,35 @@ public class ReservationConfirmationPage extends JPanel {
 
         summary.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        // Policy preview
+        // Full-width policy preview section under grand total
+        JPanel policyBlock = new JPanel();
+        policyBlock.setLayout(new BoxLayout(policyBlock, BoxLayout.Y_AXIS));
+        policyBlock.setOpaque(false);
+        policyBlock.setAlignmentX(LEFT_ALIGNMENT);
+        policyBlock.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+        policyBlock.setPreferredSize(new Dimension(10, 90));
+
         JLabel policyTitle = new JLabel("Cancellation Policy");
         policyTitle.setFont(new Font("SansSerif", Font.BOLD, 12));
         policyTitle.setForeground(new Color(161, 62, 47));
-        summary.add(policyTitle);
-        summary.add(Box.createRigidArea(new Dimension(0, 6)));
+        policyTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        policyTitle.setHorizontalAlignment(SwingConstants.LEFT);
 
         JLabel policyPreview = new JLabel("<html>Cancel free within 2 days.<br>After: 80% non-refundable.</html>");
         policyPreview.setFont(new Font("SansSerif", Font.PLAIN, 11));
         policyPreview.setForeground(UITheme.TEXT_MEDIUM);
-        summary.add(policyPreview);
+        policyPreview.setAlignmentX(Component.LEFT_ALIGNMENT);
+        policyPreview.setHorizontalAlignment(SwingConstants.LEFT);
+
+        policyBlock.add(policyTitle);
+        policyBlock.add(Box.createRigidArea(new Dimension(0, 6)));
+        policyBlock.add(policyPreview);
+        summary.add(policyBlock);
 
         summary.add(Box.createRigidArea(new Dimension(0, 18)));
 
         JButton confirmButton = createPrimaryButton("Confirm & Book");
+        confirmButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         confirmButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         confirmButton.setFont(new Font("SansSerif", Font.BOLD, 14));
         confirmButton.addActionListener(e -> confirmReservation());
@@ -280,6 +302,7 @@ public class ReservationConfirmationPage extends JPanel {
         summary.add(Box.createRigidArea(new Dimension(0, 10)));
 
         JButton editButton = createSecondaryButton("Edit Dates");
+        editButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         editButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         editButton.addActionListener(e -> goBackToMakeReservation());
         summary.add(editButton);
@@ -287,6 +310,7 @@ public class ReservationConfirmationPage extends JPanel {
         summary.add(Box.createRigidArea(new Dimension(0, 10)));
 
         JButton cancelButton = createCancelButton();
+        cancelButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         cancelButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         cancelButton.addActionListener(e -> cancelBooking());
         summary.add(cancelButton);
@@ -294,12 +318,10 @@ public class ReservationConfirmationPage extends JPanel {
         JScrollPane scrollPane = new JScrollPane(summary);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.getViewport().setBackground(UITheme.PAGE_BACKGROUND);
+        scrollPane.getViewport().setBackground(UITheme.CARD_BACKGROUND);
 
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(UITheme.PAGE_BACKGROUND);
-        wrapper.add(scrollPane, BorderLayout.CENTER);
-        return wrapper;
+        summaryCard.add(scrollPane, BorderLayout.CENTER);
+        return summaryCard;
     }
 
 
@@ -332,10 +354,12 @@ public class ReservationConfirmationPage extends JPanel {
         JPanel section = new JPanel();
         section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
         section.setOpaque(false);
+        section.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel sectionTitle = new JLabel(title);
         sectionTitle.setFont(new Font("SansSerif", Font.BOLD, 14));
-        sectionTitle.setForeground(UITheme.TEXT_DARK);
+        sectionTitle.setForeground(new Color(248, 248, 248));
+        sectionTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         section.add(sectionTitle);
         section.add(Box.createRigidArea(new Dimension(0, 12)));
 
@@ -345,6 +369,8 @@ public class ReservationConfirmationPage extends JPanel {
     private JPanel createPricingRow(String label, JLabel valueLabel) {
         JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
 
         JLabel labelComponent = new JLabel(label);
         labelComponent.setFont(new Font("SansSerif", Font.PLAIN, 13));
@@ -361,6 +387,8 @@ public class ReservationConfirmationPage extends JPanel {
 
     private JPanel createDivider() {
         JPanel divider = new JPanel();
+        divider.setAlignmentX(Component.LEFT_ALIGNMENT);
+        divider.setPreferredSize(new Dimension(1, 1));
         divider.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
         divider.setBackground(UITheme.BORDER_COLOR);
         divider.setOpaque(true);
@@ -574,10 +602,10 @@ public class ReservationConfirmationPage extends JPanel {
         return null;
     }
 
-    private static class ImagePanel extends JPanel {
+    private static class BackgroundImagePanel extends JPanel {
         private final Image image;
 
-        ImagePanel(Image image) {
+        BackgroundImagePanel(Image image) {
             this.image = image;
         }
 
@@ -586,9 +614,26 @@ public class ReservationConfirmationPage extends JPanel {
             super.paintComponent(g);
             if (image != null) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.drawImage(image, 0, 0, getWidth(), getHeight(), this);
-                // Subtle overlay for depth
-                g2.setColor(new Color(0, 0, 0, 20));
+                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+                int panelW = getWidth();
+                int panelH = getHeight();
+                int imageW = image.getWidth(this);
+                int imageH = image.getHeight(this);
+
+                if (imageW > 0 && imageH > 0 && panelW > 0 && panelH > 0) {
+                    // Cover fit: keep aspect ratio and crop overflow to avoid stretching.
+                    double scale = Math.max((double) panelW / imageW, (double) panelH / imageH);
+                    int drawW = (int) Math.round(imageW * scale);
+                    int drawH = (int) Math.round(imageH * scale);
+                    int drawX = (panelW - drawW) / 2;
+                    int drawY = (panelH - drawH) / 2;
+                    g2.drawImage(image, drawX, drawY, drawW, drawH, this);
+                }
+
+                // Darken the background so overlay cards/text are readable.
+                g2.setColor(new Color(0, 0, 0, 96));
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 g2.dispose();
             }
