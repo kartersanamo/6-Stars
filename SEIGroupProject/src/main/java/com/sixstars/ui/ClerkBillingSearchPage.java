@@ -132,7 +132,12 @@ public class ClerkBillingSearchPage extends JPanel {
 
     private void showHotelSummary() {
         resultsPanel.removeAll();
-        resultsPanel.add(createHotelSummaryCard(), BorderLayout.NORTH);
+        JPanel summaryCard = createHotelSummaryCard();
+        JScrollPane summaryScrollPane = new JScrollPane(summaryCard);
+        summaryScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        summaryScrollPane.getViewport().setBackground(UITheme.PAGE_BACKGROUND);
+        summaryScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        resultsPanel.add(summaryScrollPane, BorderLayout.CENTER);
         revalidate();
         repaint();
     }
