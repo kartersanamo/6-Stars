@@ -2,6 +2,8 @@ package com.sixstars.ui;
 
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
+import com.sixstars.service.BillingService;
+import com.sixstars.service.AccountService;
 import com.sixstars.model.Reservation;
 import com.sixstars.model.Role;
 import com.sixstars.model.Room;
@@ -13,6 +15,8 @@ import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
 import com.sixstars.database.ShopItemDAO;
 import com.sixstars.model.Item;
+import com.sixstars.model.Account;
+import com.sixstars.model.Role;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -23,23 +27,17 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ClerkBillingSearchPage extends JPanel {
     private final BillingService billingService;
-    private final ReservationService reservationService;
-    private final RoomService roomService;
     private final AccountService accountService;
-    private final ShopItemDAO shopItemDAO;
-    private final JTextField emailField;
+    private final JComboBox<String> guestComboBox;
     private final JPanel resultsPanel;
 
     public ClerkBillingSearchPage(JPanel pages, CardLayout cardLayout) {
         this.billingService = new BillingService();
-        this.reservationService = new ReservationService();
-        this.roomService = new RoomService();
         this.accountService = new AccountService();
-        this.shopItemDAO = new ShopItemDAO();
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
 
@@ -53,7 +51,7 @@ public class ClerkBillingSearchPage extends JPanel {
         title.setForeground(UITheme.TEXT_DARK);
         header.add(title, BorderLayout.WEST);
 
-        // Back Button matching CheckInPage's "false" primary style
+        // Back Button
         JButton btnBack = createThemedButton("Back to Dashboard", false);
         btnBack.addActionListener(e -> {
             Account current = AccountController.currentAccount;
@@ -65,6 +63,23 @@ public class ClerkBillingSearchPage extends JPanel {
         });
         header.add(btnBack, BorderLayout.EAST);
 
+        // --- Guest Dropdown ---
+        JPanel guestSelectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        guestSelectionPanel.setBackground(UITheme.PAGE_BACKGROUND);
+        guestSelectionPanel.setBorder(new EmptyBorder(10, 40, 0, 40));
+
+        JLabel guestLabel = new JLabel("Select Guest: ");
+        guestLabel.setFont(UITheme.LABEL_FONT);
+        guestSelectionPanel.add(guestLabel);
+
+        guestComboBox = new JComboBox<>();
+        guestComboBox.setFont(UITheme.INPUT_FONT);
+        guestComboBox.setPreferredSize(new Dimension(250, 32));
+        guestComboBox.addItem("-- Select a guest --");
+        guestComboBox.addActionListener(e -> onGuestSelected());
+        guestSelectionPanel.add(guestComboBox);
+
+        // --- Search Panel ---
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.setBackground(UITheme.PAGE_BACKGROUND);
         searchPanel.setBorder(new EmptyBorder(10, 40, 10, 40));
@@ -103,10 +118,46 @@ public class ClerkBillingSearchPage extends JPanel {
         topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
         topContainer.setOpaque(false);
         topContainer.add(header);
+        topContainer.add(guestSelectionPanel);
         topContainer.add(searchPanel);
 
         add(topContainer, BorderLayout.NORTH);
         add(resultsPanel, BorderLayout.CENTER);
+
+        refreshGuestList();
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
+                refreshGuestList();
+            }
+        });
+    }
+
+    private void refreshGuestList() {
+        guestComboBox.removeAllItems();
+        guestComboBox.addItem("-- Select a guest --");
+
+        try {
+            List<Account> allAccounts = accountService.getAllAccounts();
+            List<String> guestEmails = allAccounts.stream()
+                    .filter(a -> a.getRole() == Role.GUEST)
+                    .map(Account::getEmail)
+                    .sorted()
+                    .collect(Collectors.toList());
+
+            for (String email : guestEmails) {
+                guestComboBox.addItem(email);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading guests: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void onGuestSelected() {
+        Object selected = guestComboBox.getSelectedItem();
+        if (selected != null && !selected.equals("-- Select a guest --")) {
+            String email = (String) selected;
+            performSearch(email);
+        }
     }
 
     private void performSearch(String email) {

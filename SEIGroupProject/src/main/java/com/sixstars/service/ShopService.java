@@ -4,6 +4,7 @@ import com.sixstars.database.ShopItemDAO;
 import com.sixstars.database.ShopOrderDAO;
 import com.sixstars.model.CartItem;
 import com.sixstars.model.Item;
+import com.sixstars.model.Reservation;
 import com.sixstars.model.ShopOrder;
 import com.sixstars.model.ShopOrderItem;
 import com.sixstars.model.ShoppingCart;
@@ -16,6 +17,7 @@ public class ShopService {
 
     private final ShopItemDAO dao = new ShopItemDAO();
     private final ShopOrderDAO shopOrderDAO = new ShopOrderDAO();
+    private final ReservationService reservationService = new ReservationService();
 
     public List<Item> getInventory() {
         List<Item> available = new ArrayList<>();
@@ -32,6 +34,10 @@ public class ShopService {
     public double checkout(String guestEmail, ShoppingCart cart) {
         if (guestEmail == null || guestEmail.isBlank()) {
             throw new IllegalStateException("A guest must be logged in to complete checkout.");
+        }
+
+        if (!isGuestCurrentlyCheckedIn(guestEmail)) {
+            throw new IllegalStateException("Checkout is only available to guests currently checked in.");
         }
 
         if (cart == null || cart.isEmpty()) {
@@ -75,5 +81,21 @@ public class ShopService {
 
         cart.clear();
         return total;
+    }
+
+    private boolean isGuestCurrentlyCheckedIn(String guestEmail) {
+        LocalDate today = LocalDate.now();
+        List<Reservation> reservations = reservationService.getGuestReservations(guestEmail);
+
+        for (Reservation reservation : reservations) {
+            boolean isCheckedIn = "CHECKED_IN".equalsIgnoreCase(reservation.getStatus());
+            boolean isDuringStay = !today.isBefore(reservation.getStartDate()) && today.isBefore(reservation.getEndDate());
+
+            if (isCheckedIn && isDuringStay) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

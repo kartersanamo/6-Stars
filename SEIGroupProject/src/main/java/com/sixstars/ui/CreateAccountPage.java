@@ -107,6 +107,14 @@ public class CreateAccountPage extends JPanel {
         JButton createButton = new JButton("Create Account");
         stylePrimaryButton(createButton);
 
+        JLabel loginPromptLabel = new JLabel("Already have an account?");
+        loginPromptLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        loginPromptLabel.setForeground(UITheme.TEXT_MEDIUM);
+        loginPromptLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JButton loginButton = new JButton("Log In");
+        styleLinkButton(loginButton);
+
         JButton backButton = new JButton("Back");
         styleSecondaryButton(backButton);
 
@@ -159,6 +167,14 @@ public class CreateAccountPage extends JPanel {
         gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 14, 0);
         formPanel.add(createButton, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 6, 0);
+        formPanel.add(loginPromptLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 14, 0);
+        formPanel.add(loginButton, gbc);
 
         gbc.gridy = row;
         gbc.insets = new Insets(0, 0, 0, 0);
@@ -241,6 +257,8 @@ public class CreateAccountPage extends JPanel {
                 cardLayout.show(pages, "home");
             }
         });
+
+        loginButton.addActionListener(e -> cardLayout.show(pages, "login"));
     }
 
     private JLabel createCenteredLabel(String text) {
@@ -310,6 +328,20 @@ public class CreateAccountPage extends JPanel {
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
+    }
+
+    private void styleLinkButton(JButton button) {
+        button.setPreferredSize(new Dimension(320, 34));
+        button.setMaximumSize(new Dimension(320, 34));
+        button.setFont(new Font("SansSerif", Font.BOLD, 14));
+        button.setForeground(new Color(140, 104, 47));
+        button.setBackground(UITheme.CARD_BACKGROUND);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(false);
+        button.setContentAreaFilled(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
     }
