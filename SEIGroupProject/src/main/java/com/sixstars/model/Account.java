@@ -11,12 +11,20 @@ public class Account {
     private String verificationExpiresAt;
     private String profileImagePath;
 
-    public Account(String firstName, String lastName, String email, String passwordHash, Role role, String profileImagePath) {
-        this(firstName, lastName, email, passwordHash, role, null, null, null);
+    // Original 5-arg constructor for backward compatibility
+    public Account(String firstName, String lastName, String email, String passwordHash, Role role) {
+        this(firstName, lastName, email, passwordHash, role, null, null, null, null);
     }
 
+    // 8-arg constructor with verification fields but no profile image
     public Account(String firstName, String lastName, String email, String passwordHash, Role role,
                    Boolean emailVerified, String verificationCodeHash, String verificationExpiresAt) {
+        this(firstName, lastName, email, passwordHash, role, emailVerified, verificationCodeHash, verificationExpiresAt, null);
+    }
+
+    // 9-arg full constructor with verification fields and profile image
+    public Account(String firstName, String lastName, String email, String passwordHash, Role role,
+                   Boolean emailVerified, String verificationCodeHash, String verificationExpiresAt, String profileImagePath) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -28,7 +36,9 @@ public class Account {
         this.profileImagePath = profileImagePath;
     }
 
-    public Account(String firstName, String lastName, String email, String passwordHash, Role role, boolean emailVerified, String verificationCodeHash, String verificationExpiresAt, Role role1, String profileImagePath) {
+    // 6-arg legacy constructor with profile image (delegates to 9-arg)
+    public Account(String firstName, String lastName, String email, String passwordHash, Role role, String profileImagePath) {
+        this(firstName, lastName, email, passwordHash, role, null, null, null, profileImagePath);
     }
 
     public String getFirstName() {

@@ -59,7 +59,6 @@ public class AccountDAO {
                             rs.getInt("email_verified") == 1,
                             rs.getString("verification_code_hash"),
                             rs.getString("verification_expires_at"),
-                            com.sixstars.model.Role.valueOf(rs.getString("role")),
                             rs.getString("profileImagePath")
                     );
                 }
@@ -87,7 +86,6 @@ public class AccountDAO {
                         rs.getInt("email_verified") == 1,
                         rs.getString("verification_code_hash"),
                         rs.getString("verification_expires_at"),
-                        com.sixstars.model.Role.valueOf(rs.getString("role")),
                         rs.getString("profileImagePath")
                     );
                     aList.add(a);

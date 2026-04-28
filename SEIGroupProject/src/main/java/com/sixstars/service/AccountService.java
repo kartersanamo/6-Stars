@@ -134,37 +134,26 @@ public class AccountService {
         accountDAO.saveAccount(account);
     }
 
-    public void updateProfile(Account performer, String fName, String lName, String newPass) {
+    public void updateProfile(Account performer, String fName, String lName, String profileImagePath) {
         if (performer == null) {
             throw new RuntimeException("You must be logged in to edit your profile.");
         }
 
-        // Allow the currently authenticated user to update their own profile (name and image).
-        // Previously this method restricted edits to clerks only which prevented users
-        // from updating their own profile image. That restriction is removed so any
-        // logged-in user can modify their own profile details. Changing other users'
-        // accounts should still be done via updateAccount(Account) where appropriate.
+        // Update the performer's name and profile image, preserving all other fields including verification state
         Account updated = new Account(
                 fName,
                 lName,
                 performer.getEmail(),
                 performer.getPasswordHash(),
                 performer.getRole(),
+                performer.getEmailVerified(),
+                performer.getVerificationCodeHash(),
+                performer.getVerificationExpiresAt(),
                 profileImagePath
         );
         accountDAO.saveAccount(updated);
     }
 
-        Account updated = new Account(
-                fName,
-                lName,
-                performer.getEmail(),
-                passwordHash,
-                performer.getRole(),
-                performer.getEmailVerified(),
-                performer.getVerificationCodeHash(),
-                performer.getVerificationExpiresAt()
-        );
     public void changePassword(Account performer, String currentPassword, String newPassword, String confirmPassword) {
         if (performer == null) {
             throw new RuntimeException("No active account found.");
