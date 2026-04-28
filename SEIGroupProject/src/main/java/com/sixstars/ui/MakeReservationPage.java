@@ -758,9 +758,9 @@ public class MakeReservationPage extends JPanel {
         }
 
         return switch (theme) {
-            case NATURE_RETREAT -> loadImage("assets/roomImages/natureRetreatRoom.jpg");
-            case URBAN_ELEGANCE -> loadImage("assets/roomImages/urbanEleganceRoom.jpg");
-            case VINTAGE_CHARM -> loadImage("assets/roomImages/vintageCharmRoom.jpg");
+            case NATURE_RETREAT -> loadImage("assets/roomImages/natureRetreatRoom.png");
+            case URBAN_ELEGANCE -> loadImage("assets/roomImages/urbanEleganceRoom.png");
+            case VINTAGE_CHARM -> loadImage("assets/roomImages/vintageCharmRoom.png");
         };
     }
 
