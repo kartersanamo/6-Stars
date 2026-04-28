@@ -20,6 +20,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
 import com.sixstars.app.Main;
@@ -152,7 +153,51 @@ public class LoginPage extends JPanel {
                     cardLayout.show(pages, "home");
                 }
             } else {
-                JOptionPane.showMessageDialog(this, "Invalid credentials.");
+                Account existing = accountService.getAccountByEmail(email);
+                if (existing != null && !existing.isEmailVerified() && existing.getPasswordHash().equals(accountService.hashPassword(password))) {
+                    try {
+                        accountService.sendVerificationCode(existing.getEmail());
+                    } catch (RuntimeException verificationEx) {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "We couldn't send a fresh code yet: " + verificationEx.getMessage(),
+                                "Verification Email Failed",
+                                JOptionPane.WARNING_MESSAGE
+                        );
+                    }
+
+                    EmailVerificationDialog dialog = new EmailVerificationDialog(
+                            SwingUtilities.getWindowAncestor(this),
+                            new AccountController(),
+                            existing.getEmail()
+                    );
+                    dialog.setVisible(true);
+
+                    if (dialog.wasVerified()) {
+                        Account verified = accountService.getAccountByEmail(existing.getEmail());
+                        if (verified != null) {
+                            AccountController.currentAccount = verified;
+                            Main.headerBar.refreshInfo();
+
+                            if (verified.getRole() == Role.ADMIN) {
+                                cardLayout.show(pages, "admin page");
+                            } else if (verified.getRole() == Role.CLERK) {
+                                cardLayout.show(pages, "clerk page");
+                            } else {
+                                cardLayout.show(pages, "home");
+                            }
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "Please verify your email to continue.",
+                                "Email Verification Required",
+                                JOptionPane.WARNING_MESSAGE
+                        );
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this, "Invalid credentials.");
+                }
             }
 
             emailField.setText("");

@@ -25,4 +25,20 @@ public class AccountController {
         accountService.updateProfile(currentAccount, firstName, lastName, newPassword);
         currentAccount = accountService.getAccountByEmail(currentAccount.getEmail());
     }
+
+    public void sendVerificationCode(String email) {
+        accountService.sendVerificationCode(email);
+    }
+
+    public boolean verifyAccountEmail(String email, String code) {
+        return accountService.verifyEmailCode(email, code);
+    }
+
+    public void resendVerificationCode(String email) {
+        accountService.resendVerificationCode(email);
+    }
+
+    public Account getAccountByEmail(String email) {
+        return accountService.getAccountByEmail(email);
+    }
 }

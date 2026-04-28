@@ -25,6 +25,7 @@ import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -369,7 +370,47 @@ public class CreateAccountPage extends JPanel {
                 
 
                 if (!isAdmin) {
-                    AccountController.currentAccount = createdAccount;
+                    try {
+                        accountController.sendVerificationCode(createdAccount.getEmail());
+                    } catch (RuntimeException verificationEx) {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "Account created, but the verification email could not be sent yet. " + verificationEx.getMessage(),
+                                "Verification Email Failed",
+                                JOptionPane.WARNING_MESSAGE
+                        );
+                    }
+
+                    EmailVerificationDialog dialog = new EmailVerificationDialog(
+                            SwingUtilities.getWindowAncestor(this),
+                            accountController,
+                            createdAccount.getEmail()
+                    );
+                    dialog.setVisible(true);
+
+                    if (!dialog.wasVerified()) {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "Please verify your email to continue.",
+                                "Verification Required",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+                        return;
+                    }
+
+                    Account verifiedAccount = accountController.getAccountByEmail(createdAccount.getEmail());
+                    if (verifiedAccount == null) {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "Verification succeeded, but we couldn't reload the new account.",
+                                "Verification Error",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+                        return;
+                    }
+
+                    AccountController.currentAccount = verifiedAccount;
+
                     Main.headerBar.refreshInfo();
 
                     if (Main.makeReservationPage.completePendingReservationIfAny()) {

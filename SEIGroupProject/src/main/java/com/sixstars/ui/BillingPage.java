@@ -230,15 +230,9 @@ public class BillingPage extends JPanel {
         dates.setFont(new Font("SansSerif", Font.PLAIN, 14));
         dates.setForeground(UITheme.TEXT_MEDIUM);
 
-        JLabel ratePlan = new JLabel("Rate Plan: " + reservation.getRatePlan().getDisplayName());
-        ratePlan.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        ratePlan.setForeground(UITheme.TEXT_MEDIUM);
-
         card.add(top);
         card.add(Box.createRigidArea(new Dimension(0, 6)));
         card.add(dates);
-        card.add(Box.createRigidArea(new Dimension(0, 4)));
-        card.add(ratePlan);
 
         // Only show Nightly Rate details if the reservation is ACTIVE
         if (!isCancelled) {
@@ -246,18 +240,12 @@ public class BillingPage extends JPanel {
             nightly.setFont(new Font("SansSerif", Font.PLAIN, 14));
             nightly.setForeground(UITheme.TEXT_MEDIUM);
 
-            JLabel maxDaily = new JLabel("Quality Max Daily Rate: $" + reservation.getMaxDailyRate() + ".00");
-            maxDaily.setFont(new Font("SansSerif", Font.PLAIN, 14));
-            maxDaily.setForeground(UITheme.TEXT_MEDIUM);
-
             JLabel nights = new JLabel("Nights: " + reservation.getNights());
             nights.setFont(new Font("SansSerif", Font.PLAIN, 14));
             nights.setForeground(UITheme.TEXT_MEDIUM);
 
             card.add(Box.createRigidArea(new Dimension(0, 4)));
             card.add(nightly);
-            card.add(Box.createRigidArea(new Dimension(0, 4)));
-            card.add(maxDaily);
             card.add(Box.createRigidArea(new Dimension(0, 4)));
             card.add(nights);
         }

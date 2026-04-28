@@ -11,12 +11,10 @@ import java.util.stream.Collectors;
 public class ReservationService {
     private final ReservationDAO reservationDAO;
     private final RoomDAO roomDAO;
-    private final PricingSettingsService pricingSettingsService;
 
     public ReservationService() {
         reservationDAO = new ReservationDAO();
         roomDAO = new RoomDAO();
-        pricingSettingsService = new PricingSettingsService();
     }
 
     public List<Room> filterAvailableRooms(LocalDate start, LocalDate end, BedType type, Theme theme, QualityLevel quality) {
@@ -38,10 +36,6 @@ public class ReservationService {
      * Logic to finalize and save a booking.
      */
     public Reservation makeReservation(String guestEmail, LocalDate start, LocalDate end, List<Room> selectedRooms) {
-        return makeReservation(guestEmail, start, end, selectedRooms, null);
-    }
-
-    public Reservation makeReservation(String guestEmail, LocalDate start, LocalDate end, List<Room> selectedRooms, RatePlan ratePlan) {
         // 1. Validate availability (unchanged)
         for (Room r : selectedRooms) {
             if (!reservationDAO.isRoomAvailable(r.getRoomNumber(), start, end)) {
@@ -56,23 +50,9 @@ public class ReservationService {
         }
 
         int nightlyRate = 0;
-        int maxDailyRate = 0;
-        double configuredDiscountRate = pricingSettingsService.getGlobalDiscountRate();
-        RatePlan appliedRatePlan = ratePlan == null
-                ? (configuredDiscountRate > 0 ? RatePlan.PROMOTION : RatePlan.STANDARD)
-                : ratePlan;
         if (selectedRooms != null && !selectedRooms.isEmpty()) {
             // Assuming 1 room per reservation (matches your current UI)
-            Room selectedRoom = selectedRooms.get(0);
-            maxDailyRate = selectedRoom.getQualityLevel().getMaxDailyRate();
-            int baseRate = selectedRoom.getPricePerNight();
-            if (ratePlan == null) {
-                nightlyRate = (int) Math.round(baseRate * (1.0 - configuredDiscountRate));
-            } else {
-                nightlyRate = appliedRatePlan.applyDiscount(baseRate);
-            }
-            // Enforce quality cap regardless of pricing plan
-            nightlyRate = Math.min(nightlyRate, maxDailyRate);
+            nightlyRate = selectedRooms.get(0).getPricePerNight();
         }
 
         int totalCost = nightlyRate * nights;
@@ -82,8 +62,6 @@ public class ReservationService {
 
         // 4. Explicitly set billing fields (IMPORTANT)
         newBooking.setNightlyRate(nightlyRate);
-        newBooking.setMaxDailyRate(maxDailyRate);
-        newBooking.setRatePlan(appliedRatePlan);
         newBooking.setNights(nights);
         newBooking.setTotalCost(totalCost);
 

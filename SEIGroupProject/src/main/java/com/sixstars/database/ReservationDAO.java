@@ -1,7 +1,6 @@
 package com.sixstars.database;
 
 import com.sixstars.model.Reservation;
-import com.sixstars.model.RatePlan;
 import com.sixstars.model.Room;
 import java.sql.*;
 import java.time.LocalDate;
@@ -11,7 +10,7 @@ import java.util.List;
 public class ReservationDAO {
 
     public void saveReservation(Reservation res) {
-        String resSql = "INSERT INTO reservations(startDate, endDate, guestEmail, nightlyRate, nights, totalCost, status, createdDate, maxDailyRate, ratePlan) VALUES(?,?,?,?,?,?,?,?,?,?)";
+        String resSql = "INSERT INTO reservations(startDate, endDate, guestEmail, nightlyRate, nights, totalCost, status, createdDate) VALUES(?,?,?,?,?,?,?,?)";
         String joinSql = "INSERT INTO reservation_rooms(reservation_id, room_number) VALUES(?,?)";
 
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -26,8 +25,6 @@ public class ReservationDAO {
                 pstmt.setInt(6, res.getTotalCost());
                 pstmt.setString(7, res.getStatus());
                 pstmt.setString(8, res.getCreatedDate().toString());
-                pstmt.setInt(9, res.getMaxDailyRate());
-                pstmt.setString(10, res.getRatePlan().name());
                 pstmt.executeUpdate();
 
                 ResultSet rs = pstmt.getGeneratedKeys();
@@ -73,16 +70,13 @@ public class ReservationDAO {
                 int totalCost = rs.getInt("totalCost");
                 String status = rs.getString("status");
                 String createdDateRaw = rs.getString("createdDate");
-                int maxDailyRate = rs.getInt("maxDailyRate");
-                String ratePlanRaw = rs.getString("ratePlan");
-                RatePlan ratePlan = parseRatePlan(ratePlanRaw);
                 LocalDate createdDate = (createdDateRaw == null || createdDateRaw.isBlank())
                         ? LocalDate.now()
                         : LocalDate.parse(createdDateRaw);
 
                 List<Room> rooms = getRoomsForReservation(id);
 
-                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost, status, createdDate, maxDailyRate, ratePlan);
+                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost, status, createdDate);
                 res.setId(id);
 
                 reservations.add(res);
@@ -170,16 +164,13 @@ public class ReservationDAO {
                 int totalCost = rs.getInt("totalCost");
                 String status = rs.getString("status");
                 String createdDateRaw = rs.getString("createdDate");
-                int maxDailyRate = rs.getInt("maxDailyRate");
-                String ratePlanRaw = rs.getString("ratePlan");
-                RatePlan ratePlan = parseRatePlan(ratePlanRaw);
                 LocalDate createdDate = (createdDateRaw == null || createdDateRaw.isBlank())
                         ? LocalDate.now()
                         : LocalDate.parse(createdDateRaw);
 
                 List<Room> rooms = getRoomsForReservation(id);
 
-                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost, status, createdDate, maxDailyRate, ratePlan);
+                Reservation res = new Reservation(email, start, end, rooms, nightlyRate, nights, totalCost, status, createdDate);
                 res.setId(id);
                 list.add(res);
             }
@@ -257,17 +248,6 @@ public class ReservationDAO {
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
-        }
-    }
-
-    private RatePlan parseRatePlan(String ratePlanRaw) {
-        if (ratePlanRaw == null || ratePlanRaw.isBlank()) {
-            return RatePlan.STANDARD;
-        }
-        try {
-            return RatePlan.valueOf(ratePlanRaw);
-        } catch (IllegalArgumentException ex) {
-            return RatePlan.STANDARD;
         }
     }
 }

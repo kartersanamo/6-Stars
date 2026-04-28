@@ -13,8 +13,6 @@ public class Reservation {
     int totalCost;
     String status;
     LocalDate createdDate;
-    int maxDailyRate;
-    RatePlan ratePlan;
 
     public Reservation(String guestEmail, LocalDate startDate, LocalDate endDate, List<Room> rooms, String status) {
         this.guestEmail = guestEmail;
@@ -23,14 +21,11 @@ public class Reservation {
         this.rooms = rooms;
         this.status = status;
         this.createdDate = LocalDate.now();
-        this.ratePlan = RatePlan.STANDARD;
 
         if (rooms != null && !rooms.isEmpty()) {
             this.nightlyRate = rooms.get(0).getPricePerNight();
-            this.maxDailyRate = rooms.get(0).getQualityLevel().getMaxDailyRate();
         } else {
             this.nightlyRate = 0;
-            this.maxDailyRate = 0;
         }
 
         this.nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
@@ -43,17 +38,11 @@ public class Reservation {
 
     public Reservation(String guestEmail, LocalDate startDate, LocalDate endDate,
                        List<Room> rooms, int nightlyRate, int nights, int totalCost, String status) {
-        this(guestEmail, startDate, endDate, rooms, nightlyRate, nights, totalCost, status, LocalDate.now(), 0, RatePlan.STANDARD);
+        this(guestEmail, startDate, endDate, rooms, nightlyRate, nights, totalCost, status, LocalDate.now());
     }
 
     public Reservation(String guestEmail, LocalDate startDate, LocalDate endDate,
                        List<Room> rooms, int nightlyRate, int nights, int totalCost, String status, LocalDate createdDate) {
-        this(guestEmail, startDate, endDate, rooms, nightlyRate, nights, totalCost, status, createdDate, 0, RatePlan.STANDARD);
-    }
-
-    public Reservation(String guestEmail, LocalDate startDate, LocalDate endDate,
-                       List<Room> rooms, int nightlyRate, int nights, int totalCost, String status, LocalDate createdDate,
-                       int maxDailyRate, RatePlan ratePlan) {
         this.guestEmail = guestEmail;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -63,8 +52,6 @@ public class Reservation {
         this.totalCost = totalCost;
         this.status = status;
         this.createdDate = createdDate;
-        this.maxDailyRate = maxDailyRate;
-        this.ratePlan = ratePlan == null ? RatePlan.STANDARD : ratePlan;
     }
 
     @Override
@@ -146,21 +133,5 @@ public class Reservation {
 
     public void setCreatedDate(LocalDate createdDate) {
         this.createdDate = createdDate;
-    }
-
-    public int getMaxDailyRate() {
-        return maxDailyRate;
-    }
-
-    public void setMaxDailyRate(int maxDailyRate) {
-        this.maxDailyRate = maxDailyRate;
-    }
-
-    public RatePlan getRatePlan() {
-        return ratePlan;
-    }
-
-    public void setRatePlan(RatePlan ratePlan) {
-        this.ratePlan = ratePlan;
     }
 }

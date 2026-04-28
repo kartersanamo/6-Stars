@@ -6,13 +6,24 @@ public class Account {
     private String email;
     private String passwordHash;
     private Role role;
+    private Boolean emailVerified;
+    private String verificationCodeHash;
+    private String verificationExpiresAt;
 
     public Account(String firstName, String lastName, String email, String passwordHash, Role role) {
+        this(firstName, lastName, email, passwordHash, role, null, null, null);
+    }
+
+    public Account(String firstName, String lastName, String email, String passwordHash, Role role,
+                   Boolean emailVerified, String verificationCodeHash, String verificationExpiresAt) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
+        this.emailVerified = emailVerified;
+        this.verificationCodeHash = verificationCodeHash;
+        this.verificationExpiresAt = verificationExpiresAt;
     }
 
     public String getFirstName() {
@@ -33,5 +44,21 @@ public class Account {
 
     public Role getRole() {
         return role;
+    }
+
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public boolean isEmailVerified() {
+        return Boolean.TRUE.equals(emailVerified);
+    }
+
+    public String getVerificationCodeHash() {
+        return verificationCodeHash;
+    }
+
+    public String getVerificationExpiresAt() {
+        return verificationExpiresAt;
     }
 }

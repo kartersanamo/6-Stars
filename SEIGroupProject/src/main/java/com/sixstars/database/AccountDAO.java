@@ -8,10 +8,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.sixstars.model.Account;
+import com.sixstars.model.Role;
 
 public class AccountDAO {
     public void saveAccount(Account account) {
-        String sql = "INSERT OR REPLACE INTO accounts(email, firstName, lastName, passwordHash, role) VALUES(?,?,?,?,?)";
+        Account existing = getAccountByEmail(account.getEmail());
+        Boolean emailVerified = account.getEmailVerified() != null
+                ? account.getEmailVerified()
+                : existing != null ? existing.getEmailVerified() : Boolean.FALSE;
+        String verificationCodeHash = account.getVerificationCodeHash() != null
+                ? account.getVerificationCodeHash()
+                : existing != null ? existing.getVerificationCodeHash() : null;
+        String verificationExpiresAt = account.getVerificationExpiresAt() != null
+                ? account.getVerificationExpiresAt()
+                : existing != null ? existing.getVerificationExpiresAt() : null;
+
+        String sql = "INSERT OR REPLACE INTO accounts(email, firstName, lastName, passwordHash, role, email_verified, verification_code_hash, verification_expires_at) VALUES(?,?,?,?,?,?,?,?)";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -20,6 +32,9 @@ public class AccountDAO {
             pstmt.setString(3, account.getLastName());
             pstmt.setString(4, account.getPasswordHash());
             pstmt.setString(5, account.getRole().name());
+            pstmt.setInt(6, Boolean.TRUE.equals(emailVerified) ? 1 : 0);
+            pstmt.setString(7, verificationCodeHash);
+            pstmt.setString(8, verificationExpiresAt);
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -39,7 +54,10 @@ public class AccountDAO {
                             rs.getString("lastName"),
                             rs.getString("email"),
                             rs.getString("passwordHash"),
-                            com.sixstars.model.Role.valueOf(rs.getString("role"))
+                            Role.valueOf(rs.getString("role")),
+                            rs.getInt("email_verified") == 1,
+                            rs.getString("verification_code_hash"),
+                            rs.getString("verification_expires_at")
                     );
                 }
             }
@@ -62,7 +80,10 @@ public class AccountDAO {
                         rs.getString("lastName"),
                         rs.getString("email"),
                         rs.getString("passwordHash"),
-                        com.sixstars.model.Role.valueOf(rs.getString("role"))
+                        Role.valueOf(rs.getString("role")),
+                        rs.getInt("email_verified") == 1,
+                        rs.getString("verification_code_hash"),
+                        rs.getString("verification_expires_at")
                     );
                     aList.add(a);
                 }
@@ -71,5 +92,20 @@ public class AccountDAO {
             e.printStackTrace();
         }
         return aList;
+    }
+
+    public void updateVerificationState(String email, boolean verified, String verificationCodeHash, String verificationExpiresAt) {
+        String sql = "UPDATE accounts SET email_verified = ?, verification_code_hash = ?, verification_expires_at = ? WHERE email = ?";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, verified ? 1 : 0);
+            pstmt.setString(2, verificationCodeHash);
+            pstmt.setString(3, verificationExpiresAt);
+            pstmt.setString(4, email);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

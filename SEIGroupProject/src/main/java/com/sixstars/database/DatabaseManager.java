@@ -15,6 +15,8 @@ public class DatabaseManager {
 
     public static void initializeDatabase() {
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
+            boolean addedAccountVerificationColumns = false;
+
             // Create Accounts Table
             stmt.execute("CREATE TABLE IF NOT EXISTS accounts (" +
                     "email TEXT PRIMARY KEY, firstName TEXT, lastName TEXT, " +
@@ -30,7 +32,7 @@ public class DatabaseManager {
             stmt.execute("CREATE TABLE IF NOT EXISTS reservations (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, startDate TEXT, endDate TEXT, guestEmail TEXT, " +
                     "nightlyRate INTEGER DEFAULT 0, nights INTEGER DEFAULT 0, totalCost INTEGER DEFAULT 0, " +
-                    "status TEXT DEFAULT 'BOOKED', createdDate TEXT, maxDailyRate INTEGER DEFAULT 0, ratePlan TEXT DEFAULT 'STANDARD')");
+                    "status TEXT DEFAULT 'BOOKED', createdDate TEXT)");
 
             // Create Join Table for Reservation <-> Rooms (Many-to-Many)
             stmt.execute("CREATE TABLE IF NOT EXISTS reservation_rooms (" +
@@ -45,25 +47,29 @@ public class DatabaseManager {
                     "stock INTEGER NOT NULL, " +
                     "imagePath TEXT)");
 
-            stmt.execute("CREATE TABLE IF NOT EXISTS system_settings (" +
-                    "settingKey TEXT PRIMARY KEY, " +
-                    "settingValue TEXT NOT NULL)");
-
             addColumnIfMissing(conn, "rooms", "pricePerNight", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "nightlyRate", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "nights", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "totalCost", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "status", "TEXT DEFAULT 'BOOKED'");
             addColumnIfMissing(conn, "reservations", "createdDate", "TEXT");
-            addColumnIfMissing(conn, "reservations", "maxDailyRate", "INTEGER DEFAULT 0");
-            addColumnIfMissing(conn, "reservations", "ratePlan", "TEXT DEFAULT 'STANDARD'");
+
+            addedAccountVerificationColumns |= addColumnIfMissing(conn, "accounts", "email_verified", "INTEGER DEFAULT 0");
+            addedAccountVerificationColumns |= addColumnIfMissing(conn, "accounts", "verification_code_hash", "TEXT");
+            addedAccountVerificationColumns |= addColumnIfMissing(conn, "accounts", "verification_expires_at", "TEXT");
+
+            if (addedAccountVerificationColumns) {
+                try (Statement backfillStmt = conn.createStatement()) {
+                    backfillStmt.executeUpdate("UPDATE accounts SET email_verified = 1");
+                }
+            }
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    private static void addColumnIfMissing(Connection conn, String tableName, String columnName, String columnDefinition)
+    private static boolean addColumnIfMissing(Connection conn, String tableName, String columnName, String columnDefinition)
             throws SQLException {
         String pragmaSql = "PRAGMA table_info(" + tableName + ")";
         boolean columnExists = false;
@@ -82,6 +88,9 @@ public class DatabaseManager {
             try (Statement alterStmt = conn.createStatement()) {
                 alterStmt.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition);
             }
+            return true;
         }
+
+        return false;
     }
 }
