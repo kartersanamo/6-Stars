@@ -55,6 +55,9 @@ public class AdminPage extends JPanel {
             cardLayout.show(pages, "reset password");
         });
 
+        JButton btnBillingSummary = createThemedButton("Billing & Hotel Summary");
+        btnBillingSummary.addActionListener(e -> cardLayout.show(pages, "clerk billing"));
+
         JButton btnLogout = createThemedButton("Logout");
         styleLogoutButton(btnLogout);
         btnLogout.addActionListener(e -> {
@@ -72,6 +75,8 @@ public class AdminPage extends JPanel {
         card.add(btnCreateClerk);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnResetPass);
+        card.add(Box.createRigidArea(new Dimension(0, 14)));
+        card.add(btnBillingSummary);
         card.add(Box.createRigidArea(new Dimension(0, 25)));
         card.add(btnLogout);
         card.add(Box.createVerticalGlue());

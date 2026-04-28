@@ -41,4 +41,30 @@ public class BillingService {
     public double getGrandTotal(String email) {
         return getReservationTotal(email) + getShopTotal(email);
     }
+
+    public List<Reservation> getAllReservationCharges() {
+        return reservationDAO.getAllReservations();
+    }
+
+    public List<ShopOrder> getAllShopPurchases() {
+        return shopOrderDAO.getAllOrders();
+    }
+
+    public int getHotelReservationTotal() {
+        return getAllReservationCharges()
+                .stream()
+                .mapToInt(Reservation::getTotalCost)
+                .sum();
+    }
+
+    public double getHotelShopTotal() {
+        return getAllShopPurchases()
+                .stream()
+                .mapToDouble(ShopOrder::getTotalCost)
+                .sum();
+    }
+
+    public double getHotelGrandTotal() {
+        return getHotelReservationTotal() + getHotelShopTotal();
+    }
 }

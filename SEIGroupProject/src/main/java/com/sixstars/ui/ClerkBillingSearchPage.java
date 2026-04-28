@@ -1,15 +1,13 @@
 package com.sixstars.ui;
 
+import com.sixstars.controller.AccountController;
+import com.sixstars.model.Account;
+import com.sixstars.model.Role;
 import com.sixstars.service.BillingService;
-import com.sixstars.model.Reservation;
-import com.sixstars.model.ShopOrder;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.HierarchyEvent;
-import java.awt.event.HierarchyListener;
-import java.util.List;
 
 public class ClerkBillingSearchPage extends JPanel {
     private final BillingService billingService;
@@ -26,14 +24,21 @@ public class ClerkBillingSearchPage extends JPanel {
         header.setBackground(UITheme.PAGE_BACKGROUND);
         header.setBorder(new EmptyBorder(20, 40, 10, 40));
 
-        JLabel title = new JLabel("Guest Billing Search");
+        JLabel title = new JLabel("Billing Search & Hotel Summary");
         title.setFont(UITheme.TITLE_FONT); // Use constant from UITheme
         title.setForeground(UITheme.TEXT_DARK);
         header.add(title, BorderLayout.WEST);
 
         // Back Button matching CheckInPage's "false" primary style
         JButton btnBack = createThemedButton("Back to Dashboard", false);
-        btnBack.addActionListener(e -> cardLayout.show(pages, "clerk page"));
+        btnBack.addActionListener(e -> {
+            Account current = AccountController.currentAccount;
+            if (current != null && current.getRole() == Role.ADMIN) {
+                cardLayout.show(pages, "admin page");
+            } else {
+                cardLayout.show(pages, "clerk page");
+            }
+        });
         header.add(btnBack, BorderLayout.EAST);
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -60,6 +65,10 @@ public class ClerkBillingSearchPage extends JPanel {
             }
         });
         searchPanel.add(btnSearch);
+
+        JButton btnSummary = createThemedButton("Hotel Summary", false);
+        btnSummary.addActionListener(e -> showHotelSummary());
+        searchPanel.add(btnSummary);
 
         // --- Results Area ---
         resultsPanel = new JPanel(new BorderLayout());
@@ -95,6 +104,73 @@ public class ClerkBillingSearchPage extends JPanel {
         customView.refreshForEmail(email);
 
         return customView;
+    }
+
+    private void showHotelSummary() {
+        resultsPanel.removeAll();
+        resultsPanel.add(createHotelSummaryCard(), BorderLayout.NORTH);
+        revalidate();
+        repaint();
+    }
+
+    private JPanel createHotelSummaryCard() {
+        int reservationCount = billingService.getAllReservationCharges().size();
+        int reservationTotal = billingService.getHotelReservationTotal();
+        int shopOrderCount = billingService.getAllShopPurchases().size();
+        double shopTotal = billingService.getHotelShopTotal();
+        double grandTotal = billingService.getHotelGrandTotal();
+
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(UITheme.CARD_BACKGROUND);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(18, 18, 18, 18)
+        ));
+
+        JLabel title = new JLabel("Hotel Financial Summary");
+        title.setFont(new Font("SansSerif", Font.BOLD, 20));
+        title.setForeground(UITheme.TEXT_DARK);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel reservations = new JLabel(String.format("Reservations tracked: %d", reservationCount));
+        reservations.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        reservations.setForeground(UITheme.TEXT_MEDIUM);
+        reservations.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel reservationRevenue = new JLabel(String.format("Reservation charges total: $%d.00", reservationTotal));
+        reservationRevenue.setFont(new Font("SansSerif", Font.BOLD, 16));
+        reservationRevenue.setForeground(UITheme.TEXT_DARK);
+        reservationRevenue.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel orders = new JLabel(String.format("Shop payments tracked: %d", shopOrderCount));
+        orders.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        orders.setForeground(UITheme.TEXT_MEDIUM);
+        orders.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel shopRevenue = new JLabel(String.format("Shop payments total: $%.2f", shopTotal));
+        shopRevenue.setFont(new Font("SansSerif", Font.BOLD, 16));
+        shopRevenue.setForeground(UITheme.TEXT_DARK);
+        shopRevenue.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel overall = new JLabel(String.format("Combined total: $%.2f", grandTotal));
+        overall.setFont(new Font("SansSerif", Font.BOLD, 20));
+        overall.setForeground(new Color(176, 132, 38));
+        overall.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        card.add(title);
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
+        card.add(reservations);
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(reservationRevenue);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+        card.add(orders);
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(shopRevenue);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+        card.add(overall);
+
+        return card;
     }
 
     private JButton createThemedButton(String text, boolean isPrimary) {
