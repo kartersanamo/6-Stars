@@ -27,20 +27,18 @@ import javax.swing.border.EmptyBorder;
 
 import com.sixstars.app.Main;
 import com.sixstars.model.Room;
+import com.sixstars.model.Theme;
 import com.sixstars.service.RoomService;
 
 public class HomeLandingPage extends JPanel {
     private static final String HERO_IMAGE_PATH = "assets/6Stars-Background.jpg";
-    private static final String ROOM_IMAGE_PATH = "assets/6Stars-Room.jpg";
 
     private final Image heroImage;
-    private final Image roomImage;
     private final RoomService roomService;
 
     public HomeLandingPage(JPanel pages, CardLayout cardLayout) {
         this.roomService = new RoomService();
         this.heroImage = loadImage(HERO_IMAGE_PATH);
-        this.roomImage = loadImage(ROOM_IMAGE_PATH);
 
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
@@ -194,7 +192,7 @@ public class HomeLandingPage extends JPanel {
     }
 
     private JPanel createRoomPreviewCard(Room room) {
-        JPanel card = new ImagePanel(roomImage);
+        JPanel card = new ImagePanel(getRoomImageForTheme(room.getTheme()));
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
@@ -316,6 +314,18 @@ public class HomeLandingPage extends JPanel {
         button.setOpaque(true);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return button;
+    }
+
+    private Image getRoomImageForTheme(Theme theme) {
+        if (theme == null) {
+            return loadImage("assets/6Stars-Room.jpg");
+        }
+
+        return switch (theme) {
+            case NATURE_RETREAT -> loadImage("assets/roomImages/natureRetreatRoom.png");
+            case URBAN_ELEGANCE -> loadImage("assets/roomImages/urbanEleganceRoom.png");
+            case VINTAGE_CHARM -> loadImage("assets/roomImages/vintageCharmRoom.png");
+        };
     }
 
     private Image loadImage(String relativePath) {
