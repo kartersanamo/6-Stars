@@ -67,14 +67,12 @@ public class MakeReservationPage extends JPanel {
     private final JCheckBox onlyAvailableCheck;
     private final JLabel resultsInfoLabel;
     private final JPanel roomCardsContainer;
-    private final Image roomCardImage;
 
     public MakeReservationPage(JPanel pages, CardLayout cardLayout, ReservationService reservationService, RoomService roomService) {
         this.pages = pages;
         this.cardLayout = cardLayout;
         this.reservationService = reservationService;
         this.roomService = roomService;
-        this.roomCardImage = loadImage(ROOM_IMAGE_PATH);
 
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
@@ -351,7 +349,7 @@ public class MakeReservationPage extends JPanel {
         ));
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 240));
 
-        ImagePanel imagePanel = new ImagePanel(roomCardImage);
+        ImagePanel imagePanel = new ImagePanel(getRoomImageForTheme(room.getTheme()));
         imagePanel.setPreferredSize(new Dimension(340, 240));
         imagePanel.setLayout(new BorderLayout());
 
@@ -752,6 +750,18 @@ public class MakeReservationPage extends JPanel {
         if (selectedCheckOut == null || selectedCheckOut.before(minCheckOut)) {
             checkOutChooser.setDate(minCheckOut);
         }
+    }
+
+    private Image getRoomImageForTheme(Theme theme) {
+        if (theme == null) {
+            return loadImage("assets/6Stars-Room.jpg");
+        }
+
+        return switch (theme) {
+            case NATURE_RETREAT -> loadImage("assets/roomImages/natureRetreatRoom.jpg");
+            case URBAN_ELEGANCE -> loadImage("assets/roomImages/urbanEleganceRoom.jpg");
+            case VINTAGE_CHARM -> loadImage("assets/roomImages/vintageCharmRoom.jpg");
+        };
     }
 
     private Image loadImage(String relativePath) {
