@@ -28,6 +28,9 @@ public class Account {
         this.profileImagePath = profileImagePath;
     }
 
+    public Account(String firstName, String lastName, String email, String passwordHash, Role role, boolean emailVerified, String verificationCodeHash, String verificationExpiresAt, Role role1, String profileImagePath) {
+    }
+
     public String getFirstName() {
         return firstName;
     }
