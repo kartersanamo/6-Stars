@@ -507,7 +507,8 @@ public class MakeReservationPage extends JPanel {
         }
 
         Account currentAccount = AccountController.currentAccount;
-        String targetEmail;
+        String targetEmail = null;
+        boolean isClerkBooking = false;
 
         if (currentAccount == null) {
             Main.setPendingReservation(room, startDate, endDate);
@@ -533,6 +534,7 @@ public class MakeReservationPage extends JPanel {
                 JOptionPane.showMessageDialog(this, "No Guest account found for: " + targetEmail);
                 return;
             }
+            isClerkBooking = true;
         } else if (currentAccount.getRole() == Role.GUEST) {
             // Normal Guest uses their own account email
             targetEmail = currentAccount.getEmail();
@@ -542,20 +544,9 @@ public class MakeReservationPage extends JPanel {
             return;
         }
 
-        reservationService.makeReservation(targetEmail, startDate, endDate, List.of(room));
-
-        int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-        int total = room.getPricePerNight() * nights;
-
-        JOptionPane.showMessageDialog(
-                this,
-                "Reservation successful for Room " + room.getRoomNumber()
-                        + ". Total: $" + total + " for " + nights
-                        + " night" + (nights == 1 ? "" : "s") + ".",
-                "Booking Confirmed",
-                JOptionPane.INFORMATION_MESSAGE
-        );
-        refreshListings();
+        // Navigate to confirmation page instead of immediately booking
+        Main.reservationConfirmationPage.showDraft(room, startDate, endDate, currentAccount, isClerkBooking, targetEmail);
+        cardLayout.show(pages, "reservation confirmation");
     }
 
     public boolean completePendingReservationIfAny() {
@@ -581,21 +572,10 @@ public class MakeReservationPage extends JPanel {
         }
 
         Account currentAccount = AccountController.currentAccount;
-        reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room));
 
-        int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-        int total = room.getPricePerNight() * nights;
-
-        JOptionPane.showMessageDialog(
-                this,
-                "Welcome! Your reservation for Room " + room.getRoomNumber()
-                        + " is confirmed. Total: $" + total + " for " + nights
-                        + " night" + (nights == 1 ? "" : "s") + ".",
-                "Booking Confirmed",
-                JOptionPane.INFORMATION_MESSAGE
-        );
-        refreshListings();
-        cardLayout.show(pages, "make reservation");
+        // Navigate to confirmation page with pending reservation data
+        Main.reservationConfirmationPage.showDraft(room, startDate, endDate, currentAccount, false, null);
+        cardLayout.show(pages, "reservation confirmation");
         return true;
     }
 
