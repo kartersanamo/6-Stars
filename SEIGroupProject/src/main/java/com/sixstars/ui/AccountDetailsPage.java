@@ -39,7 +39,6 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
-import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
@@ -67,8 +66,7 @@ public class AccountDetailsPage extends JPanel {
 
     private final AvatarPanel avatarPanel = new AvatarPanel();
     private final JLabel avatarStatusLabel = new JLabel();
-    private final JLabel profileCompletionLabel = new JLabel();
-    private final JProgressBar profileProgress = new JProgressBar(0, 100);
+    // Profile completion UI removed per user request
     private final JLabel roleBadgeLabel = new JLabel("Guest");
     private final JLabel accountTypeLabel = new JLabel("Standard Account");
     private final JLabel emailValueLabel = new JLabel("Unknown");
@@ -176,16 +174,7 @@ public class AccountDetailsPage extends JPanel {
         accountTypeLabel.setForeground(UITheme.TEXT_MEDIUM);
         badgeRow.add(accountTypeLabel);
 
-        profileCompletionLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
-        profileCompletionLabel.setForeground(UITheme.TEXT_DARK);
-        badgeRow.add(profileCompletionLabel);
-
-        profileProgress.setStringPainted(true);
-        profileProgress.setForeground(UITheme.ACCENT_GOLD);
-        profileProgress.setBackground(new Color(234, 228, 216));
-        profileProgress.setBorder(BorderFactory.createLineBorder(new Color(216, 207, 193), 1));
-        profileProgress.setPreferredSize(new Dimension(260, 18));
-        profileProgress.setString("Profile completeness");
+        // Profile completion label and progress bar removed
 
         heroText.add(title);
         heroText.add(Box.createRigidArea(new Dimension(0, 6)));
@@ -193,7 +182,6 @@ public class AccountDetailsPage extends JPanel {
         heroText.add(Box.createRigidArea(new Dimension(0, 12)));
         heroText.add(badgeRow);
         heroText.add(Box.createRigidArea(new Dimension(0, 10)));
-        heroText.add(profileProgress);
 
         JPanel avatarMini = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         avatarMini.setOpaque(false);
@@ -585,7 +573,6 @@ public class AccountDetailsPage extends JPanel {
                 : "Profile photo is uploaded and ready.");
 
         updateQuickActionVisibility(account.getRole());
-        updateProfileCompletion(account);
         loadPreferences(account);
         clearPasswordFields();
         togglePasswordVisibility(showPasswordsCheck.isSelected());
@@ -602,8 +589,7 @@ public class AccountDetailsPage extends JPanel {
         roleBadgeLabel.setText("Guest");
         avatarPanel.clear();
         avatarStatusLabel.setText("Log in to edit your profile.");
-        profileCompletionLabel.setText("0% complete");
-        profileProgress.setValue(0);
+        // Profile completion UI removed
         clearPasswordFields();
         showPasswordsCheck.setSelected(false);
         togglePasswordVisibility(false);
@@ -831,17 +817,7 @@ public class AccountDetailsPage extends JPanel {
         }
     }
 
-    private void updateProfileCompletion(Account account) {
-        int score = 0;
-        if (account.getFirstName() != null && !account.getFirstName().isBlank()) score += 25;
-        if (account.getLastName() != null && !account.getLastName().isBlank()) score += 25;
-        if (account.getEmail() != null && !account.getEmail().isBlank()) score += 25;
-        if (account.getProfileImagePath() != null && !account.getProfileImagePath().isBlank()) score += 25;
-
-        profileProgress.setValue(score);
-        profileProgress.setString(score + "% complete");
-        profileCompletionLabel.setText(score == 100 ? "Profile complete" : "Profile in progress");
-    }
+    // Profile completion tracking removed per user request
 
     private String formatAccountType(Role role) {
         if (role == Role.ADMIN) return "Administrator Account";

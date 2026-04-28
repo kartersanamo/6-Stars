@@ -65,11 +65,23 @@ public class AccountService {
     }
 
     public void updateProfile(Account performer, String fName, String lName, String profileImagePath) {
-        if (performer == null || performer.getRole() != Role.CLERK) {
-            throw new RuntimeException("Only clerks can edit profiles.");
+        if (performer == null) {
+            throw new RuntimeException("No active account found.");
         }
 
-        Account updated = new Account(fName, lName, performer.getEmail(), performer.getPasswordHash(), performer.getRole(), profileImagePath);
+        // Allow the currently authenticated user to update their own profile (name and image).
+        // Previously this method restricted edits to clerks only which prevented users
+        // from updating their own profile image. That restriction is removed so any
+        // logged-in user can modify their own profile details. Changing other users'
+        // accounts should still be done via updateAccount(Account) where appropriate.
+        Account updated = new Account(
+                fName,
+                lName,
+                performer.getEmail(),
+                performer.getPasswordHash(),
+                performer.getRole(),
+                profileImagePath
+        );
         accountDAO.saveAccount(updated);
     }
 
