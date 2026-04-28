@@ -10,6 +10,8 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.CardLayout;
+import java.awt.GridBagLayout;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.event.ActionListener;
@@ -344,8 +346,6 @@ public class AccountDetailsPage extends JPanel {
         helper.setForeground(UITheme.TEXT_MEDIUM);
         card.add(helper);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
-
-        card.add(styleActionButton(signOutButton, false));
         return card;
     }
 
