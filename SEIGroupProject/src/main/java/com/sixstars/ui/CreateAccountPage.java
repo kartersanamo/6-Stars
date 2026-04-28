@@ -3,6 +3,7 @@ package com.sixstars.ui;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -20,6 +21,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
@@ -43,7 +46,7 @@ public class CreateAccountPage extends JPanel {
     public CreateAccountPage(JPanel pages, CardLayout cardLayout) {
         accountController = new AccountController();
 
-        setLayout(new GridBagLayout());
+        setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
 
         JPanel card = new JPanel();
@@ -243,7 +246,18 @@ public class CreateAccountPage extends JPanel {
         card.add(formPanel);
         card.add(Box.createVerticalGlue());
 
-        add(card);
+        JPanel cardContainer = new JPanel(new GridBagLayout());
+        cardContainer.setOpaque(false);
+        cardContainer.add(card);
+
+        JScrollPane scrollPane = new JScrollPane(cardContainer);
+        scrollPane.setBorder(null);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getViewport().setBackground(UITheme.PAGE_BACKGROUND);
+        scrollPane.setOpaque(false);
+
+        add(scrollPane, BorderLayout.CENTER);
 
         Runnable refreshValidationUI = () -> {
             String emailText = emailField.getText().trim();
