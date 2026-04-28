@@ -57,7 +57,7 @@ public class CreateAccountPage extends JPanel {
                 BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
                 new EmptyBorder(35, 45, 35, 45)
         ));
-        card.setPreferredSize(new Dimension(460, 800));
+        card.setPreferredSize(new Dimension(460, 1050));
 
         JLabel titleLabel = new JLabel("Create Account");
         titleLabel.setFont(UITheme.TITLE_FONT);
