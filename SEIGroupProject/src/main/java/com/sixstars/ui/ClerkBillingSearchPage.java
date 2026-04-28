@@ -1,5 +1,7 @@
 package com.sixstars.ui;
 
+import com.sixstars.controller.AccountController;
+import com.sixstars.model.Role;
 import com.sixstars.service.BillingService;
 import com.sixstars.model.Reservation;
 import com.sixstars.model.ShopOrder;
@@ -33,7 +35,14 @@ public class ClerkBillingSearchPage extends JPanel {
 
         // Back Button matching CheckInPage's "false" primary style
         JButton btnBack = createThemedButton("Back to Dashboard", false);
-        btnBack.addActionListener(e -> cardLayout.show(pages, "clerk page"));
+        btnBack.addActionListener(e -> {
+            if (AccountController.currentAccount != null
+                    && AccountController.currentAccount.getRole() == Role.ADMIN) {
+                cardLayout.show(pages, "admin page");
+            } else {
+                cardLayout.show(pages, "clerk page");
+            }
+        });
         header.add(btnBack, BorderLayout.EAST);
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
