@@ -100,7 +100,7 @@ public class CreateAccountPage extends JPanel {
         });
 
         roleLabel = createCenteredLabel("Role");
-        Role[] roles = {Role.GUEST, Role.CLERK, Role.ADMIN};
+        Role[] roles = {Role.CLERK};
         roleComboBox = new JComboBox<>(roles);
         styleComboBox(roleComboBox);
 
@@ -211,7 +211,7 @@ public class CreateAccountPage extends JPanel {
                 if (!isAdmin) {
                     roleSet = Role.GUEST;
                 } else {
-                    roleSet = (Role) roleComboBox.getSelectedItem();
+                    roleSet = Role.CLERK;
                 }
 
                 Account createdAccount = accountController.createAccount(firstName, lastName, email, password, roleSet);
@@ -353,6 +353,7 @@ public class CreateAccountPage extends JPanel {
         roleLabel.setVisible(isAdmin);
         roleComboBox.setVisible(isAdmin);
         if (isAdmin) {
+            roleComboBox.setSelectedItem(Role.CLERK);
             passwordField.setText(generateRandomPassword(10));
         } else {
             passwordField.setText("");
