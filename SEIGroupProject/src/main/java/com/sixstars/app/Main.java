@@ -9,6 +9,8 @@ import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 import com.sixstars.controller.AccountController;
 import com.sixstars.database.DatabaseManager;
 import com.sixstars.model.Room;
@@ -187,6 +189,14 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        // Load .env file if it exists
+        try {
+            Dotenv dotenv = Dotenv.configure()
+                    .ignoreIfMissing()
+                    .load();
+        } catch (Exception e) {
+            // .env file not found or failed to load, continue with system environment variables
+        }
         SwingUtilities.invokeLater(Main::createAndShowUI);
     }
 
