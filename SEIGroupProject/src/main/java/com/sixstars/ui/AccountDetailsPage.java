@@ -115,7 +115,8 @@ public class AccountDetailsPage extends JPanel {
                 new EmptyBorder(28, 32, 28, 32)
         ));
         contentCard.setMaximumSize(new Dimension(1080, Integer.MAX_VALUE));
-        contentCard.setPreferredSize(new Dimension(1000, 1240));
+        // Let the content size be flexible while providing a reasonable preferred height
+        contentCard.setPreferredSize(new Dimension(1000, 900));
 
         contentCard.add(buildHeroPanel());
         contentCard.add(Box.createRigidArea(new Dimension(0, 18)));
@@ -413,9 +414,21 @@ public class AccountDetailsPage extends JPanel {
         component.setAlignmentX(Component.LEFT_ALIGNMENT);
         if (component instanceof JTextField textField) {
             styleTextField(textField);
+            // Make input fields a consistent height
+            textField.setPreferredSize(new Dimension(Integer.MAX_VALUE, 40));
+            textField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         } else if (component instanceof JLabel valueLabel) {
+            // Style value labels to visually match inputs for a consistent card look
             valueLabel.setFont(UITheme.INPUT_FONT);
             valueLabel.setForeground(UITheme.TEXT_DARK);
+            valueLabel.setBorder(BorderFactory.createCompoundBorder(
+                    new LineBorder(UITheme.BORDER_COLOR, 1, true),
+                    new EmptyBorder(8, 10, 8, 10)
+            ));
+            valueLabel.setOpaque(true);
+            valueLabel.setBackground(Color.WHITE);
+            valueLabel.setPreferredSize(new Dimension(Integer.MAX_VALUE, 40));
+            valueLabel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         }
         if (!editable && component instanceof JTextField textField) {
             textField.setEditable(false);
@@ -443,6 +456,8 @@ public class AccountDetailsPage extends JPanel {
 
         stylePasswordField(field);
         field.setAlignmentX(Component.LEFT_ALIGNMENT);
+        field.setPreferredSize(new Dimension(Integer.MAX_VALUE, 40));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         card.add(field);
         return card;
     }
@@ -495,6 +510,9 @@ public class AccountDetailsPage extends JPanel {
         field.setBackground(Color.WHITE);
         field.setForeground(UITheme.TEXT_DARK);
         field.setCaretColor(UITheme.TEXT_DARK);
+        // Keep fields at a friendly touch-target height
+        field.setPreferredSize(new Dimension(Integer.MAX_VALUE, 40));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
     }
 
     private void stylePasswordField(JPasswordField field) {
