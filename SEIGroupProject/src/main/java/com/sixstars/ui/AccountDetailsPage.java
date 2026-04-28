@@ -7,8 +7,10 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.BorderLayout;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 
 import javax.swing.BorderFactory;
@@ -177,7 +179,7 @@ public class AccountDetailsPage extends JPanel {
         actionsGbc.insets = new Insets(0, 0, 12, 0);
         quickActionsPanel.add(quickHintLabel, actionsGbc);
 
-        JPanel actionsButtonsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
+        JPanel actionsButtonsRow = new JPanel(new GridLayout(1, 3, 10, 0));
         actionsButtonsRow.setOpaque(false);
         actionsButtonsRow.add(reservationsBtn);
         actionsButtonsRow.add(shopBtn);
@@ -191,7 +193,7 @@ public class AccountDetailsPage extends JPanel {
         actionsGbc.insets = new Insets(0, 0, 0, 0);
         quickActionsPanel.add(dashboardBtn, actionsGbc);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 4));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 6));
         buttonPanel.setBackground(UITheme.CARD_BACKGROUND);
 
         editBtn = new JButton("Edit Profile");
@@ -405,8 +407,8 @@ public class AccountDetailsPage extends JPanel {
     }
 
     private void styleGoldButton(JButton button) {
-        button.setPreferredSize(new Dimension(210, 44));
-        button.setMaximumSize(new Dimension(210, 44));
+        button.setPreferredSize(new Dimension(220, 44));
+        button.setMaximumSize(new Dimension(220, 44));
         button.setBackground(UITheme.SECONDARY_BUTTON);
         button.setForeground(UITheme.TEXT_DARK);
         button.setFocusPainted(false);
@@ -417,16 +419,17 @@ public class AccountDetailsPage extends JPanel {
     }
 
     private void styleSecondaryActionButton(JButton button) {
-        button.setPreferredSize(new Dimension(180, 36));
-        button.setMinimumSize(new Dimension(180, 36));
-        button.setMaximumSize(new Dimension(230, 36));
+        button.setPreferredSize(new Dimension(210, 38));
+        button.setMinimumSize(new Dimension(210, 38));
+        button.setMaximumSize(new Dimension(210, 38));
+        button.setFont(new Font("SansSerif", Font.PLAIN, 14));
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setBackground(new Color(243, 243, 243));
         button.setForeground(UITheme.TEXT_DARK);
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
-                new EmptyBorder(6, 10, 6, 10)
+                new EmptyBorder(7, 12, 7, 12)
         ));
         button.setHorizontalAlignment(SwingConstants.CENTER);
     }
