@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 public class ClerkBillingSearchPage extends JPanel {
     private final BillingService billingService;
     private final AccountService accountService;
-    private final JTextField emailField;
     private final JComboBox<String> guestComboBox;
     private final JPanel resultsPanel;
 
@@ -64,28 +63,6 @@ public class ClerkBillingSearchPage extends JPanel {
         searchPanel.setBackground(UITheme.PAGE_BACKGROUND);
         searchPanel.setBorder(new EmptyBorder(10, 40, 10, 40));
 
-        JLabel searchLabel = new JLabel("Or enter email: ");
-        searchLabel.setFont(UITheme.LABEL_FONT);
-        searchPanel.add(searchLabel);
-
-        emailField = new JTextField(20);
-        emailField.setFont(UITheme.INPUT_FONT);
-        searchPanel.add(emailField);
-
-        JButton btnSearch = createThemedButton("Generate Bill", true);
-        btnSearch.addActionListener(e -> performSearch(emailField.getText().trim()));
-        this.addHierarchyListener(e -> {
-            emailField.requestFocusInWindow();
-            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
-                refreshGuestList();
-                javax.swing.JRootPane root = javax.swing.SwingUtilities.getRootPane(this);
-                if (root != null) {
-                    root.setDefaultButton(btnSearch);
-                }
-            }
-        });
-        searchPanel.add(btnSearch);
-
         // --- Results Area ---
         resultsPanel = new JPanel(new BorderLayout());
         resultsPanel.setOpaque(false);
@@ -100,6 +77,13 @@ public class ClerkBillingSearchPage extends JPanel {
 
         add(topContainer, BorderLayout.NORTH);
         add(resultsPanel, BorderLayout.CENTER);
+
+        refreshGuestList();
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
+                refreshGuestList();
+            }
+        });
     }
 
     private void refreshGuestList() {
@@ -126,7 +110,6 @@ public class ClerkBillingSearchPage extends JPanel {
         Object selected = guestComboBox.getSelectedItem();
         if (selected != null && !selected.equals("-- Select a guest --")) {
             String email = (String) selected;
-            emailField.setText(email);
             performSearch(email);
         }
     }
