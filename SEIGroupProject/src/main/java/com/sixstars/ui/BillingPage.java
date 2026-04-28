@@ -32,20 +32,6 @@ public class BillingPage extends JPanel {
         subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
         subtitle.setForeground(UITheme.TEXT_MEDIUM);
 
-/*
-        JPanel header = new JPanel();
-        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        header.setBackground(UITheme.CARD_BACKGROUND);
-        header.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER_COLOR),
-                new EmptyBorder(18, 26, 18, 26)
-        ));
-        title.setAlignmentX(Component.LEFT_ALIGNMENT);
-        subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        header.add(title);
-        header.add(Box.createRigidArea(new Dimension(0, 4)));
-        header.add(subtitle);*/
-
         JPanel header = new JPanel(new BorderLayout(16, 0));
         header.setBackground(UITheme.CARD_BACKGROUND);
         header.setBorder(BorderFactory.createCompoundBorder(
@@ -82,7 +68,6 @@ public class BillingPage extends JPanel {
 
         header.add(titleText, BorderLayout.CENTER);
         header.add(btnBack, BorderLayout.EAST);
-        /////////////////////////////////////////////////////////////////////////////
 
         reservationsContainer = new JPanel();
         reservationsContainer.setLayout(new BoxLayout(reservationsContainer, BoxLayout.Y_AXIS));
