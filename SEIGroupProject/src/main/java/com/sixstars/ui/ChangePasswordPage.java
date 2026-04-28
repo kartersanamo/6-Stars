@@ -7,6 +7,8 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagLayout;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -94,16 +96,24 @@ public class ChangePasswordPage extends JPanel {
                 return;
             }
 
+
             String newPassword = JOptionPane.showInputDialog(
                     this,
                     "Enter new password for " + selected.getFirstName() + " " + selected.getLastName() + ":"
             );
 
             if (newPassword != null && !newPassword.trim().isEmpty()) {
-                // For now just print (since you said wait on functionality)
-                System.out.println("Reset password for " 
-                    + selected.getFirstName() + " to: " + newPassword);
-
+                int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "Are you sure you want to reset the password for "
+                        + selected.getFirstName() + " " + selected.getLastName() + " to: " + newPassword,
+                    "Confirm Password Reset",
+                    JOptionPane.YES_NO_OPTION
+                );
+                
+                if (confirm != JOptionPane.YES_OPTION) {
+                    return; // user cancelled
+                }
                 // Later:
                 AccountService aService = new AccountService();
                 Account newA = new Account(selected.getFirstName(), selected.getLastName(), selected.getEmail(), aService.hashPassword(newPassword), selected.getRole());
@@ -134,6 +144,23 @@ public class ChangePasswordPage extends JPanel {
 
         // Load accounts
         refreshAccounts();
+
+        // Add listener to refresh accounts whenever this panel becomes visible (e.g., after navigating back)
+        addComponentListener(new ComponentListener() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                refreshAccounts();
+            }
+
+            @Override
+            public void componentHidden(ComponentEvent e) { }
+
+            @Override
+            public void componentMoved(ComponentEvent e) { }
+
+            @Override
+            public void componentResized(ComponentEvent e) { }
+        });
     }
 
     // Call this whenever page is opened
