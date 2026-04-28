@@ -556,8 +556,7 @@ public class ReservationConfirmationPage extends JPanel {
 
             JOptionPane.showMessageDialog(
                     this,
-                    "Reservation confirmed for Room " + draftRoom.getRoomNumber() + "!\n" +
-                    "Total: $" + total + " for " + nights + " night" + (nights == 1 ? "" : "s") + ".",
+                    "Reservation confirmed for Room " + draftRoom.getRoomNumber(),
                     "Booking Confirmed",
                     JOptionPane.INFORMATION_MESSAGE
             );
