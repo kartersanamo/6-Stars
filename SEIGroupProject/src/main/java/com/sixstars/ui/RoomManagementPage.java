@@ -147,7 +147,20 @@ public class RoomManagementPage extends JPanel {
         main.setBorder(new EmptyBorder(20, 28, 20, 28));
 
         // Left Panel: Filters & Add Form (Scrollable)
-        JPanel leftPanelContent = new JPanel();
+        JPanel leftPanelContent = new JPanel() {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension preferred = super.getPreferredSize();
+                java.awt.Container parent = getParent();
+                if (parent instanceof JViewport) {
+                    int viewportWidth = ((JViewport) parent).getWidth();
+                    if (viewportWidth > 0) {
+                        preferred.width = viewportWidth;
+                    }
+                }
+                return preferred;
+            }
+        };
         leftPanelContent.setLayout(new BoxLayout(leftPanelContent, BoxLayout.Y_AXIS));
         leftPanelContent.setOpaque(false);
 
@@ -161,6 +174,8 @@ public class RoomManagementPage extends JPanel {
         leftScrollPane.setBackground(UITheme.PAGE_BACKGROUND);
         leftScrollPane.getViewport().setBackground(UITheme.PAGE_BACKGROUND);
         leftScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        leftScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        leftScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         leftScrollPane.getVerticalScrollBar().setUnitIncrement(16);
         leftScrollPane.setPreferredSize(new Dimension(320, 400));
 
@@ -240,7 +255,7 @@ public class RoomManagementPage extends JPanel {
 
         // Status Filter
         filtersPanel.add(createFilterLabel("Status"));
-        statusFilterBox = new JComboBox<>(new String[]{"All", "Available", "Occupied", "Maintenance", "Reserved"});
+        statusFilterBox = new JComboBox<>(new String[]{"All", "Vacant", "Occupied", "Booked", "Checked Out"});
         styleComboBox(statusFilterBox);
         filtersPanel.add(statusFilterBox);
         filtersPanel.add(Box.createRigidArea(new Dimension(0, 16)));
@@ -266,12 +281,13 @@ public class RoomManagementPage extends JPanel {
     }
 
     private JTextField createFilterTextField(String placeholder) {
-        JTextField field = new JTextField(placeholder);
+        JTextField field = new JTextField();
         field.setFont(UITheme.INPUT_FONT);
         field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         field.setPreferredSize(new Dimension(300, 36));
         field.setBackground(Color.WHITE);
         field.setForeground(UITheme.TEXT_DARK);
+        field.setToolTipText(placeholder);
         field.setBorder(new CompoundBorder(
                 new LineBorder(UITheme.BORDER_COLOR, 1),
                 new EmptyBorder(6, 8, 6, 8)
@@ -479,9 +495,9 @@ public class RoomManagementPage extends JPanel {
 
     private void updateStatistics() {
         int total = allRooms.size();
-        long available = allRooms.stream().filter(r -> "Available".equals(r.getStatus())).count();
+        long available = allRooms.stream().filter(r -> "Vacant".equals(r.getStatus())).count();
         long occupied = allRooms.stream().filter(r -> "Occupied".equals(r.getStatus())).count();
-        long maintenance = allRooms.stream().filter(r -> "Maintenance".equals(r.getStatus())).count();
+        long maintenance = allRooms.stream().filter(r -> "Checked Out".equals(r.getStatus())).count();
 
         totalRoomsValueLabel.setText(String.valueOf(total));
         availableRoomsValueLabel.setText(String.valueOf(available));
@@ -530,7 +546,7 @@ public class RoomManagementPage extends JPanel {
                     if (smokingFilter.contains("Smoking Allowed")) return r.isSmoking();
                     return !r.isSmoking();
                 })
-                .filter(r -> statusFilter.startsWith("All") || r.getStatus().equals(statusFilter))
+                .filter(r -> statusFilter.startsWith("All") || r.getStatus().equalsIgnoreCase(statusFilter))
                 .collect(Collectors.toList());
     }
 
