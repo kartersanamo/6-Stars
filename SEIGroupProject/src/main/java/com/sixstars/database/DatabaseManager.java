@@ -30,7 +30,7 @@ public class DatabaseManager {
             stmt.execute("CREATE TABLE IF NOT EXISTS reservations (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, startDate TEXT, endDate TEXT, guestEmail TEXT, " +
                     "nightlyRate INTEGER DEFAULT 0, nights INTEGER DEFAULT 0, totalCost INTEGER DEFAULT 0, " +
-                    "status TEXT DEFAULT 'BOOKED', createdDate TEXT)");
+                    "status TEXT DEFAULT 'BOOKED', createdDate TEXT, maxDailyRate INTEGER DEFAULT 0, ratePlan TEXT DEFAULT 'STANDARD')");
 
             // Create Join Table for Reservation <-> Rooms (Many-to-Many)
             stmt.execute("CREATE TABLE IF NOT EXISTS reservation_rooms (" +
@@ -51,6 +51,8 @@ public class DatabaseManager {
             addColumnIfMissing(conn, "reservations", "totalCost", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "status", "TEXT DEFAULT 'BOOKED'");
             addColumnIfMissing(conn, "reservations", "createdDate", "TEXT");
+            addColumnIfMissing(conn, "reservations", "maxDailyRate", "INTEGER DEFAULT 0");
+            addColumnIfMissing(conn, "reservations", "ratePlan", "TEXT DEFAULT 'STANDARD'");
 
         } catch (SQLException e) {
             e.printStackTrace();

@@ -42,6 +42,7 @@ import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.BedType;
 import com.sixstars.model.QualityLevel;
+import com.sixstars.model.RatePlan;
 import com.sixstars.model.Role;
 import com.sixstars.model.Room;
 import com.sixstars.model.Theme;
@@ -375,9 +376,13 @@ public class MakeReservationPage extends JPanel {
         subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
         subtitle.setForeground(UITheme.TEXT_MEDIUM);
 
-        JLabel priceLabel = new JLabel("$" + room.getPricePerNight() + " per night");
+        JLabel priceLabel = new JLabel("$" + room.getPricePerNight() + " per night (Standard)");
         priceLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
         priceLabel.setForeground(new Color(176, 132, 38));
+
+        JLabel maxRateLabel = new JLabel("Quality Max Daily Rate: $" + room.getQualityLevel().getMaxDailyRate());
+        maxRateLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        maxRateLabel.setForeground(UITheme.TEXT_MEDIUM);
 
         String totalText = "Select dates to see total stay cost";
         if (hasValidDateRange) {
@@ -385,8 +390,9 @@ public class MakeReservationPage extends JPanel {
             LocalDate endDate = toLocalDate(checkOutChooser.getDate());
             int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
             int estimatedTotal = room.getPricePerNight() * nights;
-            totalText = "Estimated stay total: $" + estimatedTotal + " for " + nights
-                    + " night" + (nights == 1 ? "" : "s");
+            totalText = "Estimated standard total: $" + estimatedTotal + " for " + nights
+                    + " night" + (nights == 1 ? "" : "s")
+                    + " (discounted plans available)";
         }
 
         JLabel totalLabel = new JLabel(totalText);
@@ -411,6 +417,8 @@ public class MakeReservationPage extends JPanel {
         details.add(subtitle);
         details.add(Box.createRigidArea(new Dimension(0, 10)));
         details.add(priceLabel);
+        details.add(Box.createRigidArea(new Dimension(0, 4)));
+        details.add(maxRateLabel);
         details.add(Box.createRigidArea(new Dimension(0, 6)));
         details.add(totalLabel);
         details.add(Box.createRigidArea(new Dimension(0, 14)));
@@ -542,15 +550,24 @@ public class MakeReservationPage extends JPanel {
             return;
         }
 
-        reservationService.makeReservation(targetEmail, startDate, endDate, List.of(room));
+        RatePlan selectedRatePlan = promptForRatePlan();
+        if (selectedRatePlan == null) {
+            return;
+        }
+
+        reservationService.makeReservation(targetEmail, startDate, endDate, List.of(room), selectedRatePlan);
 
         int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-        int total = room.getPricePerNight() * nights;
+        int actualNightly = Math.min(selectedRatePlan.applyDiscount(room.getPricePerNight()), room.getQualityLevel().getMaxDailyRate());
+        int total = actualNightly * nights;
 
         JOptionPane.showMessageDialog(
                 this,
                 "Reservation successful for Room " + room.getRoomNumber()
-                        + ". Total: $" + total + " for " + nights
+                        + ".\nRate Plan: " + selectedRatePlan.getDisplayName()
+                        + ".\nActual Nightly Rate: $" + actualNightly
+                        + " (Quality Max: $" + room.getQualityLevel().getMaxDailyRate() + ")"
+                        + ".\nTotal: $" + total + " for " + nights
                         + " night" + (nights == 1 ? "" : "s") + ".",
                 "Booking Confirmed",
                 JOptionPane.INFORMATION_MESSAGE
@@ -581,15 +598,24 @@ public class MakeReservationPage extends JPanel {
         }
 
         Account currentAccount = AccountController.currentAccount;
-        reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room));
+        RatePlan selectedRatePlan = promptForRatePlan();
+        if (selectedRatePlan == null) {
+            return true;
+        }
+
+        reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room), selectedRatePlan);
 
         int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-        int total = room.getPricePerNight() * nights;
+        int actualNightly = Math.min(selectedRatePlan.applyDiscount(room.getPricePerNight()), room.getQualityLevel().getMaxDailyRate());
+        int total = actualNightly * nights;
 
         JOptionPane.showMessageDialog(
                 this,
                 "Welcome! Your reservation for Room " + room.getRoomNumber()
-                        + " is confirmed. Total: $" + total + " for " + nights
+                        + " is confirmed.\nRate Plan: " + selectedRatePlan.getDisplayName()
+                        + ".\nActual Nightly Rate: $" + actualNightly
+                        + " (Quality Max: $" + room.getQualityLevel().getMaxDailyRate() + ")"
+                        + ".\nTotal: $" + total + " for " + nights
                         + " night" + (nights == 1 ? "" : "s") + ".",
                 "Booking Confirmed",
                 JOptionPane.INFORMATION_MESSAGE
@@ -597,6 +623,24 @@ public class MakeReservationPage extends JPanel {
         refreshListings();
         cardLayout.show(pages, "make reservation");
         return true;
+    }
+
+    private RatePlan promptForRatePlan() {
+        JComboBox<RatePlan> planBox = new JComboBox<>(RatePlan.values());
+        planBox.setSelectedItem(RatePlan.STANDARD);
+
+        int result = JOptionPane.showConfirmDialog(
+                this,
+                planBox,
+                "Select Rate Plan",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+        return (RatePlan) planBox.getSelectedItem();
     }
 
     private JTextField createTextField(String placeholder) {

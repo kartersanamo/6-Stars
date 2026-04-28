@@ -36,6 +36,10 @@ public class ReservationService {
      * Logic to finalize and save a booking.
      */
     public Reservation makeReservation(String guestEmail, LocalDate start, LocalDate end, List<Room> selectedRooms) {
+        return makeReservation(guestEmail, start, end, selectedRooms, RatePlan.STANDARD);
+    }
+
+    public Reservation makeReservation(String guestEmail, LocalDate start, LocalDate end, List<Room> selectedRooms, RatePlan ratePlan) {
         // 1. Validate availability (unchanged)
         for (Room r : selectedRooms) {
             if (!reservationDAO.isRoomAvailable(r.getRoomNumber(), start, end)) {
@@ -50,9 +54,16 @@ public class ReservationService {
         }
 
         int nightlyRate = 0;
+        int maxDailyRate = 0;
         if (selectedRooms != null && !selectedRooms.isEmpty()) {
             // Assuming 1 room per reservation (matches your current UI)
-            nightlyRate = selectedRooms.get(0).getPricePerNight();
+            Room selectedRoom = selectedRooms.get(0);
+            maxDailyRate = selectedRoom.getQualityLevel().getMaxDailyRate();
+            int baseRate = selectedRoom.getPricePerNight();
+            RatePlan appliedRatePlan = ratePlan == null ? RatePlan.STANDARD : ratePlan;
+            nightlyRate = appliedRatePlan.applyDiscount(baseRate);
+            // Enforce quality cap regardless of pricing plan
+            nightlyRate = Math.min(nightlyRate, maxDailyRate);
         }
 
         int totalCost = nightlyRate * nights;
@@ -62,6 +73,8 @@ public class ReservationService {
 
         // 4. Explicitly set billing fields (IMPORTANT)
         newBooking.setNightlyRate(nightlyRate);
+        newBooking.setMaxDailyRate(maxDailyRate);
+        newBooking.setRatePlan(ratePlan == null ? RatePlan.STANDARD : ratePlan);
         newBooking.setNights(nights);
         newBooking.setTotalCost(totalCost);
 
