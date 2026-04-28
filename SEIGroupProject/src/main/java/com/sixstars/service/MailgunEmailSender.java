@@ -16,9 +16,28 @@ public class MailgunEmailSender {
     private final String fromEmail;
 
     public MailgunEmailSender(String apiKey, String domain, String fromEmail) {
-        this.apiKey = Objects.requireNonNull(apiKey, "apiKey");
-        this.domain = Objects.requireNonNull(domain, "domain");
-        this.fromEmail = Objects.requireNonNull(fromEmail, "fromEmail");
+        // Try System.getenv() first (for shell-set variables), then fall back to System.getProperty() (for .env-loaded variables)
+        this.apiKey = Objects.requireNonNull(
+            apiKey != null ? apiKey : getProperty("MAILGUN_API_KEY"),
+            "apiKey"
+        );
+        this.domain = Objects.requireNonNull(
+            domain != null ? domain : getProperty("MAILGUN_DOMAIN"),
+            "domain"
+        );
+        this.fromEmail = Objects.requireNonNull(
+            fromEmail != null ? fromEmail : getProperty("MAILGUN_FROM_EMAIL"),
+            "fromEmail"
+        );
+    }
+
+    // Helper to try System.getenv() first, then System.getProperty()
+    private static String getProperty(String key) {
+        String value = System.getenv(key);
+        if (value == null) {
+            value = System.getProperty(key);
+        }
+        return value;
     }
 
     public void sendVerificationCode(String toEmail, String code) throws IOException, InterruptedException {

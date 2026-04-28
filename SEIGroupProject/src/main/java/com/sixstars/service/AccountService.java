@@ -64,7 +64,11 @@ public class AccountService {
     }
 
     private String env(String key) {
+        // Try System.getenv() first (for shell-set variables), then fall back to System.getProperty() (for .env-loaded variables)
         String value = System.getenv(key);
+        if (value == null) {
+            value = System.getProperty(key);
+        }
         return value == null || value.isBlank() ? null : value.trim();
     }
 

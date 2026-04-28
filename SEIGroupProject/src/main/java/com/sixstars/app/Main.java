@@ -194,6 +194,9 @@ public class Main {
             Dotenv dotenv = Dotenv.configure()
                     .ignoreIfMissing()
                     .load();
+            // Apply loaded environment variables to System properties so they can be accessed
+            // by the rest of the application (System.getenv() is read-only)
+            dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
         } catch (Exception e) {
             // .env file not found or failed to load, continue with system environment variables
         }
