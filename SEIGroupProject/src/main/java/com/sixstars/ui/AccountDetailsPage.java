@@ -538,9 +538,24 @@ public class AccountDetailsPage extends JPanel {
         uploadPhotoButton.addActionListener(e -> uploadProfilePhoto());
         removePhotoButton.addActionListener(e -> removeProfilePhoto());
         updatePasswordButton.addActionListener(e -> updatePassword());
-        reservationsButton.addActionListener(e -> cardLayout.show(pages, "reservations"));
-        shopButton.addActionListener(e -> cardLayout.show(pages, "shop"));
-        billingButton.addActionListener(e -> cardLayout.show(pages, "billing page"));
+        reservationsButton.addActionListener(e -> {
+            if (Main.reservationsPage != null) {
+                Main.reservationsPage.refresh();
+            }
+            cardLayout.show(pages, "reservations");
+        });
+        shopButton.addActionListener(e -> {
+            if (Main.shopPage != null) {
+                Main.shopPage.refreshInventory();
+            }
+            cardLayout.show(pages, "shop");
+        });
+        billingButton.addActionListener(e -> {
+            if (Main.billingPage != null) {
+                Main.billingPage.refresh();
+            }
+            cardLayout.show(pages, "billing page");
+        });
         dashboardButton.addActionListener(e -> navigateBackByRole());
         signOutButton.addActionListener(e -> signOut());
         backButton.addActionListener(e -> navigateBackByRole());
