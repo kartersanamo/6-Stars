@@ -115,8 +115,8 @@ public class AccountDetailsPage extends JPanel {
                 new EmptyBorder(28, 32, 28, 32)
         ));
         contentCard.setMaximumSize(new Dimension(1080, Integer.MAX_VALUE));
-        // Let the content size be flexible while providing a reasonable preferred height
-        contentCard.setPreferredSize(new Dimension(1000, 900));
+        // Do not force a tall preferred size — allow the card to size itself so the
+        // scroll viewport can work naturally. Keep a maximum width so the layout stays centered.
 
         contentCard.add(buildHeroPanel());
         contentCard.add(Box.createRigidArea(new Dimension(0, 18)));
@@ -124,11 +124,12 @@ public class AccountDetailsPage extends JPanel {
         contentCard.add(Box.createRigidArea(new Dimension(0, 18)));
         contentCard.add(buildFooterBar());
 
-        JPanel centeredContainer = new JPanel(new GridBagLayout());
-        centeredContainer.setOpaque(false);
-        centeredContainer.add(contentCard);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        // Anchor the content to the top (NORTH) so the scroll viewport grows below it
+        wrapper.add(contentCard, BorderLayout.NORTH);
 
-        JScrollPane scrollPane = new JScrollPane(centeredContainer);
+        JScrollPane scrollPane = new JScrollPane(wrapper);
         scrollPane.setBorder(null);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
