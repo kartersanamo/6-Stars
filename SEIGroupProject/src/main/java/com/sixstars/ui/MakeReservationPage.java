@@ -513,6 +513,7 @@ public class MakeReservationPage extends JPanel {
         if (currentAccount == null) {
             Main.setPendingReservation(room, startDate, endDate);
             JOptionPane.showMessageDialog(this, "Please create a Guest account to complete this reservation.");
+            Main.createAccountPage.refreshInfo();
             cardLayout.show(pages, "create account");
             return;
         }

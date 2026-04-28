@@ -1,7 +1,9 @@
 package com.sixstars.ui;
 
 import com.sixstars.controller.AccountController;
+import com.sixstars.database.ShopItemDAO;
 import com.sixstars.model.Account;
+import com.sixstars.model.Item;
 import com.sixstars.service.BillingService;
 import com.sixstars.service.AccountService;
 import com.sixstars.model.Reservation;
@@ -9,35 +11,35 @@ import com.sixstars.model.Role;
 import com.sixstars.model.Room;
 import com.sixstars.model.ShopOrder;
 import com.sixstars.model.ShopOrderItem;
-import com.sixstars.service.AccountService;
-import com.sixstars.service.BillingService;
-import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
-import com.sixstars.database.ShopItemDAO;
-import com.sixstars.model.Item;
-import com.sixstars.model.Account;
-import com.sixstars.model.Role;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.HierarchyEvent;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ClerkBillingSearchPage extends JPanel {
     private final BillingService billingService;
     private final AccountService accountService;
+    private final RoomService roomService;
+    private final ShopItemDAO shopItemDAO;
     private final JComboBox<String> guestComboBox;
+    private final JTextField emailField;
     private final JPanel resultsPanel;
 
     public ClerkBillingSearchPage(JPanel pages, CardLayout cardLayout) {
         this.billingService = new BillingService();
         this.accountService = new AccountService();
+        this.roomService = new RoomService();
+        this.shopItemDAO = new ShopItemDAO();
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
 
