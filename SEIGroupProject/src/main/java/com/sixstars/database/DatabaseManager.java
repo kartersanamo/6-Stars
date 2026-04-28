@@ -10,7 +10,11 @@ public class DatabaseManager {
     private static final String URL = "jdbc:sqlite:hotel_reservation.db";
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL);
+        Connection conn = DriverManager.getConnection(URL);
+        try (Statement pragma = conn.createStatement()) {
+            pragma.execute("PRAGMA foreign_keys = ON");
+        }
+        return conn;
     }
 
     public static void initializeDatabase() {
@@ -46,6 +50,15 @@ public class DatabaseManager {
                     "price REAL NOT NULL, " +
                     "stock INTEGER NOT NULL, " +
                     "imagePath TEXT)");
+
+            // Create persisted cart table
+            stmt.execute("CREATE TABLE IF NOT EXISTS shop_cart_items (" +
+                    "guestEmail TEXT NOT NULL, " +
+                    "item_id INTEGER NOT NULL, " +
+                    "quantity INTEGER NOT NULL DEFAULT 1, " +
+                    "PRIMARY KEY (guestEmail, item_id), " +
+                    "FOREIGN KEY(guestEmail) REFERENCES accounts(email) ON DELETE CASCADE, " +
+                    "FOREIGN KEY(item_id) REFERENCES shop_items(id) ON DELETE CASCADE)");
 
             addColumnIfMissing(conn, "rooms", "pricePerNight", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "nightlyRate", "INTEGER DEFAULT 0");

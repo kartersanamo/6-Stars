@@ -8,13 +8,21 @@ public class ShoppingCart {
     private List<CartItem> items = new ArrayList<>();
 
     public void addItem(Item item) {
+        addItem(item, 1);
+    }
+
+    public void addItem(Item item, int quantity) {
+        if (item == null || quantity < 1) {
+            return;
+        }
+
         for (CartItem ci : items) {
             if (ci.getItem().getId() == item.getId()) {
-                ci.increment();
+                ci.setQuantity(ci.getQuantity() + quantity);
                 return;
             }
         }
-        items.add(new CartItem(item));
+        items.add(new CartItem(item, quantity));
     }
 
     public void decrementItem(Item item) {
@@ -36,6 +44,19 @@ public class ShoppingCart {
 
     public List<CartItem> getItems() {
         return items;
+    }
+
+    public void setItems(List<CartItem> items) {
+        this.items = new ArrayList<>();
+        if (items == null) {
+            return;
+        }
+
+        for (CartItem item : items) {
+            if (item != null && item.getItem() != null && item.getQuantity() > 0) {
+                this.items.add(new CartItem(item.getItem(), item.getQuantity()));
+            }
+        }
     }
 
     public double getTotal() {
