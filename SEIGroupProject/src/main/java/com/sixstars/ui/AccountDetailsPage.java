@@ -177,7 +177,7 @@ public class AccountDetailsPage extends JPanel {
         actionsGbc.insets = new Insets(0, 0, 12, 0);
         quickActionsPanel.add(quickHintLabel, actionsGbc);
 
-        JPanel actionsButtonsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        JPanel actionsButtonsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
         actionsButtonsRow.setOpaque(false);
         actionsButtonsRow.add(reservationsBtn);
         actionsButtonsRow.add(shopBtn);
@@ -191,7 +191,7 @@ public class AccountDetailsPage extends JPanel {
         actionsGbc.insets = new Insets(0, 0, 0, 0);
         quickActionsPanel.add(dashboardBtn, actionsGbc);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 4));
         buttonPanel.setBackground(UITheme.CARD_BACKGROUND);
 
         editBtn = new JButton("Edit Profile");
@@ -405,8 +405,8 @@ public class AccountDetailsPage extends JPanel {
     }
 
     private void styleGoldButton(JButton button) {
-        button.setPreferredSize(new Dimension(320, 44));
-        button.setMaximumSize(new Dimension(320, 44));
+        button.setPreferredSize(new Dimension(210, 44));
+        button.setMaximumSize(new Dimension(210, 44));
         button.setBackground(UITheme.SECONDARY_BUTTON);
         button.setForeground(UITheme.TEXT_DARK);
         button.setFocusPainted(false);
@@ -417,7 +417,9 @@ public class AccountDetailsPage extends JPanel {
     }
 
     private void styleSecondaryActionButton(JButton button) {
-        button.setPreferredSize(new Dimension(152, 36));
+        button.setPreferredSize(new Dimension(180, 36));
+        button.setMinimumSize(new Dimension(180, 36));
+        button.setMaximumSize(new Dimension(230, 36));
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setBackground(new Color(243, 243, 243));
