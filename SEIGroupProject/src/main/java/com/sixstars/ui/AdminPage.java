@@ -61,10 +61,10 @@ public class AdminPage extends JPanel {
 
         JButton btnBillingSummary = createThemedButton("Billing & Hotel Summary");
         btnBillingSummary.addActionListener(e -> cardLayout.show(pages, "clerk billing"));
-
+        
         JButton btnSetDiscount = createThemedButton("Set Global Discount Rate");
         btnSetDiscount.addActionListener(e -> openDiscountRateDialog());
-
+        
         JButton btnLogout = createThemedButton("Logout");
         styleLogoutButton(btnLogout);
         btnLogout.addActionListener(e -> {
@@ -84,8 +84,10 @@ public class AdminPage extends JPanel {
         card.add(btnResetPass);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnBillingSummary);
+
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnSetDiscount);
+
         card.add(Box.createRigidArea(new Dimension(0, 25)));
         card.add(btnLogout);
         card.add(Box.createVerticalGlue());

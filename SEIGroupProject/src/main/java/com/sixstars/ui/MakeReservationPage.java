@@ -520,11 +520,13 @@ public class MakeReservationPage extends JPanel {
         }
 
         Account currentAccount = AccountController.currentAccount;
-        String targetEmail;
+        String targetEmail = null;
+        boolean isClerkBooking = false;
 
         if (currentAccount == null) {
             Main.setPendingReservation(room, startDate, endDate);
             JOptionPane.showMessageDialog(this, "Please create a Guest account to complete this reservation.");
+            Main.createAccountPage.refreshInfo();
             cardLayout.show(pages, "create account");
             return;
         }
@@ -546,6 +548,7 @@ public class MakeReservationPage extends JPanel {
                 JOptionPane.showMessageDialog(this, "No Guest account found for: " + targetEmail);
                 return;
             }
+            isClerkBooking = true;
         } else if (currentAccount.getRole() == Role.GUEST) {
             // Normal Guest uses their own account email
             targetEmail = currentAccount.getEmail();
