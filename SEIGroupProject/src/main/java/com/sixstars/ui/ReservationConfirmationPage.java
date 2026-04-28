@@ -7,6 +7,7 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
@@ -25,6 +26,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -222,6 +224,7 @@ public class ReservationConfirmationPage extends JPanel {
         summary.setLayout(new BoxLayout(summary, BoxLayout.Y_AXIS));
         summary.setBackground(UITheme.CARD_BACKGROUND);
         summary.setBorder(new EmptyBorder(22, 20, 22, 20));
+        summary.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel title = new JLabel("Pricing & Summary");
         title.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -253,6 +256,8 @@ public class ReservationConfirmationPage extends JPanel {
 
         JPanel grandTotalRow = new JPanel(new BorderLayout());
         grandTotalRow.setOpaque(false);
+        grandTotalRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        grandTotalRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         JLabel grandTotalText = new JLabel("Grand Total");
         grandTotalText.setFont(new Font("SansSerif", Font.BOLD, 16));
         grandTotalText.setForeground(UITheme.TEXT_DARK);
@@ -294,26 +299,23 @@ public class ReservationConfirmationPage extends JPanel {
 
         JButton confirmButton = createPrimaryButton("Confirm & Book");
         confirmButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        confirmButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         confirmButton.setFont(new Font("SansSerif", Font.BOLD, 14));
         confirmButton.addActionListener(e -> confirmReservation());
-        summary.add(confirmButton);
+        summary.add(wrapCentered(confirmButton, 48, 230));
 
         summary.add(Box.createRigidArea(new Dimension(0, 10)));
 
         JButton editButton = createSecondaryButton("Edit Dates");
         editButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        editButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         editButton.addActionListener(e -> goBackToMakeReservation());
-        summary.add(editButton);
+        summary.add(wrapCentered(editButton, 44, 230));
 
         summary.add(Box.createRigidArea(new Dimension(0, 10)));
 
         JButton cancelButton = createCancelButton();
         cancelButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cancelButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         cancelButton.addActionListener(e -> cancelBooking());
-        summary.add(cancelButton);
+        summary.add(wrapCentered(cancelButton, 44, 230));
 
         JScrollPane scrollPane = new JScrollPane(summary);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -393,6 +395,19 @@ public class ReservationConfirmationPage extends JPanel {
         divider.setBackground(UITheme.BORDER_COLOR);
         divider.setOpaque(true);
         return divider;
+    }
+
+    private JPanel wrapCentered(JComponent component, int height, int width) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
+        row.setPreferredSize(new Dimension(10, height));
+        component.setPreferredSize(new Dimension(width, height));
+        component.setMinimumSize(new Dimension(width, height));
+        component.setMaximumSize(new Dimension(width, height));
+        row.add(component);
+        return row;
     }
 
     private JButton createPrimaryButton(String text) {
