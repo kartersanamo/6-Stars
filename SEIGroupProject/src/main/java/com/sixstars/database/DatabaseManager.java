@@ -45,6 +45,10 @@ public class DatabaseManager {
                     "stock INTEGER NOT NULL, " +
                     "imagePath TEXT)");
 
+            stmt.execute("CREATE TABLE IF NOT EXISTS system_settings (" +
+                    "settingKey TEXT PRIMARY KEY, " +
+                    "settingValue TEXT NOT NULL)");
+
             addColumnIfMissing(conn, "rooms", "pricePerNight", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "nightlyRate", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "nights", "INTEGER DEFAULT 0");

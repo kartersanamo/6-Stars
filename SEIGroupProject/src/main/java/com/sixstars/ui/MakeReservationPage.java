@@ -42,10 +42,11 @@ import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.BedType;
 import com.sixstars.model.QualityLevel;
-import com.sixstars.model.RatePlan;
+import com.sixstars.model.Reservation;
 import com.sixstars.model.Role;
 import com.sixstars.model.Room;
 import com.sixstars.model.Theme;
+import com.sixstars.service.PricingSettingsService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
 import com.toedter.calendar.JDateChooser;
@@ -57,6 +58,7 @@ public class MakeReservationPage extends JPanel {
     private final CardLayout cardLayout;
     private final ReservationService reservationService;
     private final RoomService roomService;
+    private final PricingSettingsService pricingSettingsService;
 
     private final JDateChooser checkInChooser;
     private final JDateChooser checkOutChooser;
@@ -74,6 +76,7 @@ public class MakeReservationPage extends JPanel {
         this.cardLayout = cardLayout;
         this.reservationService = reservationService;
         this.roomService = roomService;
+        this.pricingSettingsService = new PricingSettingsService();
 
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
@@ -389,10 +392,12 @@ public class MakeReservationPage extends JPanel {
             LocalDate startDate = toLocalDate(checkInChooser.getDate());
             LocalDate endDate = toLocalDate(checkOutChooser.getDate());
             int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-            int estimatedTotal = room.getPricePerNight() * nights;
-            totalText = "Estimated standard total: $" + estimatedTotal + " for " + nights
-                    + " night" + (nights == 1 ? "" : "s")
-                    + " (discounted plans available)";
+            double discountRate = pricingSettingsService.getGlobalDiscountRate();
+            int estimatedNightly = (int) Math.round(room.getPricePerNight() * (1.0 - discountRate));
+            estimatedNightly = Math.min(estimatedNightly, room.getQualityLevel().getMaxDailyRate());
+            int estimatedTotal = estimatedNightly * nights;
+            totalText = "Estimated total: $" + estimatedTotal + " for " + nights
+                    + " night" + (nights == 1 ? "" : "s");
         }
 
         JLabel totalLabel = new JLabel(totalText);
@@ -550,21 +555,15 @@ public class MakeReservationPage extends JPanel {
             return;
         }
 
-        RatePlan selectedRatePlan = promptForRatePlan();
-        if (selectedRatePlan == null) {
-            return;
-        }
-
-        reservationService.makeReservation(targetEmail, startDate, endDate, List.of(room), selectedRatePlan);
-
-        int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-        int actualNightly = Math.min(selectedRatePlan.applyDiscount(room.getPricePerNight()), room.getQualityLevel().getMaxDailyRate());
-        int total = actualNightly * nights;
+        Reservation reservation = reservationService.makeReservation(targetEmail, startDate, endDate, List.of(room));
+        int nights = reservation.getNights();
+        int actualNightly = reservation.getNightlyRate();
+        int total = reservation.getTotalCost();
 
         JOptionPane.showMessageDialog(
                 this,
                 "Reservation successful for Room " + room.getRoomNumber()
-                        + ".\nRate Plan: " + selectedRatePlan.getDisplayName()
+                        + ".\nRate Plan: " + reservation.getRatePlan().getDisplayName()
                         + ".\nActual Nightly Rate: $" + actualNightly
                         + " (Quality Max: $" + room.getQualityLevel().getMaxDailyRate() + ")"
                         + ".\nTotal: $" + total + " for " + nights
@@ -598,21 +597,15 @@ public class MakeReservationPage extends JPanel {
         }
 
         Account currentAccount = AccountController.currentAccount;
-        RatePlan selectedRatePlan = promptForRatePlan();
-        if (selectedRatePlan == null) {
-            return true;
-        }
-
-        reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room), selectedRatePlan);
-
-        int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-        int actualNightly = Math.min(selectedRatePlan.applyDiscount(room.getPricePerNight()), room.getQualityLevel().getMaxDailyRate());
-        int total = actualNightly * nights;
+        Reservation reservation = reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room));
+        int nights = reservation.getNights();
+        int actualNightly = reservation.getNightlyRate();
+        int total = reservation.getTotalCost();
 
         JOptionPane.showMessageDialog(
                 this,
                 "Welcome! Your reservation for Room " + room.getRoomNumber()
-                        + " is confirmed.\nRate Plan: " + selectedRatePlan.getDisplayName()
+                        + " is confirmed.\nRate Plan: " + reservation.getRatePlan().getDisplayName()
                         + ".\nActual Nightly Rate: $" + actualNightly
                         + " (Quality Max: $" + room.getQualityLevel().getMaxDailyRate() + ")"
                         + ".\nTotal: $" + total + " for " + nights
@@ -623,24 +616,6 @@ public class MakeReservationPage extends JPanel {
         refreshListings();
         cardLayout.show(pages, "make reservation");
         return true;
-    }
-
-    private RatePlan promptForRatePlan() {
-        JComboBox<RatePlan> planBox = new JComboBox<>(RatePlan.values());
-        planBox.setSelectedItem(RatePlan.STANDARD);
-
-        int result = JOptionPane.showConfirmDialog(
-                this,
-                planBox,
-                "Select Rate Plan",
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.QUESTION_MESSAGE
-        );
-
-        if (result != JOptionPane.OK_OPTION) {
-            return null;
-        }
-        return (RatePlan) planBox.getSelectedItem();
     }
 
     private JTextField createTextField(String placeholder) {

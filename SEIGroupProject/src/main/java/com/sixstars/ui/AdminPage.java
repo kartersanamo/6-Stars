@@ -12,14 +12,18 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
+import com.sixstars.service.PricingSettingsService;
 
 public class AdminPage extends JPanel {
+    private final PricingSettingsService pricingSettingsService = new PricingSettingsService();
+
     public AdminPage(JPanel pages, CardLayout cardLayout) {
         setLayout(new GridBagLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
@@ -55,6 +59,12 @@ public class AdminPage extends JPanel {
             cardLayout.show(pages, "reset password");
         });
 
+        JButton btnBillingSummary = createThemedButton("Billing & Hotel Summary");
+        btnBillingSummary.addActionListener(e -> cardLayout.show(pages, "clerk billing"));
+
+        JButton btnSetDiscount = createThemedButton("Set Global Discount Rate");
+        btnSetDiscount.addActionListener(e -> openDiscountRateDialog());
+
         JButton btnLogout = createThemedButton("Logout");
         styleLogoutButton(btnLogout);
         btnLogout.addActionListener(e -> {
@@ -72,6 +82,10 @@ public class AdminPage extends JPanel {
         card.add(btnCreateClerk);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(btnResetPass);
+        card.add(Box.createRigidArea(new Dimension(0, 14)));
+        card.add(btnBillingSummary);
+        card.add(Box.createRigidArea(new Dimension(0, 14)));
+        card.add(btnSetDiscount);
         card.add(Box.createRigidArea(new Dimension(0, 25)));
         card.add(btnLogout);
         card.add(Box.createVerticalGlue());
@@ -98,5 +112,34 @@ public class AdminPage extends JPanel {
     private void styleLogoutButton(JButton button) {
         button.setBackground(UITheme.ACCENT_GOLD);
         button.setForeground(java.awt.Color.WHITE);
+    }
+
+    private void openDiscountRateDialog() {
+        double currentRate = pricingSettingsService.getGlobalDiscountRate();
+        String input = JOptionPane.showInputDialog(
+                this,
+                "Enter global discount rate as a percent (0-80).",
+                String.format("%.0f", currentRate * 100)
+        );
+
+        if (input == null) {
+            return;
+        }
+
+        try {
+            double percent = Double.parseDouble(input.trim());
+            double rate = percent / 100.0;
+            pricingSettingsService.setGlobalDiscountRate(rate);
+            JOptionPane.showMessageDialog(
+                    this,
+                    String.format("Global discount rate updated to %.2f%%.", percent),
+                    "Discount Updated",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid number.");
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage());
+        }
     }
 }
