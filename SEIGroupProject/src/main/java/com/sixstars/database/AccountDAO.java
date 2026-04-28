@@ -23,7 +23,7 @@ public class AccountDAO {
                 ? account.getVerificationExpiresAt()
                 : existing != null ? existing.getVerificationExpiresAt() : null;
 
-        String sql = "INSERT OR REPLACE INTO accounts(email, firstName, lastName, passwordHash, role, email_verified, verification_code_hash, verification_expires_at) VALUES(?,?,?,?,?,?,?,?)";
+        String sql = "INSERT OR REPLACE INTO accounts(email, firstName, lastName, passwordHash, role, email_verified, verification_code_hash, verification_expires_at, profileImagePath) VALUES(?,?,?,?,?,?,?,?,?)";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -35,6 +35,7 @@ public class AccountDAO {
             pstmt.setInt(6, Boolean.TRUE.equals(emailVerified) ? 1 : 0);
             pstmt.setString(7, verificationCodeHash);
             pstmt.setString(8, verificationExpiresAt);
+            pstmt.setString(9, account.getProfileImagePath());
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -57,7 +58,9 @@ public class AccountDAO {
                             Role.valueOf(rs.getString("role")),
                             rs.getInt("email_verified") == 1,
                             rs.getString("verification_code_hash"),
-                            rs.getString("verification_expires_at")
+                            rs.getString("verification_expires_at"),
+                            com.sixstars.model.Role.valueOf(rs.getString("role")),
+                            rs.getString("profileImagePath")
                     );
                 }
             }
@@ -83,7 +86,9 @@ public class AccountDAO {
                         Role.valueOf(rs.getString("role")),
                         rs.getInt("email_verified") == 1,
                         rs.getString("verification_code_hash"),
-                        rs.getString("verification_expires_at")
+                        rs.getString("verification_expires_at"),
+                        com.sixstars.model.Role.valueOf(rs.getString("role")),
+                        rs.getString("profileImagePath")
                     );
                     aList.add(a);
                 }

@@ -124,7 +124,8 @@ public class ChangePasswordPage extends JPanel {
                         selected.getRole(),
                         selected.getEmailVerified(),
                         selected.getVerificationCodeHash(),
-                        selected.getVerificationExpiresAt()
+                        selected.getVerificationExpiresAt(),
+                        selected.getProfileImagePath()
                 );
                 accountService.updateAccount(newA);
             }

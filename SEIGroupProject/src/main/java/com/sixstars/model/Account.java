@@ -9,8 +9,9 @@ public class Account {
     private Boolean emailVerified;
     private String verificationCodeHash;
     private String verificationExpiresAt;
+    private String profileImagePath;
 
-    public Account(String firstName, String lastName, String email, String passwordHash, Role role) {
+    public Account(String firstName, String lastName, String email, String passwordHash, Role role, String profileImagePath) {
         this(firstName, lastName, email, passwordHash, role, null, null, null);
     }
 
@@ -24,6 +25,7 @@ public class Account {
         this.emailVerified = emailVerified;
         this.verificationCodeHash = verificationCodeHash;
         this.verificationExpiresAt = verificationExpiresAt;
+        this.profileImagePath = profileImagePath;
     }
 
     public String getFirstName() {
@@ -60,5 +62,29 @@ public class Account {
 
     public String getVerificationExpiresAt() {
         return verificationExpiresAt;
+    }
+
+    public String getProfileImagePath() {
+        return profileImagePath;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public void setProfileImagePath(String profileImagePath) {
+        this.profileImagePath = profileImagePath;
     }
 }

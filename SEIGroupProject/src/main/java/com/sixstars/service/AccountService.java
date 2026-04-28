@@ -16,6 +16,10 @@ import com.sixstars.model.Role;
 public class AccountService {
     private final AccountDAO accountDAO;
     private final MailgunEmailSender mailgunEmailSender;
+    private static final Pattern PASSWORD_UPPER = Pattern.compile(".*[A-Z].*");
+    private static final Pattern PASSWORD_LOWER = Pattern.compile(".*[a-z].*");
+    private static final Pattern PASSWORD_DIGIT = Pattern.compile(".*[0-9].*");
+    private static final Pattern PASSWORD_SPECIAL = Pattern.compile(".*[^A-Za-z0-9].*");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$");
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -135,9 +139,21 @@ public class AccountService {
             throw new RuntimeException("You must be logged in to edit your profile.");
         }
 
-        String passwordHash = (newPass != null && !newPass.isBlank())
-                ? hashPassword(newPass)
-                : performer.getPasswordHash();
+        // Allow the currently authenticated user to update their own profile (name and image).
+        // Previously this method restricted edits to clerks only which prevented users
+        // from updating their own profile image. That restriction is removed so any
+        // logged-in user can modify their own profile details. Changing other users'
+        // accounts should still be done via updateAccount(Account) where appropriate.
+        Account updated = new Account(
+                fName,
+                lName,
+                performer.getEmail(),
+                performer.getPasswordHash(),
+                performer.getRole(),
+                profileImagePath
+        );
+        accountDAO.saveAccount(updated);
+    }
 
         Account updated = new Account(
                 fName,
@@ -148,6 +164,46 @@ public class AccountService {
                 performer.getEmailVerified(),
                 performer.getVerificationCodeHash(),
                 performer.getVerificationExpiresAt()
+        );
+    public void changePassword(Account performer, String currentPassword, String newPassword, String confirmPassword) {
+        if (performer == null) {
+            throw new RuntimeException("No active account found.");
+        }
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new RuntimeException("Please enter your current password.");
+        }
+        if (!performer.getPasswordHash().equals(hashPassword(currentPassword))) {
+            throw new RuntimeException("Current password is incorrect.");
+        }
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new RuntimeException("Please enter a new password.");
+        }
+        if (confirmPassword == null || confirmPassword.isBlank()) {
+            throw new RuntimeException("Please confirm your new password.");
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            throw new RuntimeException("New password and confirmation do not match.");
+        }
+        if (newPassword.length() < 8) {
+            throw new RuntimeException("Password must be at least 8 characters long.");
+        }
+        if (!PASSWORD_UPPER.matcher(newPassword).matches()
+                || !PASSWORD_LOWER.matcher(newPassword).matches()
+                || !PASSWORD_DIGIT.matcher(newPassword).matches()
+                || !PASSWORD_SPECIAL.matcher(newPassword).matches()) {
+            throw new RuntimeException("Password must include uppercase, lowercase, number, and special character.");
+        }
+        if (performer.getPasswordHash().equals(hashPassword(newPassword))) {
+            throw new RuntimeException("New password must be different from the current password.");
+        }
+
+        Account updated = new Account(
+                performer.getFirstName(),
+                performer.getLastName(),
+                performer.getEmail(),
+                hashPassword(newPassword),
+                performer.getRole(),
+                performer.getProfileImagePath()
         );
         accountDAO.saveAccount(updated);
     }
@@ -224,6 +280,7 @@ public class AccountService {
         int value = 100000 + SECURE_RANDOM.nextInt(900000);
         return Integer.toString(value);
     }
+
 
     public Account getAccountByEmail(String email) {
         return accountDAO.getAccountByEmail(email);

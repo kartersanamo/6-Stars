@@ -20,7 +20,7 @@ public class DatabaseManager {
             // Create Accounts Table
             stmt.execute("CREATE TABLE IF NOT EXISTS accounts (" +
                     "email TEXT PRIMARY KEY, firstName TEXT, lastName TEXT, " +
-                    "passwordHash TEXT, role TEXT)");
+                    "passwordHash TEXT, role TEXT, profileImagePath TEXT)");
 
 //            stmt.execute("ALTER TABLE reservations ADD COLUMN status TEXT DEFAULT 'BOOKED'");
             // Create Rooms Table
@@ -63,6 +63,9 @@ public class DatabaseManager {
                     backfillStmt.executeUpdate("UPDATE accounts SET email_verified = 1");
                 }
             }
+            addColumnIfMissing(conn, "accounts", "profileImagePath", "TEXT");
+            addColumnIfMissing(conn, "reservations", "maxDailyRate", "INTEGER DEFAULT 0");
+            addColumnIfMissing(conn, "reservations", "ratePlan", "TEXT DEFAULT 'STANDARD'");
 
         } catch (SQLException e) {
             e.printStackTrace();
