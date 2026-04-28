@@ -1,10 +1,7 @@
 package com.sixstars.ui;
 
 import com.sixstars.controller.AccountController;
-import com.sixstars.model.Account;
-import com.sixstars.model.Reservation;
-import com.sixstars.model.ShopOrder;
-import com.sixstars.model.ShopOrderItem;
+import com.sixstars.model.*;
 import com.sixstars.service.BillingService;
 
 import javax.swing.*;
@@ -35,18 +32,42 @@ public class BillingPage extends JPanel {
         subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
         subtitle.setForeground(UITheme.TEXT_MEDIUM);
 
-        JPanel header = new JPanel();
-        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        JPanel header = new JPanel(new BorderLayout(16, 0));
         header.setBackground(UITheme.CARD_BACKGROUND);
         header.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER_COLOR),
-                new EmptyBorder(18, 26, 18, 26)
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(18, 20, 18, 20)
         ));
+
+        JPanel titleText = new JPanel();
+        titleText.setLayout(new BoxLayout(titleText, BoxLayout.Y_AXIS));
+        titleText.setOpaque(false);
+
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
         subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        header.add(title);
-        header.add(Box.createRigidArea(new Dimension(0, 4)));
-        header.add(subtitle);
+
+        titleText.add(title);
+        titleText.add(Box.createRigidArea(new Dimension(0, 4)));
+        titleText.add(subtitle);
+
+        JButton btnBack = new JButton("Back");
+        styleGoldButton(btnBack);
+
+        btnBack.addActionListener(e -> {
+            var acc = AccountController.currentAccount;
+            Container parent = getParent();
+
+            if (parent.getLayout() instanceof CardLayout cl) {
+                if (acc != null && acc.getRole() == Role.CLERK) {
+                    cl.show(parent, "clerk page");
+                } else {
+                    cl.show(parent, "home");
+                }
+            }
+        });
+
+        header.add(titleText, BorderLayout.CENTER);
+        header.add(btnBack, BorderLayout.EAST);
 
         reservationsContainer = new JPanel();
         reservationsContainer.setLayout(new BoxLayout(reservationsContainer, BoxLayout.Y_AXIS));
@@ -115,6 +136,16 @@ public class BillingPage extends JPanel {
         }
 
         refreshForEmail(current.getEmail());
+    }
+
+    private void styleGoldButton(JButton button) {
+        button.setPreferredSize(new Dimension(120, 40));
+        button.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        button.setBackground(UITheme.SECONDARY_BUTTON);
+        button.setForeground(UITheme.TEXT_DARK);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 
     public void refreshForEmail(String email) {
