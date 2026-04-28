@@ -2,6 +2,7 @@ package com.sixstars.ui;
 
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
+import com.sixstars.database.ShoppingCartDAO;
 import com.sixstars.model.*;
 import com.sixstars.service.ShopService;
 
@@ -19,6 +20,7 @@ public class ShopPage extends JPanel {
     private final CardLayout cardLayout;
 
     private final ShoppingCart cart;
+    private final ShoppingCartDAO cartDAO;
     private final ShopService shopService;
 
     private final JPanel inventoryPanel;
@@ -31,6 +33,7 @@ public class ShopPage extends JPanel {
         this.pages = pages;
         this.cardLayout = cardLayout;
         this.cart = new ShoppingCart();
+        this.cartDAO = new ShoppingCartDAO();
         this.shopService = new ShopService();
 
         setLayout(new BorderLayout());
@@ -46,8 +49,7 @@ public class ShopPage extends JPanel {
         add(buildBottomBar(), BorderLayout.SOUTH);
 
         attachSearchListener();
-        refreshInventory();
-        updateCartDisplay();
+        refreshPage();
     }
 
     private JPanel buildTopSection() {
@@ -204,6 +206,7 @@ public class ShopPage extends JPanel {
         clearCartButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         clearCartButton.addActionListener(e -> {
             cart.clear();
+            persistCurrentCart();
             updateCartDisplay();
         });
 
@@ -290,6 +293,37 @@ public class ShopPage extends JPanel {
         inventoryPanel.repaint();
     }
 
+    public void refreshPage() {
+        refreshInventory();
+        loadPersistedCartForCurrentAccount();
+    }
+
+    public void persistCurrentCart() {
+        Account currentAccount = AccountController.currentAccount;
+        if (currentAccount == null) {
+            return;
+        }
+
+        cartDAO.saveCart(currentAccount.getEmail(), cart);
+    }
+
+    public void clearTransientCart() {
+        cart.clear();
+        updateCartDisplay();
+    }
+
+    private void loadPersistedCartForCurrentAccount() {
+        Account currentAccount = AccountController.currentAccount;
+        if (currentAccount == null) {
+            cart.clear();
+            updateCartDisplay();
+            return;
+        }
+
+        cart.setItems(cartDAO.loadCart(currentAccount.getEmail()));
+        updateCartDisplay();
+    }
+
     private boolean matchesSearch(Item item, String searchText) {
         if (searchText.isEmpty()) {
             return true;
@@ -334,6 +368,7 @@ public class ShopPage extends JPanel {
         addButton.setForeground(Color.BLACK);
         addButton.addActionListener(e -> {
             cart.addItem(item);
+            persistCurrentCart();
             updateCartDisplay();
         });
 
@@ -415,6 +450,7 @@ public class ShopPage extends JPanel {
         styleSmallButton(minusButton, UITheme.SECONDARY_BUTTON, UITheme.TEXT_DARK);
         minusButton.addActionListener(e -> {
             cart.decrementItem(cartItem.getItem());
+            persistCurrentCart();
             updateCartDisplay();
         });
 
@@ -422,6 +458,7 @@ public class ShopPage extends JPanel {
         styleSmallButton(removeButton, new Color(200, 80, 80), Color.WHITE);
         removeButton.addActionListener(e -> {
             cart.removeItem(cartItem.getItem());
+            persistCurrentCart();
             updateCartDisplay();
         });
 

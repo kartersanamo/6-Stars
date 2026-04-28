@@ -102,7 +102,7 @@ public class HomeLandingPage extends JPanel {
         }
     );
         exploreButton.addActionListener(e -> {
-            Main.shopPage.refreshInventory();
+            Main.shopPage.refreshPage();
             Main.headerBar.refreshInfo();
             cardLayout.show(pages, "shop");
         });

@@ -66,7 +66,7 @@ public class HeaderBar extends JPanel {
         btnShop = createButton("View Shop");
         btnShop.addActionListener(_ -> {
             if (Main.shopPage != null) {
-                Main.shopPage.refreshInventory();
+                Main.shopPage.refreshPage();
             }
             cardLayout.show(pages, "shop");
         });
@@ -98,6 +98,10 @@ public class HeaderBar extends JPanel {
 
         JMenuItem logout = new JMenuItem("Logout");
         logout.addActionListener(_ -> {
+            if (Main.shopPage != null) {
+                Main.shopPage.persistCurrentCart();
+                Main.shopPage.clearTransientCart();
+            }
             AccountController.currentAccount = null;
             refreshInfo();
             cardLayout.show(pages, "home");

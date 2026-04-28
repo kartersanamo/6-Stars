@@ -2,6 +2,7 @@ package com.sixstars.service;
 
 import com.sixstars.database.ShopItemDAO;
 import com.sixstars.database.ShopOrderDAO;
+import com.sixstars.database.ShoppingCartDAO;
 import com.sixstars.model.CartItem;
 import com.sixstars.model.Item;
 import com.sixstars.model.Reservation;
@@ -17,6 +18,7 @@ public class ShopService {
 
     private final ShopItemDAO dao = new ShopItemDAO();
     private final ShopOrderDAO shopOrderDAO = new ShopOrderDAO();
+    private final ShoppingCartDAO shoppingCartDAO = new ShoppingCartDAO();
     private final ReservationService reservationService = new ReservationService();
 
     public List<Item> getInventory() {
@@ -79,6 +81,7 @@ public class ShopService {
             item.setStock(newStock);
         }
 
+        shoppingCartDAO.clearCart(guestEmail);
         cart.clear();
         return total;
     }

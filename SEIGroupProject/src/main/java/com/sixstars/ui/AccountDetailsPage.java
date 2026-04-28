@@ -585,7 +585,7 @@ public class AccountDetailsPage extends JPanel {
         });
         shopButton.addActionListener(e -> {
             if (Main.shopPage != null) {
-                Main.shopPage.refreshInventory();
+                Main.shopPage.refreshPage();
             }
             cardLayout.show(pages, "shop");
         });
@@ -787,6 +787,10 @@ public class AccountDetailsPage extends JPanel {
     }
 
     private void signOut() {
+        if (Main.shopPage != null) {
+            Main.shopPage.persistCurrentCart();
+            Main.shopPage.clearTransientCart();
+        }
         AccountController.currentAccount = null;
         Main.headerBar.refreshInfo();
         cardLayout.show(pages, "login");
