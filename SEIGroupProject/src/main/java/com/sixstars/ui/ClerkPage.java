@@ -47,14 +47,14 @@ public class ClerkPage extends JPanel {
         subtitleLabel.setForeground(UITheme.TEXT_MEDIUM);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // --- THE FOUR BUTTONS (All now using the same theme) ---
+        // --- Action Buttons ---
         JButton btnReserve = createThemedButton("Make Guest Reservation");
         btnManageRooms = createThemedButton("Room Management");
         JButton btnManageReservations = createThemedButton("Manage Reservations");
         JButton btnAccount = createThemedButton("My Account");
         JButton btnLogout = createThemedButton("Logout");
         JButton btnCheckIn = createThemedButton("Guest Check-In");
-        JButton btnBillingSearch = createThemedButton("Guest Billing Search");
+        JButton btnBillingSearch = createThemedButton("Billing & Hotel Summary");
         styleLogoutButton(btnLogout);
 
         // --- Listeners ---

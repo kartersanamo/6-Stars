@@ -84,6 +84,32 @@ public class ShopOrderDAO {
         return orders;
     }
 
+    public List<ShopOrder> getAllOrders() {
+        List<ShopOrder> orders = new ArrayList<>();
+        String sql = "SELECT * FROM shop_orders ORDER BY purchaseDate DESC, id DESC";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                int orderId = rs.getInt("id");
+                String guestEmail = rs.getString("guestEmail");
+                LocalDate purchaseDate = LocalDate.parse(rs.getString("purchaseDate"));
+                double totalCost = rs.getDouble("totalCost");
+                List<ShopOrderItem> items = getItemsForOrder(orderId);
+
+                ShopOrder order = new ShopOrder(guestEmail, purchaseDate, totalCost, items);
+                order.setId(orderId);
+                orders.add(order);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return orders;
+    }
+
     private List<ShopOrderItem> getItemsForOrder(int orderId) {
         List<ShopOrderItem> items = new ArrayList<>();
         String sql = "SELECT * FROM shop_order_items WHERE order_id = ?";
