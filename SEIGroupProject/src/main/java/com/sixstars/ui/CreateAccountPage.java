@@ -93,11 +93,17 @@ public class CreateAccountPage extends JPanel {
         styleTextField(passwordField);
         passwordField.setEchoChar('*');
 
+        JLabel confirmPasswordLabel = createCenteredLabel("Confirm Password");
+        JPasswordField confirmPasswordField = new JPasswordField();
+        styleTextField(confirmPasswordField);
+        confirmPasswordField.setEchoChar('*');
+
         JLabel passwordLengthRequirementLabel = createRequirementLabel("At least 8 characters");
         JLabel passwordUpperRequirementLabel = createRequirementLabel("At least 1 uppercase letter");
         JLabel passwordLowerRequirementLabel = createRequirementLabel("At least 1 lowercase letter");
         JLabel passwordDigitRequirementLabel = createRequirementLabel("At least 1 number");
         JLabel passwordSpecialRequirementLabel = createRequirementLabel("At least 1 special character");
+        JLabel passwordMatchRequirementLabel = createRequirementLabel("Passwords match");
 
         JCheckBox showPassword = new JCheckBox("Show Password");
         showPassword.setBackground(UITheme.CARD_BACKGROUND);
@@ -105,8 +111,10 @@ public class CreateAccountPage extends JPanel {
         showPassword.addActionListener(e -> {
             if (showPassword.isSelected()) {
                 passwordField.setEchoChar((char) 0); // show text
+                confirmPasswordField.setEchoChar((char) 0); // show text
             } else {
                 passwordField.setEchoChar('*'); // hide text again
+                confirmPasswordField.setEchoChar('*'); // hide text again
             }
         });
 
@@ -168,6 +176,14 @@ public class CreateAccountPage extends JPanel {
         formPanel.add(passwordField, gbc);
 
         gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        formPanel.add(confirmPasswordLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(confirmPasswordField, gbc);
+
+        gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 4, 0);
         formPanel.add(passwordLengthRequirementLabel, gbc);
 
@@ -186,6 +202,10 @@ public class CreateAccountPage extends JPanel {
         gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 18, 0);
         formPanel.add(passwordSpecialRequirementLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(passwordMatchRequirementLabel, gbc);
 
         gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 18, 0);
@@ -228,6 +248,7 @@ public class CreateAccountPage extends JPanel {
         Runnable refreshValidationUI = () -> {
             String emailText = emailField.getText().trim();
             String passwordText = new String(passwordField.getPassword());
+            String confirmPasswordText = new String(confirmPasswordField.getPassword());
 
             boolean emailValid = isValidEmail(emailText);
             boolean hasLength = passwordText.length() >= 8;
@@ -235,6 +256,7 @@ public class CreateAccountPage extends JPanel {
             boolean hasLower = passwordText.chars().anyMatch(Character::isLowerCase);
             boolean hasDigit = passwordText.chars().anyMatch(Character::isDigit);
             boolean hasSpecial = passwordText.chars().anyMatch(ch -> !Character.isLetterOrDigit(ch));
+            boolean passwordsMatch = !passwordText.isEmpty() && passwordText.equals(confirmPasswordText);
 
             updateRequirementLabel(emailRequirementLabel, "Valid email format (example@domain.com)", emailValid);
             updateRequirementLabel(passwordLengthRequirementLabel, "At least 8 characters", hasLength);
@@ -242,8 +264,10 @@ public class CreateAccountPage extends JPanel {
             updateRequirementLabel(passwordLowerRequirementLabel, "At least 1 lowercase letter", hasLower);
             updateRequirementLabel(passwordDigitRequirementLabel, "At least 1 number", hasDigit);
             updateRequirementLabel(passwordSpecialRequirementLabel, "At least 1 special character", hasSpecial);
+            updateRequirementLabel(passwordMatchRequirementLabel, "Passwords match", passwordsMatch);
 
-            createButton.setEnabled(emailValid && hasLength && hasUpper && hasLower && hasDigit && hasSpecial);
+            createButton.setEnabled(emailValid && hasLength && hasUpper && hasLower && hasDigit && hasSpecial && passwordsMatch);
+            updatePrimaryButtonState(createButton);
         };
 
         DocumentListener validationListener = new DocumentListener() {
@@ -265,6 +289,7 @@ public class CreateAccountPage extends JPanel {
 
         emailField.getDocument().addDocumentListener(validationListener);
         passwordField.getDocument().addDocumentListener(validationListener);
+        confirmPasswordField.getDocument().addDocumentListener(validationListener);
         refreshValidationUI.run();
 
         createButton.addActionListener(e -> {
@@ -272,13 +297,24 @@ public class CreateAccountPage extends JPanel {
             String lastName = lastNameField.getText().trim();
             String email = emailField.getText().trim();
             String password = new String(passwordField.getPassword()).trim();
+            String confirmPassword = new String(confirmPasswordField.getPassword()).trim();
             Role roleSet;
 
-            if (firstName.isEmpty() || lastName.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            if (firstName.isEmpty() || lastName.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
                 JOptionPane.showMessageDialog(
                         this,
                         "Please fill in all fields.",
                         "Missing Information",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
+            }
+
+            if (!password.equals(confirmPassword)) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Passwords do not match.",
+                        "Invalid Information",
                         JOptionPane.WARNING_MESSAGE
                 );
                 return;
@@ -314,6 +350,7 @@ public class CreateAccountPage extends JPanel {
                 lastNameField.setText("");
                 emailField.setText("");
                 passwordField.setText("");
+                confirmPasswordField.setText("");
                 refreshValidationUI.run();
                 
 
@@ -371,7 +408,7 @@ public class CreateAccountPage extends JPanel {
     }
 
     private boolean isValidEmail(String email) {
-        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$");
     }
 
     private boolean isStrongPassword(String password) {
@@ -443,10 +480,24 @@ public class CreateAccountPage extends JPanel {
         button.setBackground(UITheme.ACCENT_GOLD);
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
-        button.setBorderPainted(false);
+        button.setBorderPainted(true);
+        button.setBorder(BorderFactory.createLineBorder(new Color(126, 94, 43), 1));
         button.setOpaque(true);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
+        updatePrimaryButtonState(button);
+    }
+
+    private void updatePrimaryButtonState(JButton button) {
+        if (button.isEnabled()) {
+            button.setBackground(UITheme.ACCENT_GOLD);
+            button.setForeground(Color.WHITE);
+            button.setBorder(BorderFactory.createLineBorder(new Color(126, 94, 43), 1));
+        } else {
+            button.setBackground(new Color(224, 224, 224));
+            button.setForeground(new Color(120, 120, 120));
+            button.setBorder(BorderFactory.createLineBorder(new Color(190, 190, 190), 1));
+        }
     }
 
     private void styleSecondaryButton(JButton button) {

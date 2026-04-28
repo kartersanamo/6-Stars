@@ -12,7 +12,7 @@ import com.sixstars.model.Role;
 
 public class AccountService {
     private final AccountDAO accountDAO;
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$");
 
     public AccountService() {
         accountDAO = new AccountDAO();
