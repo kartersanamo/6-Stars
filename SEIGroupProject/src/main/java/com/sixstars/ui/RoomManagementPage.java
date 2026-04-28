@@ -10,6 +10,7 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
+import java.awt.event.HierarchyEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -60,6 +61,13 @@ public class RoomManagementPage extends JPanel {
         add(buildHeaderSection(), BorderLayout.NORTH);
         add(buildMainContent(), BorderLayout.CENTER);
         add(buildFooterSection(), BorderLayout.SOUTH);
+
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
+                refreshData();
+                updateRoomDisplay();
+            }
+        });
 
         refreshData();
         updateRoomDisplay();
@@ -529,25 +537,44 @@ public class RoomManagementPage extends JPanel {
     }
 
     private List<Room> filterRooms() {
-        String roomNumInput = roomNumberFilterField.getText().trim();
-        String bedTypeFilter = (String) bedTypeFilterBox.getSelectedItem();
-        String themeFilter = (String) themeFilterBox.getSelectedItem();
-        String qualityFilter = (String) qualityFilterBox.getSelectedItem();
-        String smokingFilter = (String) smokingFilterBox.getSelectedItem();
-        String statusFilter = (String) statusFilterBox.getSelectedItem();
+        String roomNumInput = sanitizeFilterText(roomNumberFilterField.getText());
+        String bedTypeFilter = sanitizeFilterText((String) bedTypeFilterBox.getSelectedItem());
+        String themeFilter = sanitizeFilterText((String) themeFilterBox.getSelectedItem());
+        String qualityFilter = sanitizeFilterText((String) qualityFilterBox.getSelectedItem());
+        String smokingFilter = sanitizeFilterText((String) smokingFilterBox.getSelectedItem());
+        String statusFilter = sanitizeFilterText((String) statusFilterBox.getSelectedItem());
 
         return allRooms.stream()
                 .filter(r -> roomNumInput.isEmpty() || String.valueOf(r.getRoomNumber()).contains(roomNumInput))
-                .filter(r -> !bedTypeFilter.startsWith("All") || r.getBedType().toString().equals(bedTypeFilter))
-                .filter(r -> !themeFilter.startsWith("All") || r.getTheme().toString().equals(themeFilter))
-                .filter(r -> !qualityFilter.startsWith("All") || r.getQualityLevel().toString().equals(qualityFilter))
+                .filter(r -> isAllOption(bedTypeFilter) || r.getBedType().toString().equalsIgnoreCase(bedTypeFilter))
+                .filter(r -> isAllOption(themeFilter) || r.getTheme().toString().equalsIgnoreCase(themeFilter))
+                .filter(r -> isAllOption(qualityFilter) || r.getQualityLevel().toString().equalsIgnoreCase(qualityFilter))
                 .filter(r -> {
-                    if (smokingFilter.startsWith("All")) return true;
+                    if (isAllOption(smokingFilter)) return true;
                     if (smokingFilter.contains("Smoking Allowed")) return r.isSmoking();
                     return !r.isSmoking();
                 })
-                .filter(r -> statusFilter.startsWith("All") || r.getStatus().equalsIgnoreCase(statusFilter))
+                .filter(r -> isAllOption(statusFilter) || normalizeStatus(r.getStatus()).equalsIgnoreCase(statusFilter))
                 .collect(Collectors.toList());
+    }
+
+    private String sanitizeFilterText(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.trim();
+        if (normalized.equalsIgnoreCase("e.g., 101, 201") || normalized.equalsIgnoreCase("room number")) {
+            return "";
+        }
+        return normalized;
+    }
+
+    private boolean isAllOption(String filterValue) {
+        return filterValue == null || filterValue.isBlank() || filterValue.toLowerCase().startsWith("all");
+    }
+
+    private String normalizeStatus(String status) {
+        return status == null ? "Vacant" : status.trim();
     }
 
     private JPanel createRoomCard(Room room) {
