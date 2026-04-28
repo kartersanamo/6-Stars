@@ -17,12 +17,42 @@ public class AccountController {
         return accountService.createAccount(firstName, lastName, email, password, role);
     }
 
+    public void updateProfileDetails(String firstName, String lastName, String profileImagePath) {
+        ensureCurrentAccount();
+        accountService.updateProfile(currentAccount, firstName, lastName, profileImagePath);
+        currentAccount = accountService.getAccountByEmail(currentAccount.getEmail());
+    }
+
+    public void changePassword(String currentPassword, String newPassword, String confirmPassword) {
+        ensureCurrentAccount();
+        accountService.changePassword(currentAccount, currentPassword, newPassword, confirmPassword);
+        currentAccount = accountService.getAccountByEmail(currentAccount.getEmail());
+    }
+
+    public void updateProfileImage(String profileImagePath) {
+        ensureCurrentAccount();
+        accountService.updateProfile(currentAccount, currentAccount.getFirstName(), currentAccount.getLastName(), profileImagePath);
+        currentAccount = accountService.getAccountByEmail(currentAccount.getEmail());
+    }
+
+    public void removeProfileImage() {
+        updateProfileImage(null);
+    }
+
     public Account getCurrentAccount() {
         return currentAccount;
     }
 
+    @Deprecated
     public void updateProfile(String firstName, String lastName, String newPassword) {
-        accountService.updateProfile(currentAccount, firstName, lastName, newPassword);
+        ensureCurrentAccount();
+        accountService.updateProfile(currentAccount, firstName, lastName, currentAccount.getProfileImagePath());
         currentAccount = accountService.getAccountByEmail(currentAccount.getEmail());
+    }
+
+    private void ensureCurrentAccount() {
+        if (currentAccount == null) {
+            throw new IllegalStateException("No account is currently logged in.");
+        }
     }
 }

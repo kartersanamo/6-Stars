@@ -18,7 +18,7 @@ public class DatabaseManager {
             // Create Accounts Table
             stmt.execute("CREATE TABLE IF NOT EXISTS accounts (" +
                     "email TEXT PRIMARY KEY, firstName TEXT, lastName TEXT, " +
-                    "passwordHash TEXT, role TEXT)");
+                    "passwordHash TEXT, role TEXT, profileImagePath TEXT)");
 
 //            stmt.execute("ALTER TABLE reservations ADD COLUMN status TEXT DEFAULT 'BOOKED'");
             // Create Rooms Table
@@ -55,8 +55,10 @@ public class DatabaseManager {
             addColumnIfMissing(conn, "reservations", "totalCost", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "status", "TEXT DEFAULT 'BOOKED'");
             addColumnIfMissing(conn, "reservations", "createdDate", "TEXT");
+            addColumnIfMissing(conn, "accounts", "profileImagePath", "TEXT");
             addColumnIfMissing(conn, "reservations", "maxDailyRate", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "ratePlan", "TEXT DEFAULT 'STANDARD'");
+
 
         } catch (SQLException e) {
             e.printStackTrace();

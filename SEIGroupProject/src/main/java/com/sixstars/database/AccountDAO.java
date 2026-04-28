@@ -11,7 +11,7 @@ import com.sixstars.model.Account;
 
 public class AccountDAO {
     public void saveAccount(Account account) {
-        String sql = "INSERT OR REPLACE INTO accounts(email, firstName, lastName, passwordHash, role) VALUES(?,?,?,?,?)";
+        String sql = "INSERT OR REPLACE INTO accounts(email, firstName, lastName, passwordHash, role, profileImagePath) VALUES(?,?,?,?,?,?)";
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -20,6 +20,7 @@ public class AccountDAO {
             pstmt.setString(3, account.getLastName());
             pstmt.setString(4, account.getPasswordHash());
             pstmt.setString(5, account.getRole().name());
+            pstmt.setString(6, account.getProfileImagePath());
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -39,7 +40,8 @@ public class AccountDAO {
                             rs.getString("lastName"),
                             rs.getString("email"),
                             rs.getString("passwordHash"),
-                            com.sixstars.model.Role.valueOf(rs.getString("role"))
+                            com.sixstars.model.Role.valueOf(rs.getString("role")),
+                            rs.getString("profileImagePath")
                     );
                 }
             }
@@ -62,7 +64,8 @@ public class AccountDAO {
                         rs.getString("lastName"),
                         rs.getString("email"),
                         rs.getString("passwordHash"),
-                        com.sixstars.model.Role.valueOf(rs.getString("role"))
+                        com.sixstars.model.Role.valueOf(rs.getString("role")),
+                        rs.getString("profileImagePath")
                     );
                     aList.add(a);
                 }

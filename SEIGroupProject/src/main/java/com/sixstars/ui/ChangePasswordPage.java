@@ -116,7 +116,14 @@ public class ChangePasswordPage extends JPanel {
                 }
                 // Later:
                 AccountService aService = new AccountService();
-                Account newA = new Account(selected.getFirstName(), selected.getLastName(), selected.getEmail(), aService.hashPassword(newPassword), selected.getRole());
+                Account newA = new Account(
+                        selected.getFirstName(),
+                        selected.getLastName(),
+                        selected.getEmail(),
+                        aService.hashPassword(newPassword),
+                        selected.getRole(),
+                        selected.getProfileImagePath()
+                );
                 accountService.updateAccount(newA);
             }
 });
