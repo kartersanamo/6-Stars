@@ -209,38 +209,47 @@ public class AccountDetailsPage extends JPanel {
         card.add(buildSectionTitle("Profile Information", "Update your public-facing account details and avatar."));
         card.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        // Avatar on top, then full-width fields stacked below for a cleaner single-column layout
+        JPanel topRow = new JPanel(new BorderLayout(18, 0));
+        topRow.setOpaque(false);
+
         JPanel avatarStack = new JPanel();
         avatarStack.setOpaque(false);
         avatarStack.setLayout(new BoxLayout(avatarStack, BoxLayout.Y_AXIS));
-        avatarStack.setAlignmentX(Component.LEFT_ALIGNMENT);
-        avatarPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        avatarPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         avatarStack.add(avatarPanel);
         avatarStack.add(Box.createRigidArea(new Dimension(0, 10)));
         avatarStatusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         avatarStatusLabel.setForeground(UITheme.TEXT_MEDIUM);
-        avatarStatusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        avatarStatusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         avatarStack.add(avatarStatusLabel);
         avatarStack.add(Box.createRigidArea(new Dimension(0, 8)));
         avatarStack.add(centeredButton(uploadPhotoButton, 176, 38, true));
         avatarStack.add(Box.createRigidArea(new Dimension(0, 8)));
         avatarStack.add(centeredButton(removePhotoButton, 176, 38, false));
-        card.add(avatarStack);
-
-        card.add(Box.createRigidArea(new Dimension(0, 12)));
+        // limit avatar column width so the fields column has room
+        avatarStack.setPreferredSize(new Dimension(AVATAR_SIZE + 40, AVATAR_SIZE + 120));
 
         JPanel fields = new JPanel();
-        fields.setLayout(new BoxLayout(fields, BoxLayout.Y_AXIS));
         fields.setOpaque(false);
-        fields.setAlignmentX(Component.LEFT_ALIGNMENT);
-        fields.add(createLabeledFieldCard("First Name", firstNameField, true));
+        fields.setLayout(new BoxLayout(fields, BoxLayout.Y_AXIS));
+
+        JPanel row1 = new JPanel(new GridLayout(1, 2, 10, 0));
+        row1.setOpaque(false);
+        row1.add(createLabeledFieldCard("First Name", firstNameField, true));
+        row1.add(createLabeledFieldCard("Last Name", lastNameField, true));
+
+        JPanel row2 = new JPanel(new GridLayout(1, 2, 10, 0));
+        row2.setOpaque(false);
+        row2.add(createLabeledFieldCard("Email Address", emailValueLabel, false));
+        row2.add(createLabeledFieldCard("Role", roleValueLabel, false));
+
+        fields.add(row1);
         fields.add(Box.createRigidArea(new Dimension(0, 8)));
-        fields.add(createLabeledFieldCard("Last Name", lastNameField, true));
-        fields.add(Box.createRigidArea(new Dimension(0, 8)));
-        fields.add(createLabeledFieldCard("Email Address", emailValueLabel, false));
-        fields.add(Box.createRigidArea(new Dimension(0, 8)));
-        fields.add(createLabeledFieldCard("Role", roleValueLabel, false));
-        card.add(fields);
+        fields.add(row2);
+
+        topRow.add(avatarStack, BorderLayout.WEST);
+        topRow.add(fields, BorderLayout.CENTER);
+        card.add(topRow);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
 
         JPanel notePanel = new JPanel(new BorderLayout());
