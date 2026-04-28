@@ -7,6 +7,8 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagLayout;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -142,6 +144,23 @@ public class ChangePasswordPage extends JPanel {
 
         // Load accounts
         refreshAccounts();
+
+        // Add listener to refresh accounts whenever this panel becomes visible (e.g., after navigating back)
+        addComponentListener(new ComponentListener() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                refreshAccounts();
+            }
+
+            @Override
+            public void componentHidden(ComponentEvent e) { }
+
+            @Override
+            public void componentMoved(ComponentEvent e) { }
+
+            @Override
+            public void componentResized(ComponentEvent e) { }
+        });
     }
 
     // Call this whenever page is opened
