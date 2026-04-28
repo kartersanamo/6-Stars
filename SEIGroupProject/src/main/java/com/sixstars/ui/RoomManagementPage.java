@@ -11,7 +11,9 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.HierarchyEvent;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -677,9 +679,12 @@ public class RoomManagementPage extends JPanel {
 
     private void showRoomDetails(Room room) {
         JDialog detailsDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Room " + room.getRoomNumber() + " Details", true);
-        detailsDialog.setSize(500, 450);
+        detailsDialog.setSize(620, 620);
         detailsDialog.setLocationRelativeTo(this);
         detailsDialog.setResizable(false);
+
+        List<Reservation> roomReservations = getReservationsForRoom(room);
+        Reservation activeReservation = findActiveReservation(roomReservations);
 
         JPanel dialogContent = new JPanel();
         dialogContent.setLayout(new BoxLayout(dialogContent, BoxLayout.Y_AXIS));
@@ -700,6 +705,45 @@ public class RoomManagementPage extends JPanel {
         dialogContent.add(createDetailRow("Smoking:", room.isSmoking() ? "Yes" : "No"));
         dialogContent.add(Box.createRigidArea(new Dimension(0, 10)));
         dialogContent.add(createDetailRow("Status:", room.getStatus()));
+        dialogContent.add(Box.createRigidArea(new Dimension(0, 10)));
+        dialogContent.add(createDetailRow("Current Reservation:", activeReservation == null
+                ? "None active right now"
+                : "#" + activeReservation.getId() + " (" + activeReservation.getGuestEmail() + ")"));
+
+        dialogContent.add(Box.createRigidArea(new Dimension(0, 18)));
+
+        JLabel reservationSectionTitle = new JLabel("Reservation Activity");
+        reservationSectionTitle.setFont(new Font("SansSerif", Font.BOLD, 15));
+        reservationSectionTitle.setForeground(UITheme.TEXT_DARK);
+        dialogContent.add(reservationSectionTitle);
+
+        JLabel reservationSectionSubtitle = new JLabel("Verbose timeline for this room (newest first)");
+        reservationSectionSubtitle.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        reservationSectionSubtitle.setForeground(UITheme.TEXT_MEDIUM);
+        dialogContent.add(Box.createRigidArea(new Dimension(0, 2)));
+        dialogContent.add(reservationSectionSubtitle);
+        dialogContent.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        if (roomReservations.isEmpty()) {
+            JPanel emptyReservationPanel = new JPanel(new BorderLayout());
+            emptyReservationPanel.setOpaque(true);
+            emptyReservationPanel.setBackground(UITheme.CARD_BACKGROUND);
+            emptyReservationPanel.setBorder(new CompoundBorder(
+                    new LineBorder(UITheme.BORDER_COLOR, 1),
+                    new EmptyBorder(12, 12, 12, 12)
+            ));
+
+            JLabel emptyReservationLabel = new JLabel("No reservations found for this room yet.");
+            emptyReservationLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            emptyReservationLabel.setForeground(UITheme.TEXT_MEDIUM);
+            emptyReservationPanel.add(emptyReservationLabel, BorderLayout.CENTER);
+            dialogContent.add(emptyReservationPanel);
+        } else {
+            for (Reservation reservation : roomReservations) {
+                dialogContent.add(createReservationDetailCard(reservation));
+                dialogContent.add(Box.createRigidArea(new Dimension(0, 8)));
+            }
+        }
 
         dialogContent.add(Box.createRigidArea(new Dimension(0, 20)));
 
@@ -712,11 +756,72 @@ public class RoomManagementPage extends JPanel {
         closeButton.addActionListener(e -> detailsDialog.dispose());
         buttonPanel.add(closeButton);
 
-        dialogContent.add(buttonPanel);
-        dialogContent.add(Box.createVerticalGlue());
+        JPanel outer = new JPanel(new BorderLayout());
+        outer.setBackground(UITheme.PAGE_BACKGROUND);
 
-        detailsDialog.add(dialogContent);
+        JScrollPane scrollPane = new JScrollPane(dialogContent);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        outer.add(scrollPane, BorderLayout.CENTER);
+        outer.add(buttonPanel, BorderLayout.SOUTH);
+
+        detailsDialog.add(outer);
         detailsDialog.setVisible(true);
+    }
+
+    private List<Reservation> getReservationsForRoom(Room room) {
+        return allReservations.stream()
+                .filter(reservation -> reservation.getRooms() != null)
+                .filter(reservation -> reservation.getRooms().stream()
+                        .anyMatch(bookedRoom -> bookedRoom.getRoomNumber() == room.getRoomNumber()))
+                .sorted(Comparator
+                        .comparing(Reservation::getStartDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .reversed())
+                .collect(Collectors.toList());
+    }
+
+    private Reservation findActiveReservation(List<Reservation> roomReservations) {
+        LocalDate today = LocalDate.now();
+
+        return roomReservations.stream()
+                .filter(reservation -> reservation.getStartDate() != null && reservation.getEndDate() != null)
+                .filter(reservation -> !today.isBefore(reservation.getStartDate()) && today.isBefore(reservation.getEndDate()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private JPanel createReservationDetailCard(Reservation reservation) {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setOpaque(true);
+        card.setBackground(UITheme.CARD_BACKGROUND);
+        card.setBorder(new CompoundBorder(
+                new LineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(10, 10, 10, 10)
+        ));
+
+        JLabel titleLabel = new JLabel("Reservation #" + reservation.getId());
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
+        titleLabel.setForeground(UITheme.TEXT_DARK);
+        card.add(titleLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+
+        card.add(createDetailRow("Guest:", reservation.getGuestEmail()));
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(createDetailRow("Dates:", reservation.getStartDate() + " to " + reservation.getEndDate()));
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(createDetailRow("Status:", reservation.getStatus()));
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(createDetailRow("Created:", String.valueOf(reservation.getCreatedDate())));
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(createDetailRow("Rate/Nights:", "$" + reservation.getNightlyRate() + " x " + reservation.getNights()));
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(createDetailRow("Total:", "$" + reservation.getTotalCost()));
+
+        return card;
     }
 
     private JPanel createDetailRow(String label, String value) {
