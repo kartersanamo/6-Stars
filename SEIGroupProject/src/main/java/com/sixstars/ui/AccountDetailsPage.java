@@ -209,33 +209,38 @@ public class AccountDetailsPage extends JPanel {
         card.add(buildSectionTitle("Profile Information", "Update your public-facing account details and avatar."));
         card.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        JPanel topRow = new JPanel(new BorderLayout(16, 0));
-        topRow.setOpaque(false);
-
+        // Avatar on top, then full-width fields stacked below for a cleaner single-column layout
         JPanel avatarStack = new JPanel();
         avatarStack.setOpaque(false);
         avatarStack.setLayout(new BoxLayout(avatarStack, BoxLayout.Y_AXIS));
+        avatarStack.setAlignmentX(Component.LEFT_ALIGNMENT);
+        avatarPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         avatarStack.add(avatarPanel);
         avatarStack.add(Box.createRigidArea(new Dimension(0, 10)));
         avatarStatusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         avatarStatusLabel.setForeground(UITheme.TEXT_MEDIUM);
-        avatarStatusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        avatarStatusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         avatarStack.add(avatarStatusLabel);
         avatarStack.add(Box.createRigidArea(new Dimension(0, 8)));
         avatarStack.add(centeredButton(uploadPhotoButton, 176, 38, true));
         avatarStack.add(Box.createRigidArea(new Dimension(0, 8)));
         avatarStack.add(centeredButton(removePhotoButton, 176, 38, false));
+        card.add(avatarStack);
 
-        JPanel fields = new JPanel(new GridLayout(2, 2, 10, 10));
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel fields = new JPanel();
+        fields.setLayout(new BoxLayout(fields, BoxLayout.Y_AXIS));
         fields.setOpaque(false);
+        fields.setAlignmentX(Component.LEFT_ALIGNMENT);
         fields.add(createLabeledFieldCard("First Name", firstNameField, true));
+        fields.add(Box.createRigidArea(new Dimension(0, 8)));
         fields.add(createLabeledFieldCard("Last Name", lastNameField, true));
+        fields.add(Box.createRigidArea(new Dimension(0, 8)));
         fields.add(createLabeledFieldCard("Email Address", emailValueLabel, false));
+        fields.add(Box.createRigidArea(new Dimension(0, 8)));
         fields.add(createLabeledFieldCard("Role", roleValueLabel, false));
-
-        topRow.add(avatarStack, BorderLayout.WEST);
-        topRow.add(fields, BorderLayout.CENTER);
-        card.add(topRow);
+        card.add(fields);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
 
         JPanel notePanel = new JPanel(new BorderLayout());
@@ -391,6 +396,9 @@ public class AccountDetailsPage extends JPanel {
         panel.add(titleLabel);
         panel.add(Box.createRigidArea(new Dimension(0, 4)));
         panel.add(subtitleLabel);
+        // Allow the title block to stretch the full width of its parent card
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, panel.getPreferredSize().height));
         return panel;
     }
 
@@ -403,6 +411,9 @@ public class AccountDetailsPage extends JPanel {
                 new LineBorder(UITheme.BORDER_COLOR, 1, true),
                 new EmptyBorder(10, 10, 10, 10)
         ));
+        // Let the card expand horizontally to fill the parent container
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
 
         JLabel l = new JLabel(label);
         l.setFont(new Font("SansSerif", Font.BOLD, 12));
