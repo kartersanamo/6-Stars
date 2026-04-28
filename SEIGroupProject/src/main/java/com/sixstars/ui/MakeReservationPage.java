@@ -42,9 +42,11 @@ import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.BedType;
 import com.sixstars.model.QualityLevel;
+import com.sixstars.model.Reservation;
 import com.sixstars.model.Role;
 import com.sixstars.model.Room;
 import com.sixstars.model.Theme;
+import com.sixstars.service.PricingSettingsService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
 import com.toedter.calendar.JDateChooser;
@@ -56,6 +58,7 @@ public class MakeReservationPage extends JPanel {
     private final CardLayout cardLayout;
     private final ReservationService reservationService;
     private final RoomService roomService;
+    private final PricingSettingsService pricingSettingsService;
 
     private final JDateChooser checkInChooser;
     private final JDateChooser checkOutChooser;
@@ -73,6 +76,7 @@ public class MakeReservationPage extends JPanel {
         this.cardLayout = cardLayout;
         this.reservationService = reservationService;
         this.roomService = roomService;
+        this.pricingSettingsService = new PricingSettingsService();
 
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
@@ -375,17 +379,24 @@ public class MakeReservationPage extends JPanel {
         subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
         subtitle.setForeground(UITheme.TEXT_MEDIUM);
 
-        JLabel priceLabel = new JLabel("$" + room.getPricePerNight() + " per night");
+        JLabel priceLabel = new JLabel("$" + room.getPricePerNight() + " per night (Standard)");
         priceLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
         priceLabel.setForeground(new Color(176, 132, 38));
+
+        JLabel maxRateLabel = new JLabel("Quality Max Daily Rate: $" + room.getQualityLevel().getMaxDailyRate());
+        maxRateLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        maxRateLabel.setForeground(UITheme.TEXT_MEDIUM);
 
         String totalText = "Select dates to see total stay cost";
         if (hasValidDateRange) {
             LocalDate startDate = toLocalDate(checkInChooser.getDate());
             LocalDate endDate = toLocalDate(checkOutChooser.getDate());
             int nights = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-            int estimatedTotal = room.getPricePerNight() * nights;
-            totalText = "Estimated stay total: $" + estimatedTotal + " for " + nights
+            double discountRate = pricingSettingsService.getGlobalDiscountRate();
+            int estimatedNightly = (int) Math.round(room.getPricePerNight() * (1.0 - discountRate));
+            estimatedNightly = Math.min(estimatedNightly, room.getQualityLevel().getMaxDailyRate());
+            int estimatedTotal = estimatedNightly * nights;
+            totalText = "Estimated total: $" + estimatedTotal + " for " + nights
                     + " night" + (nights == 1 ? "" : "s");
         }
 
@@ -411,6 +422,8 @@ public class MakeReservationPage extends JPanel {
         details.add(subtitle);
         details.add(Box.createRigidArea(new Dimension(0, 10)));
         details.add(priceLabel);
+        details.add(Box.createRigidArea(new Dimension(0, 4)));
+        details.add(maxRateLabel);
         details.add(Box.createRigidArea(new Dimension(0, 6)));
         details.add(totalLabel);
         details.add(Box.createRigidArea(new Dimension(0, 14)));
@@ -545,9 +558,23 @@ public class MakeReservationPage extends JPanel {
             return;
         }
 
-        // Navigate to confirmation page instead of immediately booking
-        Main.reservationConfirmationPage.showDraft(room, startDate, endDate, currentAccount, isClerkBooking, targetEmail);
-        cardLayout.show(pages, "reservation confirmation");
+        Reservation reservation = reservationService.makeReservation(targetEmail, startDate, endDate, List.of(room));
+        int nights = reservation.getNights();
+        int actualNightly = reservation.getNightlyRate();
+        int total = reservation.getTotalCost();
+
+        JOptionPane.showMessageDialog(
+                this,
+                "Reservation successful for Room " + room.getRoomNumber()
+                        + ".\nRate Plan: " + reservation.getRatePlan().getDisplayName()
+                        + ".\nActual Nightly Rate: $" + actualNightly
+                        + " (Quality Max: $" + room.getQualityLevel().getMaxDailyRate() + ")"
+                        + ".\nTotal: $" + total + " for " + nights
+                        + " night" + (nights == 1 ? "" : "s") + ".",
+                "Booking Confirmed",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+        refreshListings();
     }
 
     public boolean completePendingReservationIfAny() {
@@ -573,10 +600,24 @@ public class MakeReservationPage extends JPanel {
         }
 
         Account currentAccount = AccountController.currentAccount;
+        Reservation reservation = reservationService.makeReservation(currentAccount.getEmail(), startDate, endDate, List.of(room));
+        int nights = reservation.getNights();
+        int actualNightly = reservation.getNightlyRate();
+        int total = reservation.getTotalCost();
 
-        // Navigate to confirmation page with pending reservation data
-        Main.reservationConfirmationPage.showDraft(room, startDate, endDate, currentAccount, false, null);
-        cardLayout.show(pages, "reservation confirmation");
+        JOptionPane.showMessageDialog(
+                this,
+                "Welcome! Your reservation for Room " + room.getRoomNumber()
+                        + " is confirmed.\nRate Plan: " + reservation.getRatePlan().getDisplayName()
+                        + ".\nActual Nightly Rate: $" + actualNightly
+                        + " (Quality Max: $" + room.getQualityLevel().getMaxDailyRate() + ")"
+                        + ".\nTotal: $" + total + " for " + nights
+                        + " night" + (nights == 1 ? "" : "s") + ".",
+                "Booking Confirmed",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+        refreshListings();
+        cardLayout.show(pages, "make reservation");
         return true;
     }
 
