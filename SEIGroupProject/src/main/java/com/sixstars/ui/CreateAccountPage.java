@@ -23,6 +23,8 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
@@ -34,6 +36,7 @@ public class CreateAccountPage extends JPanel {
     private JPanel formPanel;
     private JLabel roleLabel;
     private JComboBox<Role> roleComboBox;
+    private JTextField emailField;
     private boolean isAdmin;
     JPasswordField passwordField;
 
@@ -80,13 +83,21 @@ public class CreateAccountPage extends JPanel {
         styleTextField(lastNameField);
 
         JLabel emailLabel = createCenteredLabel("Email Address");
-        JTextField emailField = new JTextField();
+        emailField = new JTextField();
         styleTextField(emailField);
+
+        JLabel emailRequirementLabel = createRequirementLabel("Valid email format (example@domain.com)");
 
         JLabel passwordLabel = createCenteredLabel("Password");
         passwordField = new JPasswordField();
         styleTextField(passwordField);
         passwordField.setEchoChar('*');
+
+        JLabel passwordLengthRequirementLabel = createRequirementLabel("At least 8 characters");
+        JLabel passwordUpperRequirementLabel = createRequirementLabel("At least 1 uppercase letter");
+        JLabel passwordLowerRequirementLabel = createRequirementLabel("At least 1 lowercase letter");
+        JLabel passwordDigitRequirementLabel = createRequirementLabel("At least 1 number");
+        JLabel passwordSpecialRequirementLabel = createRequirementLabel("At least 1 special character");
 
         JCheckBox showPassword = new JCheckBox("Show Password");
         showPassword.setBackground(UITheme.CARD_BACKGROUND);
@@ -145,12 +156,36 @@ public class CreateAccountPage extends JPanel {
         formPanel.add(emailField, gbc);
 
         gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(emailRequirementLabel, gbc);
+
+        gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 10, 0);
         formPanel.add(passwordLabel, gbc);
 
         gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 18, 0);
         formPanel.add(passwordField, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 4, 0);
+        formPanel.add(passwordLengthRequirementLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 4, 0);
+        formPanel.add(passwordUpperRequirementLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 4, 0);
+        formPanel.add(passwordLowerRequirementLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 4, 0);
+        formPanel.add(passwordDigitRequirementLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(passwordSpecialRequirementLabel, gbc);
 
         gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 18, 0);
@@ -190,6 +225,48 @@ public class CreateAccountPage extends JPanel {
 
         add(card);
 
+        Runnable refreshValidationUI = () -> {
+            String emailText = emailField.getText().trim();
+            String passwordText = new String(passwordField.getPassword());
+
+            boolean emailValid = isValidEmail(emailText);
+            boolean hasLength = passwordText.length() >= 8;
+            boolean hasUpper = passwordText.chars().anyMatch(Character::isUpperCase);
+            boolean hasLower = passwordText.chars().anyMatch(Character::isLowerCase);
+            boolean hasDigit = passwordText.chars().anyMatch(Character::isDigit);
+            boolean hasSpecial = passwordText.chars().anyMatch(ch -> !Character.isLetterOrDigit(ch));
+
+            updateRequirementLabel(emailRequirementLabel, "Valid email format (example@domain.com)", emailValid);
+            updateRequirementLabel(passwordLengthRequirementLabel, "At least 8 characters", hasLength);
+            updateRequirementLabel(passwordUpperRequirementLabel, "At least 1 uppercase letter", hasUpper);
+            updateRequirementLabel(passwordLowerRequirementLabel, "At least 1 lowercase letter", hasLower);
+            updateRequirementLabel(passwordDigitRequirementLabel, "At least 1 number", hasDigit);
+            updateRequirementLabel(passwordSpecialRequirementLabel, "At least 1 special character", hasSpecial);
+
+            createButton.setEnabled(emailValid && hasLength && hasUpper && hasLower && hasDigit && hasSpecial);
+        };
+
+        DocumentListener validationListener = new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                refreshValidationUI.run();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                refreshValidationUI.run();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                refreshValidationUI.run();
+            }
+        };
+
+        emailField.getDocument().addDocumentListener(validationListener);
+        passwordField.getDocument().addDocumentListener(validationListener);
+        refreshValidationUI.run();
+
         createButton.addActionListener(e -> {
             String firstName = firstNameField.getText().trim();
             String lastName = lastNameField.getText().trim();
@@ -202,6 +279,16 @@ public class CreateAccountPage extends JPanel {
                         this,
                         "Please fill in all fields.",
                         "Missing Information",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
+            }
+
+            if (!isValidEmail(email) || !isStrongPassword(password)) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please satisfy all email and password requirements.",
+                        "Invalid Information",
                         JOptionPane.WARNING_MESSAGE
                 );
                 return;
@@ -227,6 +314,7 @@ public class CreateAccountPage extends JPanel {
                 lastNameField.setText("");
                 emailField.setText("");
                 passwordField.setText("");
+                refreshValidationUI.run();
                 
 
                 if (!isAdmin) {
@@ -267,6 +355,48 @@ public class CreateAccountPage extends JPanel {
         label.setForeground(UITheme.TEXT_MEDIUM);
         label.setHorizontalAlignment(SwingConstants.CENTER);
         return label;
+    }
+
+    private JLabel createRequirementLabel(String text) {
+        JLabel label = new JLabel("✗ " + text);
+        label.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        label.setHorizontalAlignment(SwingConstants.LEFT);
+        label.setForeground(new Color(180, 46, 46));
+        return label;
+    }
+
+    private void updateRequirementLabel(JLabel label, String text, boolean met) {
+        label.setText((met ? "✓ " : "✗ ") + text);
+        label.setForeground(met ? new Color(34, 139, 34) : new Color(180, 46, 46));
+    }
+
+    private boolean isValidEmail(String email) {
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    }
+
+    private boolean isStrongPassword(String password) {
+        if (password == null || password.length() < 8) {
+            return false;
+        }
+
+        boolean hasUpper = false;
+        boolean hasLower = false;
+        boolean hasDigit = false;
+        boolean hasSpecial = false;
+
+        for (char c : password.toCharArray()) {
+            if (Character.isUpperCase(c)) {
+                hasUpper = true;
+            } else if (Character.isLowerCase(c)) {
+                hasLower = true;
+            } else if (Character.isDigit(c)) {
+                hasDigit = true;
+            } else {
+                hasSpecial = true;
+            }
+        }
+
+        return hasUpper && hasLower && hasDigit && hasSpecial;
     }
 
     private void styleTextField(JTextField field) {
