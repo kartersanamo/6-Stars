@@ -77,9 +77,10 @@ public class DatabaseManager {
 
             // Create Join Table for Reservation <-> Rooms (Many-to-Many)
             stmt.execute("CREATE TABLE IF NOT EXISTS reservation_rooms (" +
-                    "reservation_id INTEGER, room_number INTEGER, " +
+                    "reservation_id INTEGER NOT NULL, room_number INTEGER NOT NULL, " +
+                    "PRIMARY KEY (reservation_id, room_number), " +
                     "FOREIGN KEY(reservation_id) REFERENCES reservations(id), " +
-                    "FOREIGN KEY(room_number) REFERENCES rooms(room_number))");
+                    "FOREIGN KEY(room_number) REFERENCES rooms(roomNumber))");
             // Create Shop Items Table
             stmt.execute("CREATE TABLE IF NOT EXISTS shop_items (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -116,9 +117,63 @@ public class DatabaseManager {
             addColumnIfMissing(conn, "accounts", "profileImagePath", "TEXT");
             addColumnIfMissing(conn, "reservations", "maxDailyRate", "INTEGER DEFAULT 0");
             addColumnIfMissing(conn, "reservations", "ratePlan", "TEXT DEFAULT 'STANDARD'");
+            ensureReservationRoomsForeignKey(conn);
 
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void ensureReservationRoomsForeignKey(Connection conn) throws SQLException {
+        boolean foundRoomForeignKey = false;
+        boolean needsMigration = false;
+
+        try (Statement pragmaStmt = conn.createStatement();
+             ResultSet rs = pragmaStmt.executeQuery("PRAGMA foreign_key_list(reservation_rooms)")) {
+            while (rs.next()) {
+                String referencedTable = rs.getString("table");
+                String fromColumn = rs.getString("from");
+                String toColumn = rs.getString("to");
+
+                if ("rooms".equalsIgnoreCase(referencedTable) && "room_number".equalsIgnoreCase(fromColumn)) {
+                    foundRoomForeignKey = true;
+                    if (!"roomNumber".equalsIgnoreCase(toColumn)) {
+                        needsMigration = true;
+                    }
+                }
+            }
+        }
+
+        if (!foundRoomForeignKey) {
+            needsMigration = true;
+        }
+
+        if (!needsMigration) {
+            return;
+        }
+
+        try (Statement migrationStmt = conn.createStatement()) {
+            migrationStmt.execute("PRAGMA foreign_keys=OFF");
+            migrationStmt.execute("BEGIN TRANSACTION");
+            migrationStmt.execute("ALTER TABLE reservation_rooms RENAME TO reservation_rooms_old");
+            migrationStmt.execute("CREATE TABLE reservation_rooms (" +
+                    "reservation_id INTEGER NOT NULL, room_number INTEGER NOT NULL, " +
+                    "PRIMARY KEY (reservation_id, room_number), " +
+                    "FOREIGN KEY (reservation_id) REFERENCES reservations(id), " +
+                    "FOREIGN KEY (room_number) REFERENCES rooms(roomNumber))");
+            migrationStmt.execute("INSERT INTO reservation_rooms (reservation_id, room_number) " +
+                    "SELECT reservation_id, room_number FROM reservation_rooms_old");
+            migrationStmt.execute("DROP TABLE reservation_rooms_old");
+            migrationStmt.execute("COMMIT");
+            migrationStmt.execute("PRAGMA foreign_keys=ON");
+        } catch (SQLException migrationError) {
+            try (Statement rollbackStmt = conn.createStatement()) {
+                rollbackStmt.execute("ROLLBACK");
+                rollbackStmt.execute("PRAGMA foreign_keys=ON");
+            } catch (SQLException ignored) {
+                // If rollback fails, rethrow original migration error.
+            }
+            throw migrationError;
         }
     }
 
