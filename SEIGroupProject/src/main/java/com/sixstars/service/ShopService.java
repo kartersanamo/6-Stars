@@ -22,15 +22,7 @@ public class ShopService {
     private final ReservationService reservationService = new ReservationService();
 
     public List<Item> getInventory() {
-        List<Item> available = new ArrayList<>();
-
-        for (Item item : dao.getAllItems()) {
-            if (item.getStock() > 0) {
-                available.add(item);
-            }
-        }
-
-        return available;
+        return dao.getAllItems();
     }
 
     public double checkout(String guestEmail, ShoppingCart cart) {

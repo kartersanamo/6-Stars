@@ -397,19 +397,41 @@ public class ShopPage extends JPanel {
         priceLabel.setFont(new Font("SansSerif", Font.PLAIN, 15));
         priceLabel.setForeground(UITheme.TEXT_MEDIUM);
 
-        JLabel stockLabel = new JLabel(item.getStock() + " left", SwingConstants.CENTER);
+        boolean inStock = item.getStock() > 0;
+
+        JLabel stockLabel = new JLabel(
+                inStock ? item.getStock() + " left" : "Out of Stock",
+                SwingConstants.CENTER
+        );
         stockLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        stockLabel.setForeground(UITheme.TEXT_MEDIUM);
+        stockLabel.setForeground(inStock ? UITheme.TEXT_MEDIUM : new Color(200, 80, 80));
 
         JButton addButton = null;
         if (purchaseEnabled) {
-            addButton = createPrimaryButton("Add to Cart");
+            addButton = createPrimaryButton(inStock ? "Add to Cart" : "Out of Stock");
             addButton.setForeground(Color.BLACK);
-            addButton.addActionListener(e -> {
-                cart.addItem(item);
-                persistCurrentCart();
-                updateCartDisplay();
-            });
+
+            if (!inStock) {
+                addButton.setEnabled(false);
+            } else {
+                addButton.addActionListener(e -> {
+                    Account currentAccount = AccountController.currentAccount;
+
+                    if (currentAccount == null) {
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "Please log in or create an account before adding items to your cart.",
+                                "Account Required",
+                                JOptionPane.WARNING_MESSAGE
+                        );
+                        return;
+                    }
+
+                    cart.addItem(item);
+                    persistCurrentCart();
+                    updateCartDisplay();
+                });
+            }
         }
 
         JPanel infoPanel = new JPanel();
@@ -420,6 +442,7 @@ public class ShopPage extends JPanel {
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         priceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         stockLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         if (addButton != null) {
             addButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         }
@@ -431,6 +454,7 @@ public class ShopPage extends JPanel {
         infoPanel.add(priceLabel);
         infoPanel.add(Box.createRigidArea(new Dimension(0, 4)));
         infoPanel.add(stockLabel);
+
         if (addButton != null) {
             infoPanel.add(Box.createRigidArea(new Dimension(0, 14)));
             infoPanel.add(addButton);
@@ -678,7 +702,12 @@ public class ShopPage extends JPanel {
 
     private void updateShopAccessState() {
         Account currentAccount = AccountController.currentAccount;
-        purchaseEnabled = currentAccount != null && currentAccount.getRole() == Role.GUEST;
-        cartCardLayout.show(cartContainer, purchaseEnabled ? "cart" : "viewOnly");
+
+        boolean isClerk = currentAccount != null && currentAccount.getRole() == Role.CLERK;
+
+        purchaseEnabled = !isClerk;
+
+        cartContainer.setVisible(true);
+        cartCardLayout.show(cartContainer, isClerk ? "viewOnly" : "cart");
     }
 }
