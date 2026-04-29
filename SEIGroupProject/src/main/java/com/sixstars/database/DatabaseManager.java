@@ -5,9 +5,46 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.ResultSet;
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class DatabaseManager {
-    private static final String URL = "jdbc:sqlite:hotel_reservation.db";
+    private static final String DB_NAME = "hotel_reservation.db";
+    private static String databasePath;
+
+    static {
+        // Initialize the database path on class load
+        databasePath = initializeDatabasePath();
+    }
+
+    private static String initializeDatabasePath() {
+        // Check if database exists in current working directory
+        File dbFile = new File(DB_NAME);
+        if (dbFile.exists()) {
+            return "jdbc:sqlite:" + DB_NAME;
+        }
+
+        // Otherwise, extract from bundled resources
+        try {
+            InputStream resourceStream = DatabaseManager.class.getResourceAsStream("/data/" + DB_NAME);
+            if (resourceStream != null) {
+                Files.createDirectories(Paths.get("."));
+                Files.copy(resourceStream, Paths.get(DB_NAME));
+                System.out.println("Extracted bundled database: " + DB_NAME);
+                return "jdbc:sqlite:" + DB_NAME;
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not extract bundled database: " + e.getMessage());
+        }
+
+        // Fallback to creating a new database file
+        System.out.println("Creating new database: " + DB_NAME);
+        return "jdbc:sqlite:" + DB_NAME;
+    }
+
+    private static final String URL = databasePath;
 
     public static Connection getConnection() throws SQLException {
         Connection conn = DriverManager.getConnection(URL);

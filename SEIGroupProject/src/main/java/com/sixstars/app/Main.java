@@ -3,6 +3,9 @@ package com.sixstars.app;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.time.LocalDate;
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Paths;
 
 import javax.swing.JFrame;
 import javax.swing.ImageIcon;
@@ -189,16 +192,34 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        // Load .env file if it exists
+        // Load .env file: first try local file, then fallback to bundled resource
         try {
-            Dotenv dotenv = Dotenv.configure()
-                    .ignoreIfMissing()
-                    .load();
-            // Apply loaded environment variables to System properties so they can be accessed
-            // by the rest of the application (System.getenv() is read-only)
-            dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+            File localEnv = new File(".env");
+            if (localEnv.exists()) {
+                // Load from local .env file
+                Dotenv dotenv = Dotenv.configure()
+                        .ignoreIfMissing()
+                        .load();
+                dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+                System.out.println("Loaded .env from local file");
+            } else {
+                // Try to load from bundled resource
+                try (InputStream resourceStream = Main.class.getResourceAsStream("/data/.env")) {
+                    if (resourceStream != null) {
+                        // Create a temporary .env file from the bundled resource
+                        java.nio.file.Files.copy(resourceStream, Paths.get(".env"),
+                                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                        // Now load it with Dotenv
+                        Dotenv dotenv = Dotenv.configure()
+                                .ignoreIfMissing()
+                                .load();
+                        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+                        System.out.println("Loaded .env from bundled resources");
+                    }
+                }
+            }
         } catch (Exception e) {
-            // .env file not found or failed to load, continue with system environment variables
+            System.out.println("Note: .env file not found. Using system environment variables if available.");
         }
         SwingUtilities.invokeLater(Main::createAndShowUI);
     }
