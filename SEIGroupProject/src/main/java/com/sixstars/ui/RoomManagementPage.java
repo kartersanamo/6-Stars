@@ -283,6 +283,92 @@ public class RoomManagementPage extends JPanel {
         return filtersPanel;
     }
 
+    private void showModifyRoomDialog(Room room) {
+        JDialog dialog = new JDialog(
+                (Frame) SwingUtilities.getWindowAncestor(this),
+                "Modify Room " + room.getRoomNumber(),
+                true
+        );
+
+        dialog.setSize(420, 420);
+        dialog.setLocationRelativeTo(this);
+        dialog.setResizable(false);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(UITheme.CARD_BACKGROUND);
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JLabel title = new JLabel("Modify Room " + room.getRoomNumber());
+        title.setFont(UITheme.LABEL_FONT);
+        title.setForeground(UITheme.TEXT_DARK);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JComboBox<BedType> editBedTypeBox = new JComboBox<>(BedType.values());
+        editBedTypeBox.setSelectedItem(room.getBedType());
+
+        JComboBox<Theme> editThemeBox = new JComboBox<>(Theme.values());
+        editThemeBox.setSelectedItem(room.getTheme());
+
+        JComboBox<QualityLevel> editQualityBox = new JComboBox<>(QualityLevel.values());
+        editQualityBox.setSelectedItem(room.getQualityLevel());
+
+        JSpinner editPriceSpinner = new JSpinner(
+                new SpinnerNumberModel(room.getPricePerNight(), 50, 500, 10)
+        );
+
+        JCheckBox editSmokingCheckBox = new JCheckBox("Smoking Allowed");
+        editSmokingCheckBox.setSelected(room.isSmoking());
+        editSmokingCheckBox.setBackground(UITheme.CARD_BACKGROUND);
+
+        panel.add(title);
+        panel.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        panel.add(createFilterLabel("Bed Type"));
+        panel.add(editBedTypeBox);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        panel.add(createFilterLabel("Theme"));
+        panel.add(editThemeBox);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        panel.add(createFilterLabel("Quality Level"));
+        panel.add(editQualityBox);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        panel.add(createFilterLabel("Price Per Night ($)"));
+        panel.add(editPriceSpinner);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        panel.add(editSmokingCheckBox);
+        panel.add(Box.createRigidArea(new Dimension(0, 18)));
+
+        JButton saveButton = createPrimaryButton("Save Changes");
+        saveButton.addActionListener(e -> {
+            Room updatedRoom = new Room(
+                    room.getRoomNumber(),
+                    (BedType) editBedTypeBox.getSelectedItem(),
+                    (Theme) editThemeBox.getSelectedItem(),
+                    (QualityLevel) editQualityBox.getSelectedItem(),
+                    editSmokingCheckBox.isSelected(),
+                    (Integer) editPriceSpinner.getValue()
+            );
+
+            roomService.updateRoom(updatedRoom);
+
+            refreshData();
+            updateRoomDisplay();
+
+            JOptionPane.showMessageDialog(this, "Room " + room.getRoomNumber() + " updated successfully!");
+            dialog.dispose();
+        });
+
+        panel.add(saveButton);
+
+        dialog.add(panel);
+        dialog.setVisible(true);
+    }
+
     private JLabel createFilterLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("SansSerif", Font.BOLD, 12));
@@ -662,6 +748,22 @@ public class RoomManagementPage extends JPanel {
         card.add(detailsButton);
 
         card.add(Box.createVerticalGlue());
+
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+
+        JButton modifyButton = new JButton("Modify Room");
+        modifyButton.setFont(new Font("SansSerif", Font.BOLD, 11));
+        modifyButton.setBackground(UITheme.SECONDARY_BUTTON);
+        modifyButton.setForeground(UITheme.TEXT_DARK);
+        modifyButton.setFocusPainted(false);
+        modifyButton.setBorderPainted(false);
+        modifyButton.setOpaque(true);
+        modifyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        modifyButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+
+        modifyButton.addActionListener(e -> showModifyRoomDialog(room));
+
+        card.add(modifyButton);
 
         return card;
     }
