@@ -24,10 +24,13 @@ public class ShopPage extends JPanel {
     private final ShopService shopService;
 
     private final JPanel inventoryPanel;
+    private final JPanel cartContainer;
+    private final CardLayout cartCardLayout;
     private JPanel cartItemsPanel;
     private final JLabel totalLabel;
     private final JLabel resultsInfoLabel;
     private final JTextField searchField;
+    private boolean purchaseEnabled;
 
     public ShopPage(JPanel pages, CardLayout cardLayout) {
         this.pages = pages;
@@ -40,6 +43,8 @@ public class ShopPage extends JPanel {
         setBackground(UITheme.PAGE_BACKGROUND);
 
         inventoryPanel = new JPanel();
+        cartCardLayout = new CardLayout();
+        cartContainer = new JPanel(cartCardLayout);
         totalLabel = new JLabel("Total: $0.00");
         resultsInfoLabel = new JLabel("0 items");
         searchField = createTextField("Search shop items");
@@ -151,9 +156,12 @@ public class ShopPage extends JPanel {
         leftSection.add(scrollPane, BorderLayout.CENTER);
 
         JPanel cartPanel = buildCartPanel();
+        JPanel viewOnlyPanel = buildViewOnlyPanel();
+        cartContainer.add(cartPanel, "cart");
+        cartContainer.add(viewOnlyPanel, "viewOnly");
 
         content.add(leftSection, BorderLayout.CENTER);
-        content.add(cartPanel, BorderLayout.EAST);
+        content.add(cartContainer, BorderLayout.EAST);
 
         return content;
     }
@@ -229,6 +237,34 @@ public class ShopPage extends JPanel {
         return cartPanel;
     }
 
+    private JPanel buildViewOnlyPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(UITheme.CARD_BACKGROUND);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(18, 18, 18, 18)
+        ));
+        panel.setPreferredSize(new Dimension(340, 0));
+
+        JLabel title = new JLabel("Inventory View");
+        title.setFont(new Font("Serif", Font.BOLD, 24));
+        title.setForeground(UITheme.TEXT_DARK);
+        title.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JLabel message = new JLabel("<html><div style='text-align:center;'>Clerk accounts can browse shop inventory only.<br/>Cart and checkout are available for guest accounts.</div></html>");
+        message.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        message.setForeground(UITheme.TEXT_MEDIUM);
+        message.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JPanel body = new JPanel(new GridBagLayout());
+        body.setOpaque(false);
+        body.add(message);
+
+        panel.add(title, BorderLayout.NORTH);
+        panel.add(body, BorderLayout.CENTER);
+        return panel;
+    }
+
     private JPanel buildBottomBar() {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(UITheme.CARD_BACKGROUND);
@@ -294,13 +330,14 @@ public class ShopPage extends JPanel {
     }
 
     public void refreshPage() {
+        updateShopAccessState();
         refreshInventory();
         loadPersistedCartForCurrentAccount();
     }
 
     public void persistCurrentCart() {
         Account currentAccount = AccountController.currentAccount;
-        if (currentAccount == null) {
+        if (currentAccount == null || !purchaseEnabled) {
             return;
         }
 
@@ -314,7 +351,7 @@ public class ShopPage extends JPanel {
 
     private void loadPersistedCartForCurrentAccount() {
         Account currentAccount = AccountController.currentAccount;
-        if (currentAccount == null) {
+        if (currentAccount == null || !purchaseEnabled) {
             cart.clear();
             updateCartDisplay();
             return;
@@ -364,13 +401,16 @@ public class ShopPage extends JPanel {
         stockLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
         stockLabel.setForeground(UITheme.TEXT_MEDIUM);
 
-        JButton addButton = createPrimaryButton("Add to Cart");
-        addButton.setForeground(Color.BLACK);
-        addButton.addActionListener(e -> {
-            cart.addItem(item);
-            persistCurrentCart();
-            updateCartDisplay();
-        });
+        JButton addButton = null;
+        if (purchaseEnabled) {
+            addButton = createPrimaryButton("Add to Cart");
+            addButton.setForeground(Color.BLACK);
+            addButton.addActionListener(e -> {
+                cart.addItem(item);
+                persistCurrentCart();
+                updateCartDisplay();
+            });
+        }
 
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
@@ -380,7 +420,9 @@ public class ShopPage extends JPanel {
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         priceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         stockLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        addButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        if (addButton != null) {
+            addButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        }
 
         infoPanel.add(imageLabel);
         infoPanel.add(Box.createRigidArea(new Dimension(0, 12)));
@@ -389,8 +431,10 @@ public class ShopPage extends JPanel {
         infoPanel.add(priceLabel);
         infoPanel.add(Box.createRigidArea(new Dimension(0, 4)));
         infoPanel.add(stockLabel);
-        infoPanel.add(Box.createRigidArea(new Dimension(0, 14)));
-        infoPanel.add(addButton);
+        if (addButton != null) {
+            infoPanel.add(Box.createRigidArea(new Dimension(0, 14)));
+            infoPanel.add(addButton);
+        }
 
         card.add(infoPanel, BorderLayout.CENTER);
         return card;
@@ -528,6 +572,16 @@ public class ShopPage extends JPanel {
     }
 
     private void handleCheckout() {
+        if (!purchaseEnabled) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Shop purchases are available for Guest accounts only.",
+                    "Guest Account Required",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
         if (cart.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Your cart is empty.");
             return;
@@ -539,16 +593,6 @@ public class ShopPage extends JPanel {
                     this,
                     "Please log in as a Guest before checking out.",
                     "Login Required",
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
-
-        if (currentAccount.getRole() != Role.GUEST) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Only Guest accounts can make shop purchases.",
-                    "Guest Account Required",
                     JOptionPane.WARNING_MESSAGE
             );
             return;
@@ -630,5 +674,11 @@ public class ShopPage extends JPanel {
         button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return button;
+    }
+
+    private void updateShopAccessState() {
+        Account currentAccount = AccountController.currentAccount;
+        purchaseEnabled = currentAccount != null && currentAccount.getRole() == Role.GUEST;
+        cartCardLayout.show(cartContainer, purchaseEnabled ? "cart" : "viewOnly");
     }
 }
