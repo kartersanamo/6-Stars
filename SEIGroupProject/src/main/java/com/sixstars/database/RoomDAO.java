@@ -33,6 +33,34 @@ public class RoomDAO {
         }
     }
 
+    public void updateRoom(Room room) {
+        String sql = """
+            UPDATE rooms
+            SET bedType = ?,
+                theme = ?,
+                qualityLevel = ?,
+                isSmoking = ?,
+                pricePerNight = ?
+            WHERE roomNumber = ?
+            """;
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pStmt = conn.prepareStatement(sql)) {
+
+            pStmt.setString(1, room.getBedType().name());
+            pStmt.setString(2, room.getTheme().name());
+            pStmt.setString(3, room.getQualityLevel().name());
+            pStmt.setInt(4, room.isSmoking() ? 1 : 0);
+            pStmt.setInt(5, room.getPricePerNight());
+            pStmt.setInt(6, room.getRoomNumber());
+
+            pStmt.executeUpdate();
+
+        } catch (SQLException e) {
+            System.err.println("Error updating room: " + e.getMessage());
+        }
+    }
+
     /**
      * Retrieves all rooms currently stored in the database.
      */

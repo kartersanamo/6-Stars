@@ -25,6 +25,9 @@ public class RoomService {
     public void addRoom(Room newRoom) {
         roomDAO.saveRoom(newRoom);
     }
+    public void updateRoom(Room room) {
+        roomDAO.updateRoom(room);
+    }
 
     private void initializeRooms() {
         roomDAO.saveRoom(new Room(101, BedType.KING, Theme.NATURE_RETREAT, QualityLevel.EXECUTIVE, false));
