@@ -1,5 +1,6 @@
 package com.sixstars.ui;
 
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -63,6 +64,10 @@ public class LoginPage extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
+        // Create inline error notification panel
+        JPanel errorNotificationPanel = createErrorNotificationPanel();
+        errorNotificationPanel.setVisible(false);
+
         JLabel emailLabel = new JLabel("Email Address");
         emailLabel.setFont(UITheme.LABEL_FONT);
         emailLabel.setForeground(UITheme.TEXT_MEDIUM);
@@ -93,35 +98,40 @@ public class LoginPage extends JPanel {
         JButton backButton = new JButton("Back");
         styleSecondaryButton(backButton);
 
+        // Add error notification at top of form
         gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 14, 0);
+        formPanel.add(errorNotificationPanel, gbc);
+
+        gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 10, 0);
         formPanel.add(emailLabel, gbc);
 
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         gbc.insets = new Insets(0, 0, 22, 0);
         formPanel.add(emailField, gbc);
 
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.insets = new Insets(0, 0, 10, 0);
         formPanel.add(passwordLabel, gbc);
 
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.insets = new Insets(0, 0, 28, 0);
         formPanel.add(passwordField, gbc);
 
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.insets = new Insets(0, 0, 14, 0);
         formPanel.add(loginButton, gbc);
 
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.insets = new Insets(0, 0, 6, 0);
         formPanel.add(createPromptLabel, gbc);
 
-        gbc.gridy = 6;
+        gbc.gridy = 7;
         gbc.insets = new Insets(0, 0, 14, 0);
         formPanel.add(createAccountButton, gbc);
 
-        gbc.gridy = 7;
+        gbc.gridy = 8;
         gbc.insets = new Insets(0, 0, 0, 0);
         formPanel.add(backButton, gbc);
 
@@ -135,6 +145,9 @@ public class LoginPage extends JPanel {
             }
         });
 
+        // Store error message label for later updates
+        JLabel errorMessageLabel = (JLabel) errorNotificationPanel.getClientProperty("errorMessageLabel");
+
         loginButton.addActionListener(_ -> {
             String email = emailField.getText().trim();
             String password = new String(passwordField.getPassword());
@@ -142,7 +155,7 @@ public class LoginPage extends JPanel {
             Account a = accountService.authenticate(email, password);
             if (a != null) {
                 AccountController.currentAccount = a;
-
+                errorNotificationPanel.setVisible(false);
                 Main.headerBar.refreshInfo();
 
                 if (a.getRole() == Role.ADMIN) {
@@ -177,6 +190,7 @@ public class LoginPage extends JPanel {
                         Account verified = accountService.getAccountByEmail(existing.getEmail());
                         if (verified != null) {
                             AccountController.currentAccount = verified;
+                            errorNotificationPanel.setVisible(false);
                             Main.headerBar.refreshInfo();
 
                             if (verified.getRole() == Role.ADMIN) {
@@ -196,7 +210,10 @@ public class LoginPage extends JPanel {
                         );
                     }
                 } else {
-                    JOptionPane.showMessageDialog(this, "Invalid credentials.");
+                    errorMessageLabel.setText("Invalid email or password. Please try again.");
+                    errorNotificationPanel.setVisible(true);
+                    formPanel.revalidate();
+                    formPanel.repaint();
                 }
             }
 
@@ -279,5 +296,47 @@ public class LoginPage extends JPanel {
         button.setContentAreaFilled(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
+    }
+
+    private JPanel createErrorNotificationPanel() {
+        JPanel notificationPanel = new JPanel();
+        notificationPanel.setLayout(new BorderLayout(8, 0));
+        notificationPanel.setBackground(new Color(255, 240, 245)); // Light red/pink background
+        notificationPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 53, 69), 1),
+                new EmptyBorder(10, 12, 10, 12)
+        ));
+        notificationPanel.setMaximumSize(new Dimension(320, 50));
+        notificationPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Error icon/bullet
+        JLabel iconLabel = new JLabel("⚠");
+        iconLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+        iconLabel.setForeground(new Color(220, 53, 69));
+
+        // Error message
+        JLabel errorMessageLabel = new JLabel("Invalid email or password.");
+        errorMessageLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        errorMessageLabel.setForeground(new Color(220, 53, 69));
+        notificationPanel.putClientProperty("errorMessageLabel", errorMessageLabel);
+
+        // Dismiss button (X)
+        JButton dismissButton = new JButton("✕");
+        dismissButton.setFont(new Font("SansSerif", Font.BOLD, 16));
+        dismissButton.setForeground(new Color(220, 53, 69));
+        dismissButton.setBackground(new Color(255, 240, 245));
+        dismissButton.setFocusPainted(false);
+        dismissButton.setBorderPainted(false);
+        dismissButton.setOpaque(false);
+        dismissButton.setContentAreaFilled(false);
+        dismissButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        dismissButton.setPreferredSize(new Dimension(24, 24));
+        dismissButton.addActionListener(_ -> notificationPanel.setVisible(false));
+
+        notificationPanel.add(iconLabel, BorderLayout.WEST);
+        notificationPanel.add(errorMessageLabel, BorderLayout.CENTER);
+        notificationPanel.add(dismissButton, BorderLayout.EAST);
+
+        return notificationPanel;
     }
 }
