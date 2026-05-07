@@ -27,18 +27,7 @@ import java.util.Locale;
 import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -58,6 +47,8 @@ public class AccountCenterPage extends JPanel {
     private static final Color SIDEBAR_BG = new Color(245, 240, 228);
     private static final Color SIDEBAR_HOVER = new Color(235, 225, 208);
     private static final Color SIDEBAR_SELECTED = UITheme.ACCENT_GOLD;
+    private static final Color SIDEBAR_PANEL = new Color(252, 249, 241);
+    private static final Color SIDEBAR_TEXT_MUTED = new Color(112, 103, 90);
 
     private final JPanel pages;
     private final CardLayout cardLayout;
@@ -148,16 +139,18 @@ public class AccountCenterPage extends JPanel {
         sidebar.setBackground(SIDEBAR_BG);
         sidebar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 0, 1, UITheme.BORDER_COLOR),
-                new EmptyBorder(24, 0, 24, 0)
+                new EmptyBorder(16, 14, 16, 14)
         ));
-        // Preset width will be handled by parent layout
 
-        // Header: Avatar + Name
         JPanel headerPanel = new JPanel();
         headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
-        headerPanel.setOpaque(false);
-        headerPanel.setBorder(new EmptyBorder(0, 20, 24, 20));
-        headerPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        headerPanel.setBackground(SIDEBAR_PANEL);
+        headerPanel.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(224, 214, 195), 1, true),
+                new EmptyBorder(18, 16, 16, 16)
+        ));
+        headerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        headerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
 
         avatarPanel.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
         avatarPanel.setMaximumSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
@@ -172,86 +165,93 @@ public class AccountCenterPage extends JPanel {
         headerPanel.add(nameLabel);
 
         emailLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        emailLabel.setForeground(UITheme.TEXT_MEDIUM);
+        emailLabel.setForeground(SIDEBAR_TEXT_MUTED);
         emailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         headerPanel.add(emailLabel);
 
-        roleLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        roleLabel.setForeground(new Color(100, 100, 100));
+        roleLabel.setFont(new Font("SansSerif", Font.BOLD, 11));
+        roleLabel.setForeground(new Color(133, 106, 53));
         roleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         headerPanel.add(roleLabel);
 
-        // Divider
-        JPanel divider = new JPanel();
-        divider.setOpaque(true);
-        divider.setBackground(UITheme.BORDER_COLOR);
-        divider.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-        divider.setAlignmentX(Component.CENTER_ALIGNMENT);
-        headerPanel.add(Box.createRigidArea(new Dimension(0, 16)));
-        headerPanel.add(divider);
-        headerPanel.add(Box.createRigidArea(new Dimension(0, 16)));
-
         sidebar.add(headerPanel);
+        sidebar.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        // Navigation buttons
-        accountInfoButton = createNavButton("📋 Account Information", "account-info");
-        securityButton = createNavButton("🔒 Security", "security");
-        notificationsButton = createNavButton("🔔 Notifications", "notifications");
-        billingButton = createNavButton("💳 Billing", "billing");
-        purchasesButton = createNavButton("🛍️ Purchases", "purchases");
-        dangerZoneButton = createNavButton("⚠️ Danger Zone", "danger-zone");
+        accountInfoButton = createNavButton("Account Information", "account-info");
+        securityButton = createNavButton("Security", "security");
+        notificationsButton = createNavButton("Notifications", "notifications");
+        billingButton = createNavButton("Billing", "billing");
+        purchasesButton = createNavButton("Purchases", "purchases");
+        dangerZoneButton = createNavButton("Danger Zone", "danger-zone");
 
-        sidebar.add(accountInfoButton);
-        sidebar.add(Box.createRigidArea(new Dimension(0, 8)));
-        sidebar.add(securityButton);
-        sidebar.add(Box.createRigidArea(new Dimension(0, 8)));
-        sidebar.add(notificationsButton);
-        sidebar.add(Box.createRigidArea(new Dimension(0, 8)));
-        sidebar.add(billingButton);
-        sidebar.add(Box.createRigidArea(new Dimension(0, 8)));
-        sidebar.add(purchasesButton);
-        sidebar.add(Box.createRigidArea(new Dimension(0, 20)));
+        JPanel navPanel = new JPanel();
+        navPanel.setLayout(new BoxLayout(navPanel, BoxLayout.Y_AXIS));
+        navPanel.setBackground(SIDEBAR_PANEL);
+        navPanel.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(224, 214, 195), 1, true),
+                new EmptyBorder(12, 10, 12, 10)
+        ));
+        navPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        navPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
-        // Danger zone button has more spacing above
-        JPanel dangerZoneWrapper = new JPanel();
-        dangerZoneWrapper.setOpaque(false);
-        dangerZoneWrapper.setLayout(new BoxLayout(dangerZoneWrapper, BoxLayout.Y_AXIS));
-        dangerZoneWrapper.setBorder(new EmptyBorder(12, 12, 12, 12));
+        navPanel.add(createSidebarSectionLabel("Account"));
+        navPanel.add(accountInfoButton);
+        navPanel.add(securityButton);
+        navPanel.add(notificationsButton);
+        navPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+        navPanel.add(createSidebarSectionLabel("Hotel Services"));
+        navPanel.add(billingButton);
+        navPanel.add(purchasesButton);
+        sidebar.add(navPanel);
+        sidebar.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        JPanel dangerZoneDivider = new JPanel();
-        dangerZoneDivider.setOpaque(true);
-        dangerZoneDivider.setBackground(UITheme.BORDER_COLOR);
-        dangerZoneDivider.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-        dangerZoneWrapper.add(dangerZoneDivider);
-        dangerZoneWrapper.add(Box.createRigidArea(new Dimension(0, 12)));
-        dangerZoneWrapper.add(dangerZoneButton);
+        JPanel dangerPanel = new JPanel();
+        dangerPanel.setLayout(new BoxLayout(dangerPanel, BoxLayout.Y_AXIS));
+        dangerPanel.setBackground(new Color(252, 246, 246));
+        dangerPanel.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(234, 206, 206), 1, true),
+                new EmptyBorder(10, 10, 10, 10)
+        ));
+        dangerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dangerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 84));
+        dangerPanel.add(createSidebarSectionLabel("Danger Zone"));
+        dangerPanel.add(dangerZoneButton);
+        sidebar.add(dangerPanel);
 
-        sidebar.add(dangerZoneWrapper);
-
-        // Spacer to push content to top
         sidebar.add(Box.createVerticalGlue());
 
-        // Back button at bottom
-        JButton backButton = new JButton("← Back");
-        backButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        backButton.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        backButton.setForeground(UITheme.TEXT_MEDIUM);
-        backButton.setBackground(new Color(250, 248, 244));
+        JButton backButton = new JButton("Back to Dashboard");
+        backButton.setFont(new Font("SansSerif", Font.BOLD, 13));
+        backButton.setForeground(UITheme.TEXT_DARK);
+        backButton.setBackground(new Color(246, 241, 230));
         backButton.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(UITheme.BORDER_COLOR, 1, true),
-                new EmptyBorder(8, 16, 8, 16)
+                new LineBorder(new Color(219, 207, 184), 1, true),
+                new EmptyBorder(11, 14, 11, 14)
         ));
         backButton.setFocusPainted(false);
         backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         backButton.setOpaque(true);
-        backButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        backButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        backButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         backButton.addActionListener(_ -> navigateBack());
+        backButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                backButton.setBackground(new Color(240, 232, 215));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                backButton.setBackground(new Color(246, 241, 230));
+            }
+        });
 
         JPanel backPanel = new JPanel();
         backPanel.setOpaque(false);
         backPanel.setLayout(new BoxLayout(backPanel, BoxLayout.X_AXIS));
-        backPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
+        backPanel.setBorder(new EmptyBorder(14, 0, 0, 0));
         backPanel.add(backButton);
+        backPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
 
         sidebar.add(backPanel);
 
@@ -264,16 +264,18 @@ public class AccountCenterPage extends JPanel {
 
     private JButton createNavButton(String text, String contentKey) {
         JButton button = new JButton(text);
-        button.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        button.setFont(new Font("SansSerif", Font.BOLD, 13));
         button.setForeground(UITheme.TEXT_DARK);
-        button.setBackground(SIDEBAR_BG);
-        button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
+        button.setBackground(SIDEBAR_PANEL);
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        button.setBorder(BorderFactory.createEmptyBorder(11, 12, 11, 12));
+        button.setMargin(new java.awt.Insets(0, 0, 0, 0));
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setOpaque(true);
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
 
         button.addActionListener(_ -> {
             selectNavButton(button);
@@ -294,7 +296,7 @@ public class AccountCenterPage extends JPanel {
                     return;
                 }
                 if (!button.getForeground().equals(Color.WHITE)) {
-                    button.setBackground(SIDEBAR_BG);
+                    button.setBackground(SIDEBAR_PANEL);
                 }
             }
         });
@@ -304,22 +306,32 @@ public class AccountCenterPage extends JPanel {
 
     private void selectNavButton(JButton button) {
         // Deselect all buttons
-        accountInfoButton.setBackground(SIDEBAR_BG);
+        accountInfoButton.setBackground(SIDEBAR_PANEL);
         accountInfoButton.setForeground(UITheme.TEXT_DARK);
-        securityButton.setBackground(SIDEBAR_BG);
+        securityButton.setBackground(SIDEBAR_PANEL);
         securityButton.setForeground(UITheme.TEXT_DARK);
-        notificationsButton.setBackground(SIDEBAR_BG);
+        notificationsButton.setBackground(SIDEBAR_PANEL);
         notificationsButton.setForeground(UITheme.TEXT_DARK);
-        billingButton.setBackground(SIDEBAR_BG);
+        billingButton.setBackground(SIDEBAR_PANEL);
         billingButton.setForeground(UITheme.TEXT_DARK);
-        purchasesButton.setBackground(SIDEBAR_BG);
+        purchasesButton.setBackground(SIDEBAR_PANEL);
         purchasesButton.setForeground(UITheme.TEXT_DARK);
-        dangerZoneButton.setBackground(SIDEBAR_BG);
+        dangerZoneButton.setBackground(SIDEBAR_PANEL);
         dangerZoneButton.setForeground(UITheme.TEXT_DARK);
 
         // Select the clicked button
         button.setBackground(SIDEBAR_SELECTED);
         button.setForeground(Color.WHITE);
+    }
+
+    private JLabel createSidebarSectionLabel(String text) {
+        JLabel label = new JLabel(text.toUpperCase(Locale.ROOT));
+        label.setFont(new Font("SansSerif", Font.BOLD, 11));
+        label.setForeground(SIDEBAR_TEXT_MUTED);
+        label.setBorder(new EmptyBorder(4, 12, 8, 0));
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        label.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
+        return label;
     }
 
 
