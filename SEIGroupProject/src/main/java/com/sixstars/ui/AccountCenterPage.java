@@ -139,7 +139,7 @@ public class AccountCenterPage extends JPanel {
         sidebar.setBackground(SIDEBAR_BG);
         sidebar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 0, 1, UITheme.BORDER_COLOR),
-                new EmptyBorder(16, 14, 16, 14)
+                new EmptyBorder(16, 4, 16, 0)
         ));
 
         JPanel headerPanel = new JPanel();
@@ -174,7 +174,12 @@ public class AccountCenterPage extends JPanel {
         roleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         headerPanel.add(roleLabel);
 
-        sidebar.add(headerPanel);
+        JPanel headerWrapper = new JPanel(new BorderLayout());
+        headerWrapper.setOpaque(false);
+        headerWrapper.setBorder(new EmptyBorder(0, 0, 0, 0));
+        headerWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
+        headerWrapper.add(headerPanel, BorderLayout.CENTER);
+        sidebar.add(headerWrapper);
         sidebar.add(Box.createRigidArea(new Dimension(0, 16)));
 
         accountInfoButton = createNavButton("Account Information", "account-info");
@@ -189,7 +194,7 @@ public class AccountCenterPage extends JPanel {
         navPanel.setBackground(SIDEBAR_PANEL);
         navPanel.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(new Color(224, 214, 195), 1, true),
-                new EmptyBorder(12, 10, 12, 10)
+                new EmptyBorder(12, 0, 12, 0)
         ));
         navPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         navPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
@@ -202,7 +207,12 @@ public class AccountCenterPage extends JPanel {
         navPanel.add(createSidebarSectionLabel("Hotel Services"));
         navPanel.add(createNavButtonRow(billingButton));
         navPanel.add(createNavButtonRow(purchasesButton));
-        sidebar.add(navPanel);
+        JPanel navWrapper = new JPanel(new BorderLayout());
+        navWrapper.setOpaque(false);
+        navWrapper.setBorder(new EmptyBorder(0, 0, 0, 0));
+        navWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        navWrapper.add(navPanel, BorderLayout.CENTER);
+        sidebar.add(navWrapper);
         sidebar.add(Box.createRigidArea(new Dimension(0, 12)));
 
         JPanel dangerPanel = new JPanel();
@@ -210,13 +220,18 @@ public class AccountCenterPage extends JPanel {
         dangerPanel.setBackground(new Color(252, 246, 246));
         dangerPanel.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(new Color(234, 206, 206), 1, true),
-                new EmptyBorder(10, 10, 10, 10)
+                new EmptyBorder(10, 0, 10, 0)
         ));
         dangerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         dangerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 84));
         dangerPanel.add(createSidebarSectionLabel("Danger Zone"));
         dangerPanel.add(createNavButtonRow(dangerZoneButton));
-        sidebar.add(dangerPanel);
+        JPanel dangerWrapper = new JPanel(new BorderLayout());
+        dangerWrapper.setOpaque(false);
+        dangerWrapper.setBorder(new EmptyBorder(0, 0, 0, 0));
+        dangerWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 84));
+        dangerWrapper.add(dangerPanel, BorderLayout.CENTER);
+        sidebar.add(dangerWrapper);
 
         sidebar.add(Box.createVerticalGlue());
 
@@ -276,8 +291,6 @@ public class AccountCenterPage extends JPanel {
         button.setOpaque(true);
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
         button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        button.setPreferredSize(new Dimension(Integer.MAX_VALUE, 42));
-        button.setMinimumSize(new Dimension(0, 42));
 
         button.addActionListener(_ -> {
             selectNavButton(button);
@@ -337,12 +350,12 @@ public class AccountCenterPage extends JPanel {
     }
 
     private JPanel createNavButtonRow(JButton button) {
-        JPanel row = new JPanel();
+        JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
-        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setPreferredSize(new Dimension(0, 42));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        row.add(button);
+        row.add(button, BorderLayout.CENTER);
         return row;
     }
 
