@@ -36,7 +36,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
@@ -98,6 +97,8 @@ public class AccountDetailsPage extends JPanel {
     private final JButton backButton = new JButton("Back");
 
     private boolean loadingPreferences = false;
+    private JPanel notificationPanel;
+    private JLabel notificationMessageLabel;
 
     public AccountDetailsPage(JPanel pages, CardLayout cardLayout, AccountController accountController) {
         this.pages = pages;
@@ -106,6 +107,10 @@ public class AccountDetailsPage extends JPanel {
 
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
+
+        // Create notification panel
+        notificationPanel = createNotificationPanel();
+        notificationPanel.setVisible(false);
 
         JPanel contentCard = new JPanel();
         contentCard.setLayout(new BoxLayout(contentCard, BoxLayout.Y_AXIS));
@@ -124,10 +129,15 @@ public class AccountDetailsPage extends JPanel {
         contentCard.add(Box.createRigidArea(new Dimension(0, 18)));
         contentCard.add(buildFooterBar());
 
+        JPanel contentWithNotification = new JPanel(new BorderLayout());
+        contentWithNotification.setOpaque(false);
+        contentWithNotification.add(notificationPanel, BorderLayout.NORTH);
+        contentWithNotification.add(contentCard, BorderLayout.CENTER);
+
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
         // Anchor the content to the top (NORTH) so the scroll viewport grows below it
-        wrapper.add(contentCard, BorderLayout.NORTH);
+        wrapper.add(contentWithNotification, BorderLayout.NORTH);
 
         JScrollPane scrollPane = new JScrollPane(wrapper);
         scrollPane.setBorder(null);
@@ -686,14 +696,14 @@ public class AccountDetailsPage extends JPanel {
     private void saveProfileChanges() {
         Account account = AccountController.currentAccount;
         if (account == null) {
-            JOptionPane.showMessageDialog(this, "Please log in to update your profile.", "No Account", JOptionPane.WARNING_MESSAGE);
+            showNotification("Please log in to update your profile.");
             return;
         }
 
         String firstName = firstNameField.getText().trim();
         String lastName = lastNameField.getText().trim();
         if (firstName.isEmpty() || lastName.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "First name and last name cannot be blank.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            showNotification("First name and last name cannot be blank.");
             return;
         }
 
@@ -701,9 +711,9 @@ public class AccountDetailsPage extends JPanel {
             accountController.updateProfileDetails(firstName, lastName, account.getProfileImagePath());
             Main.headerBar.refreshInfo();
             refreshInfo();
-            JOptionPane.showMessageDialog(this, "Profile updated successfully.", "Saved", JOptionPane.INFORMATION_MESSAGE);
+            showNotification("Profile updated successfully.");
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Profile Update Failed", JOptionPane.ERROR_MESSAGE);
+            showNotification(ex.getMessage());
         }
     }
 
@@ -717,16 +727,16 @@ public class AccountDetailsPage extends JPanel {
             clearPasswordFields();
             Main.headerBar.refreshInfo();
             refreshInfo();
-            JOptionPane.showMessageDialog(this, "Password updated successfully.", "Saved", JOptionPane.INFORMATION_MESSAGE);
+            showNotification("Password updated successfully.");
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Password Update Failed", JOptionPane.ERROR_MESSAGE);
+            showNotification(ex.getMessage());
         }
     }
 
     private void uploadProfilePhoto() {
         Account account = AccountController.currentAccount;
         if (account == null) {
-            JOptionPane.showMessageDialog(this, "Please log in first.", "No Account", JOptionPane.WARNING_MESSAGE);
+            showNotification("Please log in first.");
             return;
         }
 
@@ -747,9 +757,9 @@ public class AccountDetailsPage extends JPanel {
             deleteManagedAvatar(previousPath);
             Main.headerBar.refreshInfo();
             refreshInfo();
-            JOptionPane.showMessageDialog(this, "Profile photo updated.", "Photo Saved", JOptionPane.INFORMATION_MESSAGE);
+            showNotification("Profile photo updated.");
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Photo Upload Failed", JOptionPane.ERROR_MESSAGE);
+            showNotification(ex.getMessage());
         }
     }
 
@@ -760,18 +770,7 @@ public class AccountDetailsPage extends JPanel {
         }
 
         if (account.getProfileImagePath() == null || account.getProfileImagePath().isBlank()) {
-            JOptionPane.showMessageDialog(this, "There is no profile photo to remove.", "No Photo", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Remove this profile photo and return to the initials avatar?",
-                "Remove Photo",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE
-        );
-        if (confirm != JOptionPane.YES_OPTION) {
+            showNotification("There is no profile photo to remove.");
             return;
         }
 
@@ -781,8 +780,9 @@ public class AccountDetailsPage extends JPanel {
             deleteManagedAvatar(previousPath);
             Main.headerBar.refreshInfo();
             refreshInfo();
+            showNotification("Profile photo removed.");
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Photo Remove Failed", JOptionPane.ERROR_MESSAGE);
+            showNotification(ex.getMessage());
         }
     }
 
@@ -1079,6 +1079,50 @@ public class AccountDetailsPage extends JPanel {
             if (!last.isEmpty()) sb.append(Character.toUpperCase(last.charAt(0)));
             return sb.length() == 0 ? "??" : sb.toString();
         }
+    }
+
+    private JPanel createNotificationPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(8, 0));
+        panel.setBackground(new Color(240, 248, 255));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(100, 150, 200), 1),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+
+        JLabel iconLabel = new JLabel("ℹ");
+        iconLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+        iconLabel.setForeground(new Color(100, 150, 200));
+
+        notificationMessageLabel = new JLabel("Notification message");
+        notificationMessageLabel.setFont(UITheme.INPUT_FONT);
+        notificationMessageLabel.setForeground(UITheme.TEXT_DARK);
+
+        JButton dismissButton = new JButton("✕");
+        dismissButton.setFont(new Font("SansSerif", Font.BOLD, 16));
+        dismissButton.setForeground(new Color(100, 150, 200));
+        dismissButton.setBackground(new Color(240, 248, 255));
+        dismissButton.setFocusPainted(false);
+        dismissButton.setBorderPainted(false);
+        dismissButton.setOpaque(false);
+        dismissButton.setContentAreaFilled(false);
+        dismissButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        dismissButton.setPreferredSize(new Dimension(24, 24));
+        dismissButton.addActionListener(_ -> panel.setVisible(false));
+
+        panel.add(iconLabel, BorderLayout.WEST);
+        panel.add(notificationMessageLabel, BorderLayout.CENTER);
+        panel.add(dismissButton, BorderLayout.EAST);
+
+        return panel;
+    }
+
+    private void showNotification(String message) {
+        notificationMessageLabel.setText(message);
+        notificationPanel.setVisible(true);
+        revalidate();
+        repaint();
     }
 }
 

@@ -67,6 +67,8 @@ public class MakeReservationPage extends JPanel {
     private final JCheckBox onlyAvailableCheck;
     private final JLabel resultsInfoLabel;
     private final JPanel roomCardsContainer;
+    private JPanel notificationPanel;
+    private JLabel notificationMessageLabel;
 
     public MakeReservationPage(JPanel pages, CardLayout cardLayout, ReservationService reservationService, RoomService roomService) {
         this.pages = pages;
@@ -76,6 +78,10 @@ public class MakeReservationPage extends JPanel {
 
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
+
+        // Create notification panel
+        notificationPanel = createNotificationPanel();
+        notificationPanel.setVisible(false);
 
         Date today = todayAtMidnight();
         Date tomorrow = dateFromLocalDate(LocalDate.now().plusDays(1));
@@ -93,12 +99,60 @@ public class MakeReservationPage extends JPanel {
         resultsInfoLabel = new JLabel("0 rooms");
         roomCardsContainer = new JPanel();
 
-        add(buildTopSection(), BorderLayout.NORTH);
+        JPanel northWrapper = new JPanel(new BorderLayout());
+        northWrapper.add(notificationPanel, BorderLayout.NORTH);
+        northWrapper.add(buildTopSection(), BorderLayout.CENTER);
+
+        add(northWrapper, BorderLayout.NORTH);
         add(buildRoomListingsSection(), BorderLayout.CENTER);
         add(buildBottomActionBar(), BorderLayout.SOUTH);
 
         attachFilterListeners();
         refreshListings();
+    }
+
+    private JPanel createNotificationPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(8, 0));
+        panel.setBackground(new Color(240, 248, 255));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(100, 150, 200), 1),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+
+        JLabel iconLabel = new JLabel("ℹ");
+        iconLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+        iconLabel.setForeground(new Color(100, 150, 200));
+
+        notificationMessageLabel = new JLabel("Notification message");
+        notificationMessageLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        notificationMessageLabel.setForeground(UITheme.TEXT_DARK);
+
+        JButton dismissButton = new JButton("✕");
+        dismissButton.setFont(new Font("SansSerif", Font.BOLD, 16));
+        dismissButton.setForeground(new Color(100, 150, 200));
+        dismissButton.setBackground(new Color(240, 248, 255));
+        dismissButton.setFocusPainted(false);
+        dismissButton.setBorderPainted(false);
+        dismissButton.setOpaque(false);
+        dismissButton.setContentAreaFilled(false);
+        dismissButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        dismissButton.setPreferredSize(new Dimension(24, 24));
+        dismissButton.addActionListener(_ -> panel.setVisible(false));
+
+        panel.add(iconLabel, BorderLayout.WEST);
+        panel.add(notificationMessageLabel, BorderLayout.CENTER);
+        panel.add(dismissButton, BorderLayout.EAST);
+
+        return panel;
+    }
+
+    private void showNotification(String message) {
+        notificationMessageLabel.setText(message);
+        notificationPanel.setVisible(true);
+        revalidate();
+        repaint();
     }
 
     private JPanel buildTopSection() {
@@ -476,32 +530,17 @@ public class MakeReservationPage extends JPanel {
         LocalDate endDate = toLocalDate(checkOutChooser.getDate());
 
         if (startDate == null || endDate == null || !startDate.isBefore(endDate)) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Please enter valid check-in and check-out dates before reserving.",
-                    "Invalid Date Range",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            showNotification("Please enter valid check-in and check-out dates before reserving.");
             return;
         }
 
         if (startDate.isBefore(LocalDate.now())) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Check-in date cannot be in the past.",
-                    "Invalid Date",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            showNotification("Check-in date cannot be in the past.");
             return;
         }
 
         if (!reservationService.isRoomAvailable(room, startDate, endDate)) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "This room was just booked for the selected dates. Please choose another room.",
-                    "Room Unavailable",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            showNotification("This room was just booked for the selected dates. Please choose another room.");
             refreshListings();
             return;
         }
@@ -512,7 +551,7 @@ public class MakeReservationPage extends JPanel {
 
         if (currentAccount == null) {
             Main.setPendingReservation(room, startDate, endDate);
-            JOptionPane.showMessageDialog(this, "Please create a Guest account to complete this reservation.");
+            showNotification("Please create a Guest account to complete this reservation.");
             Main.createAccountPage.refreshInfo();
             cardLayout.show(pages, "create account");
             return;
@@ -532,7 +571,7 @@ public class MakeReservationPage extends JPanel {
 
             // Validate the email against the database
             if (!reservationService.isValidGuest(targetEmail)) {
-                JOptionPane.showMessageDialog(this, "No Guest account found for: " + targetEmail);
+                showNotification("No Guest account found for: " + targetEmail);
                 return;
             }
             isClerkBooking = true;
@@ -541,7 +580,7 @@ public class MakeReservationPage extends JPanel {
             targetEmail = currentAccount.getEmail();
         } else {
             // This handles any other roles (like Admin) that shouldn't be booking
-            JOptionPane.showMessageDialog(this, "Your account type cannot reserve rooms.");
+            showNotification("Your account type cannot reserve rooms.");
             return;
         }
 
@@ -561,12 +600,7 @@ public class MakeReservationPage extends JPanel {
         LocalDate endDate = pendingReservation.getEndDate();
 
         if (!reservationService.isRoomAvailable(room, startDate, endDate)) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Your selected room is no longer available. Please choose another room.",
-                    "Room Unavailable",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            showNotification("Your selected room is no longer available. Please choose another room.");
             refreshListings();
             cardLayout.show(pages, "make reservation");
             return true;

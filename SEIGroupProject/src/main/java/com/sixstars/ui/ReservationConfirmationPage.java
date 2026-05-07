@@ -28,7 +28,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
@@ -74,6 +73,8 @@ public class ReservationConfirmationPage extends JPanel {
     private final JLabel checkOutDateLabel;
     private final JLabel bookingForLabel;
     private final JLabel policyTextArea;
+    private final JPanel notificationPanel;
+    private final JLabel notificationMessageLabel;
 
     public ReservationConfirmationPage(JPanel pages, CardLayout cardLayout, ReservationService reservationService, RoomService roomService) {
         this.pages = pages;
@@ -100,8 +101,16 @@ public class ReservationConfirmationPage extends JPanel {
         this.checkOutDateLabel = new JLabel();
         this.bookingForLabel = new JLabel();
         this.policyTextArea = new JLabel();
+        this.notificationPanel = createNotificationPanel();
+        this.notificationMessageLabel = (JLabel) notificationPanel.getClientProperty("notificationMessageLabel");
+        notificationPanel.setVisible(false);
 
-        add(buildTopBar(), BorderLayout.NORTH);
+        JPanel north = new JPanel(new BorderLayout());
+        north.setOpaque(false);
+        north.add(notificationPanel, BorderLayout.NORTH);
+        north.add(buildTopBar(), BorderLayout.CENTER);
+
+        add(north, BorderLayout.NORTH);
         add(buildContentArea(), BorderLayout.CENTER);
         add(buildBottomActionBar(), BorderLayout.SOUTH);
     }
@@ -510,23 +519,13 @@ public class ReservationConfirmationPage extends JPanel {
 
     private void confirmReservation() {
         if (draftRoom == null || draftStartDate == null || draftEndDate == null) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Invalid reservation data. Please try again.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            showNotification("Invalid reservation data. Please try again.");
             return;
         }
 
         // Validate room is still available
         if (!reservationService.isRoomAvailable(draftRoom, draftStartDate, draftEndDate)) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Unfortunately, this room is no longer available for the selected dates. Please select another room.",
-                    "Room Unavailable",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            showNotification("Unfortunately, this room is no longer available for the selected dates. Please select another room.");
             cardLayout.show(pages, "make reservation");
             return;
         }
@@ -538,12 +537,7 @@ public class ReservationConfirmationPage extends JPanel {
         } else if (draftAccount != null) {
             targetEmail = draftAccount.getEmail();
         } else {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Unable to determine guest email. Please try again.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            showNotification("Unable to determine guest email. Please try again.");
             return;
         }
 
@@ -551,26 +545,15 @@ public class ReservationConfirmationPage extends JPanel {
         try {
             reservationService.makeReservation(targetEmail, draftStartDate, draftEndDate, List.of(draftRoom));
 
-            long nights = ChronoUnit.DAYS.between(draftStartDate, draftEndDate);
-            int total = draftRoom.getPricePerNight() * (int) nights;
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Reservation confirmed for Room " + draftRoom.getRoomNumber(),
-                    "Booking Confirmed",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
+            showNotification("Reservation confirmed for Room " + draftRoom.getRoomNumber() + ". Returning to home...");
 
             // Clear draft and go back to home
             clearDraft();
-            cardLayout.show(pages, "home");
+            javax.swing.Timer timer = new javax.swing.Timer(1200, e -> cardLayout.show(pages, "home"));
+            timer.setRepeats(false);
+            timer.start();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "An error occurred while confirming the reservation: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            showNotification("An error occurred while confirming the reservation: " + e.getMessage());
         }
     }
 
@@ -580,18 +563,49 @@ public class ReservationConfirmationPage extends JPanel {
     }
 
     private void cancelBooking() {
-        int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Cancel this booking? You will return to the room browse page.",
-                "Cancel Booking",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE
-        );
+        clearDraft();
+        cardLayout.show(pages, "make reservation");
+    }
 
-        if (confirm == JOptionPane.YES_OPTION) {
-            clearDraft();
-            cardLayout.show(pages, "make reservation");
-        }
+    private JPanel createNotificationPanel() {
+        JPanel panel = new JPanel(new BorderLayout(8, 0));
+        panel.setBackground(new Color(255, 241, 241));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(215, 90, 90), 1),
+                new EmptyBorder(10, 14, 10, 14)
+        ));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+
+        JLabel icon = new JLabel("⚠");
+        icon.setFont(new Font("SansSerif", Font.BOLD, 18));
+        icon.setForeground(new Color(180, 40, 40));
+
+        JLabel message = new JLabel("Notification message");
+        message.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        message.setForeground(new Color(180, 40, 40));
+        panel.putClientProperty("notificationMessageLabel", message);
+
+        JButton dismiss = new JButton("✕");
+        dismiss.setFont(new Font("SansSerif", Font.BOLD, 16));
+        dismiss.setForeground(new Color(180, 40, 40));
+        dismiss.setFocusPainted(false);
+        dismiss.setBorderPainted(false);
+        dismiss.setContentAreaFilled(false);
+        dismiss.setOpaque(false);
+        dismiss.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        dismiss.addActionListener(_ -> panel.setVisible(false));
+
+        panel.add(icon, BorderLayout.WEST);
+        panel.add(message, BorderLayout.CENTER);
+        panel.add(dismiss, BorderLayout.EAST);
+        return panel;
+    }
+
+    private void showNotification(String message) {
+        notificationMessageLabel.setText(message);
+        notificationPanel.setVisible(true);
+        revalidate();
+        repaint();
     }
 
     private void clearDraft() {

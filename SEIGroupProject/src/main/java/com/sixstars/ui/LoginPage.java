@@ -16,7 +16,6 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
@@ -171,12 +170,10 @@ public class LoginPage extends JPanel {
                     try {
                         accountService.sendVerificationCode(existing.getEmail());
                     } catch (RuntimeException verificationEx) {
-                        JOptionPane.showMessageDialog(
-                                this,
-                                "We couldn't send a fresh code yet: " + verificationEx.getMessage(),
-                                "Verification Email Failed",
-                                JOptionPane.WARNING_MESSAGE
-                        );
+                        errorMessageLabel.setText("We couldn't send a fresh code yet: " + verificationEx.getMessage());
+                        errorNotificationPanel.setVisible(true);
+                        formPanel.revalidate();
+                        formPanel.repaint();
                     }
 
                     EmailVerificationDialog dialog = new EmailVerificationDialog(
@@ -202,15 +199,13 @@ public class LoginPage extends JPanel {
                             }
                         }
                     } else {
-                        JOptionPane.showMessageDialog(
-                                this,
-                                "Please verify your email to continue.",
-                                "Email Verification Required",
-                                JOptionPane.WARNING_MESSAGE
-                        );
+                        errorMessageLabel.setText("Please verify your email to continue.");
+                        errorNotificationPanel.setVisible(true);
+                        formPanel.revalidate();
+                        formPanel.repaint();
                     }
                 } else {
-                    errorMessageLabel.setText("Invalid email or password. Please try again.");
+                    errorMessageLabel.setText("Invalid Credentials. Try again.");
                     errorNotificationPanel.setVisible(true);
                     formPanel.revalidate();
                     formPanel.repaint();

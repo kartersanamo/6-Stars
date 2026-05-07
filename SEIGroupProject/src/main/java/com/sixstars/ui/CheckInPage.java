@@ -17,11 +17,17 @@ public class CheckInPage extends JPanel {
     private JTable reservationTable;
     private DefaultTableModel tableModel;
     private ReservationService reservationService;
+    private JPanel notificationPanel;
+    private JLabel notificationMessageLabel;
 
     public CheckInPage(JPanel pages, CardLayout cardLayout, ReservationService reservationService) {
         this.reservationService = reservationService;
         setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
+
+        // Create notification panel
+        notificationPanel = createNotificationPanel();
+        notificationPanel.setVisible(false);
 
         // --- Top Header ---
         JPanel header = new JPanel(new BorderLayout());
@@ -98,12 +104,12 @@ public class CheckInPage extends JPanel {
                     // Call the service logic we just wrote
                     reservationService.updateStatus(resId, "CHECKED_IN");
 
-                    JOptionPane.showMessageDialog(this, "Guest successfully checked in!");
+                    showNotification("Guest successfully checked in!");
                     refreshTable();
                 }
             } catch (IllegalStateException ex) {
                 // This catches our "not today" error
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "Check-In Denied", JOptionPane.WARNING_MESSAGE);
+                showNotification(ex.getMessage());
             }
         });
 
@@ -114,7 +120,7 @@ public class CheckInPage extends JPanel {
             if (selectedRow != -1) {
                 int resId = (int) tableModel.getValueAt(selectedRow, 0);
                 reservationService.updateStatus(resId, "CHECKED_OUT");
-                JOptionPane.showMessageDialog(this, "Guest Checked Out!");
+                showNotification("Guest Checked Out!");
                 refreshTable();
             }
         });
@@ -123,9 +129,14 @@ public class CheckInPage extends JPanel {
         footer.add(btnCheckOut);
 
         // --- Add everything to main panel ---
+        JPanel northWrapper = new JPanel(new BorderLayout());
+        northWrapper.setOpaque(false);
+        northWrapper.add(notificationPanel, BorderLayout.NORTH);
+        northWrapper.add(searchPanel, BorderLayout.CENTER);
+
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setOpaque(false);
-        centerPanel.add(searchPanel, BorderLayout.NORTH);
+        centerPanel.add(northWrapper, BorderLayout.NORTH);
         centerPanel.add(tableWrapper, BorderLayout.CENTER);
 
         add(header, BorderLayout.NORTH);
@@ -173,7 +184,7 @@ public class CheckInPage extends JPanel {
         if (visibleReservations.isEmpty()) {
             // Only show a message if a specific search yielded no results
             if (!email.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No active reservations found for this email.");
+                showNotification("No active reservations found for this email.");
             }
         } else {
             for (Reservation res : visibleReservations) {
@@ -207,5 +218,49 @@ public class CheckInPage extends JPanel {
         button.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_COLOR));
         button.setOpaque(true);
         return button;
+    }
+
+    private JPanel createNotificationPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(8, 0));
+        panel.setBackground(new Color(240, 248, 255));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(100, 150, 200), 1),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+
+        JLabel iconLabel = new JLabel("ℹ");
+        iconLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+        iconLabel.setForeground(new Color(100, 150, 200));
+
+        notificationMessageLabel = new JLabel("Notification message");
+        notificationMessageLabel.setFont(UITheme.INPUT_FONT);
+        notificationMessageLabel.setForeground(UITheme.TEXT_DARK);
+
+        JButton dismissButton = new JButton("✕");
+        dismissButton.setFont(new Font("SansSerif", Font.BOLD, 16));
+        dismissButton.setForeground(new Color(100, 150, 200));
+        dismissButton.setBackground(new Color(240, 248, 255));
+        dismissButton.setFocusPainted(false);
+        dismissButton.setBorderPainted(false);
+        dismissButton.setOpaque(false);
+        dismissButton.setContentAreaFilled(false);
+        dismissButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        dismissButton.setPreferredSize(new Dimension(24, 24));
+        dismissButton.addActionListener(_ -> panel.setVisible(false));
+
+        panel.add(iconLabel, BorderLayout.WEST);
+        panel.add(notificationMessageLabel, BorderLayout.CENTER);
+        panel.add(dismissButton, BorderLayout.EAST);
+
+        return panel;
+    }
+
+    private void showNotification(String message) {
+        notificationMessageLabel.setText(message);
+        notificationPanel.setVisible(true);
+        revalidate();
+        repaint();
     }
 }

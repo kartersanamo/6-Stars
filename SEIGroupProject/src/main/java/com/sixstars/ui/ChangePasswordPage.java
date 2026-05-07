@@ -103,17 +103,6 @@ public class ChangePasswordPage extends JPanel {
             );
 
             if (newPassword != null && !newPassword.trim().isEmpty()) {
-                int confirm = JOptionPane.showConfirmDialog(
-                    this,
-                    "Are you sure you want to reset the password for "
-                        + selected.getFirstName() + " " + selected.getLastName() + " to: " + newPassword,
-                    "Confirm Password Reset",
-                    JOptionPane.YES_NO_OPTION
-                );
-                
-                if (confirm != JOptionPane.YES_OPTION) {
-                    return; // user cancelled
-                }
                 // Later:
                 AccountService aService = new AccountService();
                 Account newA = new Account(

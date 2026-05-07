@@ -37,6 +37,8 @@ public class RoomManagementPage extends JPanel {
     private JLabel availableRoomsValueLabel;
     private JLabel occupiedRoomsValueLabel;
     private JLabel maintenanceRoomsValueLabel;
+    private JPanel notificationPanel;
+    private JLabel notificationMessageLabel;
 
     // Form components
     private JTextField roomNumField;
@@ -59,9 +61,13 @@ public class RoomManagementPage extends JPanel {
         setLayout(new BorderLayout(0, 0));
         setBackground(UITheme.PAGE_BACKGROUND);
 
+        // Build notification panel first (will be added to page)
+        notificationPanel = createNotificationPanel();
+        notificationPanel.setVisible(false);
+
         // Build the page sections
         add(buildHeaderSection(), BorderLayout.NORTH);
-        add(buildMainContent(), BorderLayout.CENTER);
+        add(buildNotificationAndContent(), BorderLayout.CENTER);
         add(buildFooterSection(), BorderLayout.SOUTH);
 
         addHierarchyListener(e -> {
@@ -73,6 +79,14 @@ public class RoomManagementPage extends JPanel {
 
         refreshData();
         updateRoomDisplay();
+    }
+
+    private JPanel buildNotificationAndContent() {
+        JPanel container = new JPanel(new BorderLayout());
+        container.setOpaque(false);
+        container.add(notificationPanel, BorderLayout.NORTH);
+        container.add(buildMainContent(), BorderLayout.CENTER);
+        return container;
     }
 
     private JPanel buildHeaderSection() {
@@ -359,7 +373,7 @@ public class RoomManagementPage extends JPanel {
             refreshData();
             updateRoomDisplay();
 
-            JOptionPane.showMessageDialog(this, "Room " + room.getRoomNumber() + " updated successfully!");
+            showNotification("Room " + room.getRoomNumber() + " updated successfully!");
             dialog.dispose();
         });
 
@@ -536,19 +550,19 @@ public class RoomManagementPage extends JPanel {
         try {
             String roomNumText = roomNumField.getText().trim();
             if (roomNumText.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please enter a room number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                showNotification("Please enter a room number.");
                 return;
             }
 
             int roomNum = Integer.parseInt(roomNumText);
             if (roomNum < 100 || roomNum > 9999) {
-                JOptionPane.showMessageDialog(this, "Room number should be between 100 and 9999.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                showNotification("Room number should be between 100 and 9999.");
                 return;
             }
 
             // Check for duplicates
             if (allRooms.stream().anyMatch(r -> r.getRoomNumber() == roomNum)) {
-                JOptionPane.showMessageDialog(this, "Room " + roomNum + " already exists.", "Duplicate Room", JOptionPane.WARNING_MESSAGE);
+                showNotification("Room " + roomNum + " already exists.");
                 return;
             }
 
@@ -570,9 +584,9 @@ public class RoomManagementPage extends JPanel {
             refreshData();
             updateRoomDisplay();
 
-            JOptionPane.showMessageDialog(this, "Room " + roomNum + " added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            showNotification("Room " + roomNum + " added successfully!");
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Please enter a valid room number.", "Error", JOptionPane.ERROR_MESSAGE);
+            showNotification("Please enter a valid room number.");
         }
     }
 
@@ -953,5 +967,50 @@ public class RoomManagementPage extends JPanel {
         smokingFilterBox.setSelectedIndex(0);
         statusFilterBox.setSelectedIndex(0);
         updateRoomDisplay();
+    }
+
+    private JPanel createNotificationPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout(8, 0));
+        panel.setBackground(new Color(240, 248, 255));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(100, 150, 200), 1),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+        panel.setBorder(new EmptyBorder(8, 28, 8, 28));
+
+        JLabel iconLabel = new JLabel("ℹ");
+        iconLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+        iconLabel.setForeground(new Color(100, 150, 200));
+
+        notificationMessageLabel = new JLabel("Notification message");
+        notificationMessageLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        notificationMessageLabel.setForeground(UITheme.TEXT_DARK);
+
+        JButton dismissButton = new JButton("✕");
+        dismissButton.setFont(new Font("SansSerif", Font.BOLD, 16));
+        dismissButton.setForeground(new Color(100, 150, 200));
+        dismissButton.setBackground(new Color(240, 248, 255));
+        dismissButton.setFocusPainted(false);
+        dismissButton.setBorderPainted(false);
+        dismissButton.setOpaque(false);
+        dismissButton.setContentAreaFilled(false);
+        dismissButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        dismissButton.setPreferredSize(new Dimension(24, 24));
+        dismissButton.addActionListener(_ -> panel.setVisible(false));
+
+        panel.add(iconLabel, BorderLayout.WEST);
+        panel.add(notificationMessageLabel, BorderLayout.CENTER);
+        panel.add(dismissButton, BorderLayout.EAST);
+
+        return panel;
+    }
+
+    private void showNotification(String message) {
+        notificationMessageLabel.setText(message);
+        notificationPanel.setVisible(true);
+        revalidate();
+        repaint();
     }
 }

@@ -456,13 +456,12 @@ public class ReservationsPage extends JPanel {
     private void handleModify() {
         Reservation selected = resList.getSelectedValue();
         if (selected == null) {
-            JOptionPane.showMessageDialog(this, "Please select a reservation to modify.");
             return;
         }
 
         String newStartStr = JOptionPane.showInputDialog(
                 this,
-                "New Start Date (YYYY-MM-DD):",
+                "Enter new check-in date (YYYY-MM-DD):",
                 selected.getStartDate()
         );
         if (newStartStr == null) {
@@ -471,7 +470,7 @@ public class ReservationsPage extends JPanel {
 
         String newEndStr = JOptionPane.showInputDialog(
                 this,
-                "New End Date (YYYY-MM-DD):",
+                "Enter new check-out date (YYYY-MM-DD):",
                 selected.getEndDate()
         );
         if (newEndStr == null) {
@@ -526,22 +525,15 @@ public class ReservationsPage extends JPanel {
     private void handleCancel() {
         Reservation selected = resList.getSelectedValue();
         if (selected == null) {
-            JOptionPane.showMessageDialog(this, "Please select a reservation to cancel.");
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Confirm cancellation for Reservation #" + selected.getId() + "?",
-                "Cancellation Request", JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
-                String resultMessage = resService.cancelBooking(selected.getId());
-                refresh();
-                JOptionPane.showMessageDialog(this, resultMessage);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Cancellation Failed: " + ex.getMessage());
-            }
+        try {
+            String resultMessage = resService.cancelBooking(selected.getId());
+            refresh();
+            JOptionPane.showMessageDialog(this, resultMessage);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Cancellation Failed: " + ex.getMessage());
         }
     }
 
