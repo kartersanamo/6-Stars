@@ -20,6 +20,7 @@ import com.sixstars.model.Room;
 import com.sixstars.service.AccountService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
+import com.sixstars.ui.PasswordResetPage;
 import com.sixstars.ui.*;
 
 public class Main {
@@ -38,6 +39,7 @@ public class Main {
     public static BillingPage billingPage;
     public static CheckInPage checkInPage;
     public static ChangePasswordPage changePasswordPage;
+    public static PasswordResetPage passwordResetPage;
     public static ClerkBillingSearchPage clerkBillingSearchPage;
 
     public static void createAndShowUI() {
@@ -69,6 +71,7 @@ public class Main {
         reservationsPage = new ReservationsPage(pages, cardLayout, reservationService);
         accountDetailsPage = new AccountDetailsPage(pages, cardLayout, accountController);
         changePasswordPage = new ChangePasswordPage(pages, cardLayout, accountService);
+        passwordResetPage = new PasswordResetPage(pages, cardLayout, accountService);
         shopPage = new ShopPage(pages, cardLayout);
         billingPage = new BillingPage();
         checkInPage = new CheckInPage(pages, cardLayout, reservationService);
@@ -90,6 +93,7 @@ public class Main {
         pages.add(shopPage, "shop");
         pages.add(billingPage, "billing page");
         pages.add(checkInPage, "check in");
+        pages.add(passwordResetPage, "forgot password");
         pages.add(clerkBillingSearchPage, "clerk billing");
 
         frame.setLayout(new BorderLayout());

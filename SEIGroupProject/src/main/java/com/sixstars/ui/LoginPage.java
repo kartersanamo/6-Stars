@@ -94,6 +94,9 @@ public class LoginPage extends JPanel {
         JButton createAccountButton = new JButton("Create Account");
         styleLinkButton(createAccountButton);
 
+        JButton forgotPasswordButton = new JButton("Forgot Password");
+        styleLinkButton(forgotPasswordButton);
+
         JButton backButton = new JButton("Back");
         styleSecondaryButton(backButton);
 
@@ -131,6 +134,10 @@ public class LoginPage extends JPanel {
         formPanel.add(createAccountButton, gbc);
 
         gbc.gridy = 8;
+        gbc.insets = new Insets(0, 0, 12, 0);
+        formPanel.add(forgotPasswordButton, gbc);
+
+        gbc.gridy = 9;
         gbc.insets = new Insets(0, 0, 0, 0);
         formPanel.add(backButton, gbc);
 
@@ -226,6 +233,33 @@ public class LoginPage extends JPanel {
             passwordField.setText("");
             Main.createAccountPage.refreshInfo();
             cardLayout.show(pages, "create account");
+        });
+
+        forgotPasswordButton.addActionListener(_ -> {
+            String email = emailField.getText().trim();
+            if (email.isBlank()) {
+                errorMessageLabel.setText("Please enter your email address first.");
+                errorNotificationPanel.setVisible(true);
+                formPanel.revalidate();
+                formPanel.repaint();
+                return;
+            }
+
+            try {
+                accountService.sendPasswordResetCode(email);
+                if (Main.passwordResetPage != null) {
+                    Main.passwordResetPage.openForEmail(email);
+                }
+                emailField.setText("");
+                passwordField.setText("");
+                errorNotificationPanel.setVisible(false);
+                cardLayout.show(pages, "forgot password");
+            } catch (RuntimeException ex) {
+                errorMessageLabel.setText(ex.getMessage());
+                errorNotificationPanel.setVisible(true);
+                formPanel.revalidate();
+                formPanel.repaint();
+            }
         });
 
         card.add(Box.createVerticalGlue());

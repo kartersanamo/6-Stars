@@ -198,6 +198,77 @@ public class AccountService {
     }
 
     public void sendVerificationCode(String email) {
+        issueCode(email, false);
+    }
+
+    public void sendPasswordResetCode(String email) {
+        issueCode(email, true);
+    }
+
+    public void resetPasswordWithCode(String email, String code, String newPassword, String confirmPassword) {
+        String normalizedEmail = email == null ? null : email.trim().toLowerCase();
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            throw new RuntimeException("Email is required.");
+        }
+        if (code == null || code.isBlank()) {
+            throw new RuntimeException("Please enter the access code.");
+        }
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new RuntimeException("Please enter a new password.");
+        }
+        if (confirmPassword == null || confirmPassword.isBlank()) {
+            throw new RuntimeException("Please confirm your new password.");
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            throw new RuntimeException("New password and confirmation do not match.");
+        }
+
+        validatePasswordStrength(newPassword);
+
+        Account account = accountDAO.getAccountByEmail(normalizedEmail);
+        if (account == null) {
+            throw new RuntimeException("Account not found.");
+        }
+
+        if (account.getVerificationCodeHash() == null || account.getVerificationExpiresAt() == null) {
+            throw new RuntimeException("Please request an access code first.");
+        }
+
+        Instant expiresAt;
+        try {
+            expiresAt = Instant.parse(account.getVerificationExpiresAt());
+        } catch (Exception ex) {
+            throw new RuntimeException("Your access code has expired. Please request a new one.");
+        }
+
+        if (Instant.now().isAfter(expiresAt)) {
+            throw new RuntimeException("Your access code has expired. Please request a new one.");
+        }
+
+        if (!hashPassword(code).equals(account.getVerificationCodeHash())) {
+            throw new RuntimeException("Invalid access code.");
+        }
+
+        if (account.getPasswordHash().equals(hashPassword(newPassword))) {
+            throw new RuntimeException("New password must be different from the current password.");
+        }
+
+        Account updated = new Account(
+                account.getFirstName(),
+                account.getLastName(),
+                account.getEmail(),
+                hashPassword(newPassword),
+                account.getRole(),
+                account.getEmailVerified(),
+                null,
+                null,
+                account.getProfileImagePath()
+        );
+        accountDAO.saveAccount(updated);
+        accountDAO.updateVerificationState(normalizedEmail, account.isEmailVerified(), null, null);
+    }
+
+    private void issueCode(String email, boolean passwordReset) {
         if (mailgunEmailSender == null) {
             throw new RuntimeException("Mailgun is not configured. Set MAILGUN_API_KEY, MAILGUN_DOMAIN, and MAILGUN_FROM_EMAIL.");
         }
@@ -215,12 +286,16 @@ public class AccountService {
         String codeHash = hashPassword(code);
         String expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES).toString();
 
-        accountDAO.updateVerificationState(normalizedEmail, false, codeHash, expiresAt);
+        accountDAO.updateVerificationState(normalizedEmail, passwordReset && account.isEmailVerified(), codeHash, expiresAt);
 
         try {
-            mailgunEmailSender.sendVerificationCode(normalizedEmail, code);
+            if (passwordReset) {
+                mailgunEmailSender.sendPasswordResetCode(normalizedEmail, code);
+            } else {
+                mailgunEmailSender.sendVerificationCode(normalizedEmail, code);
+            }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send verification email: " + e.getMessage(), e);
+            throw new RuntimeException((passwordReset ? "Failed to send password reset email: " : "Failed to send verification email: ") + e.getMessage(), e);
         }
     }
 

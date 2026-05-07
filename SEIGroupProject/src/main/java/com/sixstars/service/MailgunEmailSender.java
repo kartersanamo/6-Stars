@@ -41,11 +41,19 @@ public class MailgunEmailSender {
     }
 
     public void sendVerificationCode(String toEmail, String code) throws IOException, InterruptedException {
+        sendEmail(toEmail, "Verify your 6 Stars Hotel account", buildVerificationHtml(code));
+    }
+
+    public void sendPasswordResetCode(String toEmail, String code) throws IOException, InterruptedException {
+        sendEmail(toEmail, "Reset your 6 Stars Hotel password", buildPasswordResetHtml(code));
+    }
+
+    private void sendEmail(String toEmail, String subject, String html) throws IOException, InterruptedException {
         String form = formEncode(
                 "from", fromEmail,
                 "to", toEmail,
-                "subject", "Verify your 6 Stars Hotel account",
-                "html", buildVerificationHtml(code)
+                "subject", subject,
+                "html", html
         );
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -64,6 +72,14 @@ public class MailgunEmailSender {
     private String buildVerificationHtml(String code) {
         return "<p>Thanks for creating a 6 Stars Hotel account.</p>"
                 + "<p>Your verification code is <b>" + escapeHtml(code) + "</b>.</p>"
+                + "<p>This code expires in 15 minutes.</p>"
+                + "<p>If you did not request this, you can ignore this email.</p>";
+    }
+
+    private String buildPasswordResetHtml(String code) {
+        return "<p>We received a request to reset your 6 Stars Hotel password.</p>"
+                + "<p>Your access code is <b>" + escapeHtml(code) + "</b>.</p>"
+                + "<p>Enter this code on the password reset page to create a new password.</p>"
                 + "<p>This code expires in 15 minutes.</p>"
                 + "<p>If you did not request this, you can ignore this email.</p>";
     }
