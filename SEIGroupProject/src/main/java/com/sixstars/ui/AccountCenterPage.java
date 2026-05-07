@@ -69,6 +69,7 @@ public class AccountCenterPage extends JPanel {
 
     // Avatar and quick info
     private final AvatarPanel avatarPanel = new AvatarPanel();
+    private final AvatarPanel profileAvatarPanel = new AvatarPanel();
     private final JLabel nameLabel = new JLabel("User");
     private final JLabel emailLabel = new JLabel("email@example.com");
     private final JLabel roleLabel = new JLabel("Guest");
@@ -364,7 +365,7 @@ public class AccountCenterPage extends JPanel {
         JPanel mainPanel = createContentPanel();
 
         JLabel title = new JLabel("Account Information");
-        title.setFont(new Font("Serif", Font.BOLD, 26));
+        title.setFont(new Font("Serif", Font.BOLD, 30));
         title.setForeground(UITheme.TEXT_DARK);
 
         JLabel subtitle = new JLabel("Update your profile details and upload a profile picture.");
@@ -374,23 +375,27 @@ public class AccountCenterPage extends JPanel {
         mainPanel.add(title);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 4)));
         mainPanel.add(subtitle);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 24)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 28)));
 
-        // Avatar section
         JPanel avatarSection = createCardPanel();
-        avatarSection.add(createSectionTitle("Profile Picture", "Upload or remove your profile photo"));
-        avatarSection.add(Box.createRigidArea(new Dimension(0, 16)));
+        avatarSection.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(UITheme.BORDER_COLOR, 1, true),
+                new EmptyBorder(24, 24, 24, 24)
+        ));
+        avatarSection.add(createSectionTitle("Profile Picture", "Keep your account photo and profile presence up to date"));
+        avatarSection.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        JPanel avatarContent = new JPanel(new BorderLayout(20, 0));
+        JPanel avatarContent = new JPanel(new GridLayout(1, 2, 24, 0));
         avatarContent.setOpaque(false);
 
         JPanel avatarStack = new JPanel();
         avatarStack.setOpaque(false);
         avatarStack.setLayout(new BoxLayout(avatarStack, BoxLayout.Y_AXIS));
-        avatarPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        avatarPanel.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-        avatarStack.add(avatarPanel);
-        avatarStack.add(Box.createRigidArea(new Dimension(0, 12)));
+        profileAvatarPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        profileAvatarPanel.setPreferredSize(new Dimension(140, 140));
+        profileAvatarPanel.setMaximumSize(new Dimension(140, 140));
+        avatarStack.add(profileAvatarPanel);
+        avatarStack.add(Box.createRigidArea(new Dimension(0, 14)));
         avatarStatusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         avatarStatusLabel.setForeground(UITheme.TEXT_MEDIUM);
         avatarStatusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -399,25 +404,44 @@ public class AccountCenterPage extends JPanel {
         JPanel avatarFieldsPanel = new JPanel();
         avatarFieldsPanel.setOpaque(false);
         avatarFieldsPanel.setLayout(new BoxLayout(avatarFieldsPanel, BoxLayout.Y_AXIS));
+        JLabel profileActionsTitle = new JLabel("Profile Actions");
+        profileActionsTitle.setFont(new Font("SansSerif", Font.BOLD, 15));
+        profileActionsTitle.setForeground(UITheme.TEXT_DARK);
+        profileActionsTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        avatarFieldsPanel.add(profileActionsTitle);
+        avatarFieldsPanel.add(Box.createRigidArea(new Dimension(0, 6)));
+        JLabel profileActionsText = new JLabel("Upload a new image or remove your current photo.");
+        profileActionsText.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        profileActionsText.setForeground(UITheme.TEXT_MEDIUM);
+        profileActionsText.setAlignmentX(Component.LEFT_ALIGNMENT);
+        avatarFieldsPanel.add(profileActionsText);
+        avatarFieldsPanel.add(Box.createRigidArea(new Dimension(0, 18)));
         avatarFieldsPanel.add(uploadPhotoButton);
         avatarFieldsPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         avatarFieldsPanel.add(removePhotoButton);
         styleButton(uploadPhotoButton, true);
         styleButton(removePhotoButton, false);
+        uploadPhotoButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        removePhotoButton.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        avatarContent.add(avatarStack, BorderLayout.WEST);
-        avatarContent.add(avatarFieldsPanel, BorderLayout.CENTER);
+        avatarContent.add(avatarStack);
+        avatarContent.add(avatarFieldsPanel);
         avatarSection.add(avatarContent);
         mainPanel.add(avatarSection);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Profile details section
         JPanel detailsSection = createCardPanel();
-        detailsSection.add(createSectionTitle("Personal Information", "Your account details"));
-        detailsSection.add(Box.createRigidArea(new Dimension(0, 16)));
+        detailsSection.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(UITheme.BORDER_COLOR, 1, true),
+                new EmptyBorder(24, 24, 24, 24)
+        ));
+        detailsSection.add(createSectionTitle("Personal Information", "Your primary account details"));
+        detailsSection.add(Box.createRigidArea(new Dimension(0, 18)));
 
         JPanel nameRow = new JPanel(new GridLayout(1, 2, 12, 0));
         nameRow.setOpaque(false);
+        nameRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        nameRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 84));
         nameRow.add(createLabeledFieldCard("First Name", firstNameField, true));
         nameRow.add(createLabeledFieldCard("Last Name", lastNameField, true));
         detailsSection.add(nameRow);
@@ -426,12 +450,22 @@ public class AccountCenterPage extends JPanel {
 
         JPanel emailRow = new JPanel(new GridLayout(1, 2, 12, 0));
         emailRow.setOpaque(false);
+        emailRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        emailRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 84));
         emailRow.add(createLabeledFieldCard("Email Address", emailValueLabel, false));
         emailRow.add(createLabeledFieldCard("Role", roleValueLabel, false));
         detailsSection.add(emailRow);
 
-        detailsSection.add(Box.createRigidArea(new Dimension(0, 16)));
-        detailsSection.add(styleButton(saveProfileButton, true));
+        detailsSection.add(Box.createRigidArea(new Dimension(0, 18)));
+        styleButton(saveProfileButton, true);
+        saveProfileButton.setPreferredSize(new Dimension(240, 42));
+        saveProfileButton.setMaximumSize(new Dimension(240, 42));
+        JPanel saveRow = new JPanel(new BorderLayout());
+        saveRow.setOpaque(false);
+        saveRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        saveRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        saveRow.add(saveProfileButton, BorderLayout.EAST);
+        detailsSection.add(saveRow);
 
         mainPanel.add(detailsSection);
 
@@ -894,6 +928,7 @@ public class AccountCenterPage extends JPanel {
         roleValueLabel.setText(formatRole(account.getRole().name()));
 
         avatarPanel.setAccount(account);
+        profileAvatarPanel.setAccount(account);
         avatarStatusLabel.setText(account.getProfileImagePath() == null || account.getProfileImagePath().isBlank()
                 ? "No profile photo uploaded yet."
                 : "Profile photo is uploaded and ready.");
@@ -911,6 +946,7 @@ public class AccountCenterPage extends JPanel {
         emailLabel.setText("email@example.com");
         roleLabel.setText("Guest");
         avatarPanel.clear();
+        profileAvatarPanel.clear();
         clearPasswordFields();
         showPasswordsCheck.setSelected(false);
         togglePasswordVisibility(false);
