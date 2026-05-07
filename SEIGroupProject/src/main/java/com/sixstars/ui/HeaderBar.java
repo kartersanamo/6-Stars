@@ -8,10 +8,7 @@ import java.awt.Font;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
@@ -26,7 +23,6 @@ public class HeaderBar extends JPanel {
     private final JPanel navPanel;
     private final JButton btnMyReservations;
     private final JButton btnShop;
-    private final JMenuItem dashboardMenuItem;
 
     private final JPanel pages;
     private final CardLayout cardLayout;
@@ -87,51 +83,12 @@ public class HeaderBar extends JPanel {
         });
 
         btnAccount = createButton("My Account");
-
-        JPopupMenu menu = new JPopupMenu();
-
-        JMenuItem view = new JMenuItem("View Account");
-        view.addActionListener(_ -> {
-            Main.accountDetailsPage.refreshInfo();
-            cardLayout.show(pages, "account details");
+        btnAccount.addActionListener(_ -> {
+            if (Main.accountCenterPage != null) {
+                Main.accountCenterPage.refreshInfo();
+            }
+            cardLayout.show(pages, "account center");
         });
-
-        JMenuItem logout = new JMenuItem("Logout");
-        logout.addActionListener(_ -> {
-            if (Main.shopPage != null) {
-                Main.shopPage.persistCurrentCart();
-                Main.shopPage.clearTransientCart();
-            }
-            AccountController.currentAccount = null;
-            refreshInfo();
-            cardLayout.show(pages, "home");
-            JOptionPane.showMessageDialog(this, "Logged out successfully");
-        });
-
-        dashboardMenuItem = new JMenuItem();
-        dashboardMenuItem.addActionListener(_ -> {
-            if (AccountController.currentAccount != null && AccountController.currentAccount.getRole() == Role.CLERK) {
-                refreshInfo();
-                cardLayout.show(pages, "clerk page");
-            }
-            else if (AccountController.currentAccount != null && AccountController.currentAccount.getRole() == Role.ADMIN) {
-                refreshInfo();
-                cardLayout.show(pages, "admin page");
-            }
-            else if (AccountController.currentAccount != null) {
-                refreshInfo();
-                Main.billingPage.refresh();
-                cardLayout.show(pages, "billing page");
-            }
-        });
-
-        menu.add(view);
-        menu.add(dashboardMenuItem);
-        menu.add(logout);
-
-        btnAccount.addActionListener(_ ->
-                menu.show(btnAccount, 0, btnAccount.getHeight())
-        );
 
         navPanel.add(bookNowButton);
         navPanel.add(btnShop);
@@ -156,15 +113,8 @@ public class HeaderBar extends JPanel {
 
         if (loggedIn) {
             btnMyReservations.setVisible(current.getRole() == Role.GUEST);
-
-            if (current.getRole() == Role.GUEST) {
-                dashboardMenuItem.setText("Billing & Purchases");
-            } else {
-                dashboardMenuItem.setText("Dashboard");
-            }
         } else {
             btnMyReservations.setVisible(false);
-            dashboardMenuItem.setText("Dashboard");
         }
 
         revalidate();

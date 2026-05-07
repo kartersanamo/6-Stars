@@ -21,6 +21,7 @@ import com.sixstars.service.AccountService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
 import com.sixstars.ui.PasswordResetPage;
+import com.sixstars.ui.AccountCenterPage;
 import com.sixstars.ui.*;
 
 public class Main {
@@ -40,6 +41,7 @@ public class Main {
     public static CheckInPage checkInPage;
     public static ChangePasswordPage changePasswordPage;
     public static PasswordResetPage passwordResetPage;
+    public static AccountCenterPage accountCenterPage;
     public static ClerkBillingSearchPage clerkBillingSearchPage;
 
     public static void createAndShowUI() {
@@ -72,6 +74,7 @@ public class Main {
         accountDetailsPage = new AccountDetailsPage(pages, cardLayout, accountController);
         changePasswordPage = new ChangePasswordPage(pages, cardLayout, accountService);
         passwordResetPage = new PasswordResetPage(pages, cardLayout, accountService);
+        accountCenterPage = new AccountCenterPage(pages, cardLayout, accountController);
         shopPage = new ShopPage(pages, cardLayout);
         billingPage = new BillingPage();
         checkInPage = new CheckInPage(pages, cardLayout, reservationService);
@@ -90,6 +93,7 @@ public class Main {
         pages.add(roomManagementPage, "room management");
         pages.add(reservationsPage, "reservations");
         pages.add(accountDetailsPage, "account details");
+        pages.add(accountCenterPage, "account center");
         pages.add(shopPage, "shop");
         pages.add(billingPage, "billing page");
         pages.add(checkInPage, "check in");
