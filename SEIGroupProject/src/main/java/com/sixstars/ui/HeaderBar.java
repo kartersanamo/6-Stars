@@ -2,27 +2,61 @@ package com.sixstars.ui;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.Window;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
+import com.sixstars.model.AppNotification;
+import com.sixstars.model.NotificationType;
 import com.sixstars.model.Role;
+import com.sixstars.service.NotificationService;
 
-public class HeaderBar extends JPanel {
+public class HeaderBar extends JPanel implements NotificationService.NotificationListener {
 
     private final JButton loginButton;
     private final JButton createAccountButton;
-    private final JButton btnAccount;
+    private final JButton profileButton;
+    private final JLabel profileBadgeLabel;
+    private final JLayeredPane profileMenuContainer;
+    private final JPopupMenu accountPopupMenu = new JPopupMenu();
     private final JPanel navPanel;
     private final JButton btnMyReservations;
     private final JButton btnShop;
+    private JDialog activeToast;
+    private final NotificationService notificationService = NotificationService.getInstance();
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mm a");
+    private final Map<String, String> lastToastByAccount = new HashMap<>();
 
     private final JPanel pages;
     private final CardLayout cardLayout;
@@ -82,24 +116,47 @@ public class HeaderBar extends JPanel {
             cardLayout.show(pages, "create account");
         });
 
-        btnAccount = createButton("My Account");
-        btnAccount.addActionListener(_ -> {
-            if (Main.accountCenterPage != null) {
-                Main.accountCenterPage.refreshInfo();
+        profileButton = new JButton();
+        profileButton.setPreferredSize(new Dimension(40, 40));
+        profileButton.setFocusPainted(false);
+        profileButton.setBorderPainted(false);
+        profileButton.setContentAreaFilled(false);
+        profileButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        profileButton.addActionListener(_ -> showAccountPopupMenu());
+
+        profileBadgeLabel = new JLabel("", SwingConstants.CENTER);
+        profileBadgeLabel.setOpaque(true);
+        profileBadgeLabel.setBackground(new Color(208, 55, 55));
+        profileBadgeLabel.setForeground(Color.WHITE);
+        profileBadgeLabel.setFont(new Font("SansSerif", Font.BOLD, 10));
+        profileBadgeLabel.setBorder(new LineBorder(Color.WHITE, 1, true));
+        profileBadgeLabel.setPreferredSize(new Dimension(16, 16));
+        profileBadgeLabel.setVisible(false);
+
+        profileMenuContainer = new JLayeredPane() {
+            @Override
+            public void doLayout() {
+                int size = 40;
+                profileButton.setBounds(0, 0, size, size);
+                profileBadgeLabel.setBounds(size - 14, 0, 16, 16);
             }
-            cardLayout.show(pages, "account center");
-        });
+        };
+        profileMenuContainer.setPreferredSize(new Dimension(44, 40));
+        profileMenuContainer.setOpaque(false);
+        profileMenuContainer.add(profileButton, JLayeredPane.DEFAULT_LAYER);
+        profileMenuContainer.add(profileBadgeLabel, JLayeredPane.PALETTE_LAYER);
 
         navPanel.add(bookNowButton);
         navPanel.add(btnShop);
         navPanel.add(btnMyReservations);
         navPanel.add(loginButton);
         navPanel.add(createAccountButton);
-        navPanel.add(btnAccount);
+        navPanel.add(profileMenuContainer);
 
         add(brandButton, BorderLayout.WEST);
         add(navPanel, BorderLayout.EAST);
 
+        notificationService.registerListener(this);
         refreshInfo();
     }
 
@@ -109,16 +166,233 @@ public class HeaderBar extends JPanel {
 
         loginButton.setVisible(!loggedIn);
         createAccountButton.setVisible(!loggedIn);
-        btnAccount.setVisible(loggedIn);
+        profileMenuContainer.setVisible(loggedIn);
 
         if (loggedIn) {
             btnMyReservations.setVisible(current.getRole() == Role.GUEST);
+            profileButton.setIcon(buildProfileIcon(current));
+            updateBadge(current.getEmail());
         } else {
             btnMyReservations.setVisible(false);
+            profileButton.setIcon(null);
+            profileBadgeLabel.setVisible(false);
         }
 
         revalidate();
         repaint();
+    }
+
+    @Override
+    public void onNotificationsChanged(String email) {
+        Account current = AccountController.currentAccount;
+        if (current == null || !current.getEmail().equalsIgnoreCase(email)) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> {
+            updateBadge(current.getEmail());
+            List<AppNotification> notifications = notificationService.getNotifications(current.getEmail());
+            if (!notifications.isEmpty()) {
+                AppNotification latest = notifications.get(0);
+                String lastToastId = lastToastByAccount.get(current.getEmail());
+                boolean isNew = !latest.getId().equals(lastToastId);
+                if (isNew && notificationService.isInAppEnabled(current.getEmail(), latest.getType())) {
+                    showToast(latest.getType().getDisplayName(), latest.getMessage());
+                    lastToastByAccount.put(current.getEmail(), latest.getId());
+                }
+            }
+        });
+    }
+
+    private void showAccountPopupMenu() {
+        accountPopupMenu.removeAll();
+        accountPopupMenu.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1));
+
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setBackground(UITheme.CARD_BACKGROUND);
+        content.setBorder(new EmptyBorder(8, 8, 8, 8));
+
+        JButton viewAccountButton = new JButton("View Account");
+        viewAccountButton.setHorizontalAlignment(SwingConstants.LEFT);
+        viewAccountButton.setFont(new Font("SansSerif", Font.BOLD, 13));
+        viewAccountButton.setBackground(UITheme.SECONDARY_BUTTON);
+        viewAccountButton.setFocusPainted(false);
+        viewAccountButton.setBorderPainted(false);
+        viewAccountButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        viewAccountButton.addActionListener(_ -> {
+            if (Main.accountCenterPage != null) {
+                Main.accountCenterPage.refreshInfo();
+            }
+            cardLayout.show(pages, "account center");
+            accountPopupMenu.setVisible(false);
+        });
+        content.add(viewAccountButton);
+        content.add(new JLabel(" "));
+
+        JPanel titleRow = new JPanel(new BorderLayout());
+        titleRow.setOpaque(false);
+        JLabel title = new JLabel("Notifications");
+        title.setFont(new Font("SansSerif", Font.BOLD, 12));
+        title.setForeground(UITheme.TEXT_DARK);
+        JButton clearAll = new JButton("clear all");
+        clearAll.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        clearAll.setBorderPainted(false);
+        clearAll.setContentAreaFilled(false);
+        clearAll.setForeground(UITheme.TEXT_MEDIUM);
+        clearAll.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        clearAll.addActionListener(_ -> {
+            Account current = AccountController.currentAccount;
+            if (current != null) {
+                notificationService.clearAll(current.getEmail());
+            }
+            accountPopupMenu.setVisible(false);
+        });
+        titleRow.add(title, BorderLayout.WEST);
+        titleRow.add(clearAll, BorderLayout.EAST);
+        content.add(titleRow);
+        content.add(new JLabel(" "));
+
+        Account current = AccountController.currentAccount;
+        List<AppNotification> notifications = current == null ? List.of() : notificationService.getNotifications(current.getEmail());
+        if (notifications.isEmpty()) {
+            JLabel empty = new JLabel("No notifications");
+            empty.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            empty.setForeground(UITheme.TEXT_MEDIUM);
+            content.add(empty);
+        } else {
+            JPanel listPanel = new JPanel();
+            listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+            listPanel.setOpaque(false);
+            int showCount = Math.min(8, notifications.size());
+            for (int i = 0; i < showCount; i++) {
+                AppNotification notification = notifications.get(i);
+                JPanel row = new JPanel(new BorderLayout(8, 0));
+                row.setOpaque(true);
+                row.setBackground(new Color(250, 248, 242));
+                row.setBorder(new EmptyBorder(6, 6, 6, 6));
+
+                String time = notification.getCreatedAt().atZone(ZoneId.systemDefault()).format(TIME_FORMAT);
+                JLabel text = new JLabel("<html><b>" + notification.getType().getDisplayName() + "</b><br/>"
+                        + notification.getMessage() + "<br/><span style='color:#777777;'>" + time + "</span></html>");
+                text.setFont(new Font("SansSerif", Font.PLAIN, 11));
+                text.setForeground(UITheme.TEXT_DARK);
+
+                JButton clearOne = new JButton("x");
+                clearOne.setFont(new Font("SansSerif", Font.BOLD, 11));
+                clearOne.setBorderPainted(false);
+                clearOne.setContentAreaFilled(false);
+                clearOne.setForeground(UITheme.TEXT_MEDIUM);
+                clearOne.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                clearOne.addActionListener(_ -> {
+                    if (current != null) {
+                        notificationService.clearNotification(current.getEmail(), notification.getId());
+                    }
+                    accountPopupMenu.setVisible(false);
+                });
+
+                row.add(text, BorderLayout.CENTER);
+                row.add(clearOne, BorderLayout.EAST);
+                listPanel.add(row);
+                listPanel.add(new JLabel(" "));
+            }
+            JScrollPane scroll = new JScrollPane(listPanel);
+            scroll.setBorder(null);
+            scroll.setPreferredSize(new Dimension(300, 220));
+            scroll.getVerticalScrollBar().setUnitIncrement(16);
+            content.add(scroll);
+        }
+
+        accountPopupMenu.add(content);
+        accountPopupMenu.show(profileButton, -260, 44);
+    }
+
+    private void updateBadge(String email) {
+        int unread = notificationService.getUnreadCount(email);
+        if (unread <= 0) {
+            profileBadgeLabel.setVisible(false);
+            return;
+        }
+        profileBadgeLabel.setVisible(true);
+        profileBadgeLabel.setText(unread > 9 ? "9+" : Integer.toString(unread));
+    }
+
+    private void showToast(String title, String message) {
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        if (owner == null) {
+            return;
+        }
+        if (activeToast != null) {
+            activeToast.dispose();
+        }
+
+        activeToast = new JDialog(owner);
+        activeToast.setUndecorated(true);
+        JPanel toast = new JPanel(new BorderLayout());
+        toast.setBackground(new Color(249, 246, 238));
+        toast.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(UITheme.BORDER_COLOR, 1, true),
+                new EmptyBorder(10, 12, 10, 12)
+        ));
+        JLabel label = new JLabel("<html><b>" + title + "</b><br/>" + message + "</html>");
+        label.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        label.setForeground(UITheme.TEXT_DARK);
+        toast.add(label, BorderLayout.CENTER);
+        activeToast.add(toast);
+        activeToast.pack();
+
+        int x = owner.getX() + owner.getWidth() - activeToast.getWidth() - 20;
+        int y = owner.getY() + 80;
+        activeToast.setLocation(x, y);
+        activeToast.setAlwaysOnTop(true);
+        activeToast.setVisible(true);
+
+        Timer timer = new Timer(5000, _ -> {
+            if (activeToast != null) {
+                activeToast.dispose();
+                activeToast = null;
+            }
+        });
+        timer.setRepeats(false);
+        timer.start();
+    }
+
+    private javax.swing.Icon buildProfileIcon(Account account) {
+        int size = 36;
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        try {
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setClip(new java.awt.geom.Ellipse2D.Double(0, 0, size, size));
+
+            if (account.getProfileImagePath() != null && !account.getProfileImagePath().isBlank()) {
+                File file = new File(account.getProfileImagePath());
+                if (file.exists()) {
+                    Image raw = new javax.swing.ImageIcon(file.getAbsolutePath()).getImage();
+                    g2.drawImage(raw, 0, 0, size, size, null);
+                } else {
+                    paintInitials(g2, account, size);
+                }
+            } else {
+                paintInitials(g2, account, size);
+            }
+        } finally {
+            g2.dispose();
+        }
+        return new javax.swing.ImageIcon(image);
+    }
+
+    private void paintInitials(Graphics2D g2, Account account, int size) {
+        g2.setColor(new Color(194, 159, 92));
+        g2.fillOval(0, 0, size, size);
+        String initials = "?";
+        if (account != null && account.getFirstName() != null && !account.getFirstName().isBlank()) {
+            initials = account.getFirstName().substring(0, 1).toUpperCase();
+        }
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+        int textWidth = g2.getFontMetrics().stringWidth(initials);
+        int textHeight = g2.getFontMetrics().getAscent();
+        g2.drawString(initials, (size - textWidth) / 2, (size + textHeight) / 2 - 2);
     }
 
     private JButton createButton(String text) {

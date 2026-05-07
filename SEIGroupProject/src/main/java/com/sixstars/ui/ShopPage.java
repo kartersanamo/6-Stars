@@ -4,6 +4,7 @@ import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.database.ShoppingCartDAO;
 import com.sixstars.model.*;
+import com.sixstars.service.NotificationService;
 import com.sixstars.service.ShopService;
 
 import javax.swing.*;
@@ -22,6 +23,7 @@ public class ShopPage extends JPanel {
     private final ShoppingCart cart;
     private final ShoppingCartDAO cartDAO;
     private final ShopService shopService;
+    private final NotificationService notificationService = NotificationService.getInstance();
 
     private final JPanel inventoryPanel;
     private final JPanel cartContainer;
@@ -631,6 +633,8 @@ public class ShopPage extends JPanel {
                     "Checkout Complete",
                     JOptionPane.INFORMATION_MESSAGE
             );
+            notificationService.publish(NotificationType.SHOP_PURCHASES, currentAccount.getEmail(),
+                    "Shop checkout complete. Total: $" + String.format("%.2f", total) + ".");
 
             updateCartDisplay();
             refreshInventory();

@@ -36,8 +36,10 @@ import javax.swing.border.EmptyBorder;
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
+import com.sixstars.model.NotificationType;
 import com.sixstars.model.Role;
 import com.sixstars.model.Room;
+import com.sixstars.service.NotificationService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
 
@@ -75,6 +77,7 @@ public class ReservationConfirmationPage extends JPanel {
     private final JLabel policyTextArea;
     private final JPanel notificationPanel;
     private final JLabel notificationMessageLabel;
+    private final NotificationService notificationService = NotificationService.getInstance();
 
     public ReservationConfirmationPage(JPanel pages, CardLayout cardLayout, ReservationService reservationService, RoomService roomService) {
         this.pages = pages;
@@ -544,6 +547,8 @@ public class ReservationConfirmationPage extends JPanel {
         // Make the reservation
         try {
             reservationService.makeReservation(targetEmail, draftStartDate, draftEndDate, List.of(draftRoom));
+            notificationService.publish(NotificationType.RESERVATION_UPDATES, targetEmail,
+                    "Reservation confirmed for Room " + draftRoom.getRoomNumber() + ".");
 
             showNotification("Reservation confirmed for Room " + draftRoom.getRoomNumber() + ". Returning to home...");
 

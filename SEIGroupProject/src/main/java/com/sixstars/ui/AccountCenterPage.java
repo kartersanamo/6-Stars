@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
@@ -35,7 +37,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
+import com.sixstars.model.NotificationType;
 import com.sixstars.model.Role;
+import com.sixstars.service.NotificationService;
 
 public class AccountCenterPage extends JPanel {
     private static final int AVATAR_SIZE = 120;
@@ -93,9 +97,14 @@ public class AccountCenterPage extends JPanel {
     private final JLabel passwordRulesLabel = new JLabel();
 
     // Notifications Section Components
-    private final JCheckBox emailReceiptsCheck = new JCheckBox("Email receipts for reservations and shop orders");
-    private final JCheckBox reservationReminderCheck = new JCheckBox("Reservation reminder notifications");
-    private final JCheckBox shopPromotionsCheck = new JCheckBox("Occasional shop promotions and special offers");
+    private final Map<NotificationType, JCheckBox> emailNotificationChecks = new EnumMap<>(NotificationType.class);
+    private final Map<NotificationType, JCheckBox> inAppNotificationChecks = new EnumMap<>(NotificationType.class);
+    private final NotificationService notificationService = NotificationService.getInstance();
+    private final JTextField deleteEmailField = new JTextField();
+    private final JTextField deleteCodeField = new JTextField();
+    private final JButton sendDeleteCodeButton = new JButton("Send Verification Code");
+    private final JButton deleteAccountButton = new JButton("Delete My Account");
+    private final JLabel deleteStatusLabel = new JLabel(" ");
 
     private boolean loadingPreferences = false;
 
@@ -526,7 +535,7 @@ public class AccountCenterPage extends JPanel {
         title.setFont(new Font("Serif", Font.BOLD, 26));
         title.setForeground(UITheme.TEXT_DARK);
 
-        JLabel subtitle = new JLabel("Choose how we should communicate with you. Preferences are saved locally.");
+        JLabel subtitle = new JLabel("Choose exactly how each notification is delivered: Email, In-App, or both.");
         subtitle.setFont(UITheme.SUBTITLE_FONT);
         subtitle.setForeground(UITheme.TEXT_MEDIUM);
 
@@ -536,26 +545,48 @@ public class AccountCenterPage extends JPanel {
         mainPanel.add(Box.createRigidArea(new Dimension(0, 24)));
 
         JPanel notificationCard = createCardPanel();
-        notificationCard.add(createSectionTitle("Email Preferences", "Control your email notifications"));
+        notificationCard.add(createSectionTitle("Delivery Preferences", "Toggle per category for Email and In-App alerts"));
         notificationCard.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        emailReceiptsCheck.setOpaque(false);
-        emailReceiptsCheck.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        emailReceiptsCheck.setForeground(UITheme.TEXT_DARK);
+        JPanel tableHeader = new JPanel(new GridLayout(1, 3, 12, 0));
+        tableHeader.setOpaque(false);
+        tableHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tableHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
+        tableHeader.add(createHeaderCell("Notification Type"));
+        tableHeader.add(createHeaderCell("Email"));
+        tableHeader.add(createHeaderCell("In-App"));
+        notificationCard.add(tableHeader);
+        notificationCard.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        reservationReminderCheck.setOpaque(false);
-        reservationReminderCheck.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        reservationReminderCheck.setForeground(UITheme.TEXT_DARK);
+        emailNotificationChecks.clear();
+        inAppNotificationChecks.clear();
+        for (NotificationType type : NotificationType.values()) {
+            JPanel row = new JPanel(new GridLayout(1, 3, 12, 0));
+            row.setOpaque(false);
+            row.setAlignmentX(Component.LEFT_ALIGNMENT);
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
-        shopPromotionsCheck.setOpaque(false);
-        shopPromotionsCheck.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        shopPromotionsCheck.setForeground(UITheme.TEXT_DARK);
+            JLabel typeLabel = new JLabel(type.getDisplayName());
+            typeLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+            typeLabel.setForeground(UITheme.TEXT_DARK);
 
-        notificationCard.add(emailReceiptsCheck);
-        notificationCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        notificationCard.add(reservationReminderCheck);
-        notificationCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        notificationCard.add(shopPromotionsCheck);
+            JCheckBox emailCheck = new JCheckBox();
+            emailCheck.setOpaque(false);
+            emailCheck.setHorizontalAlignment(SwingConstants.CENTER);
+
+            JCheckBox inAppCheck = new JCheckBox();
+            inAppCheck.setOpaque(false);
+            inAppCheck.setHorizontalAlignment(SwingConstants.CENTER);
+
+            emailNotificationChecks.put(type, emailCheck);
+            inAppNotificationChecks.put(type, inAppCheck);
+
+            row.add(typeLabel);
+            row.add(emailCheck);
+            row.add(inAppCheck);
+            notificationCard.add(row);
+            notificationCard.add(Box.createRigidArea(new Dimension(0, 6)));
+        }
 
         mainPanel.add(notificationCard);
 
@@ -711,7 +742,32 @@ public class AccountCenterPage extends JPanel {
         deleteCard.add(deleteInfo);
         deleteCard.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        JButton deleteAccountButton = new JButton("Delete My Account");
+        JPanel verificationInputs = new JPanel(new GridLayout(1, 2, 12, 0));
+        verificationInputs.setOpaque(false);
+        verificationInputs.setAlignmentX(Component.LEFT_ALIGNMENT);
+        verificationInputs.setMaximumSize(new Dimension(Integer.MAX_VALUE, 84));
+        verificationInputs.add(createLabeledFieldCard("Account Email", deleteEmailField, true));
+        verificationInputs.add(createLabeledFieldCard("Verification Code", deleteCodeField, true));
+        deleteCard.add(verificationInputs);
+        deleteCard.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JPanel verificationActions = new JPanel(new GridLayout(1, 2, 10, 0));
+        verificationActions.setOpaque(false);
+        verificationActions.setAlignmentX(Component.LEFT_ALIGNMENT);
+        verificationActions.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        styleButton(sendDeleteCodeButton, false);
+        sendDeleteCodeButton.addActionListener(_ -> sendDeleteVerificationCodeInline());
+        verificationActions.add(sendDeleteCodeButton);
+        verificationActions.add(Box.createHorizontalStrut(0));
+        deleteCard.add(verificationActions);
+
+        deleteCard.add(Box.createRigidArea(new Dimension(0, 8)));
+        deleteStatusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        deleteStatusLabel.setForeground(UITheme.TEXT_MEDIUM);
+        deleteStatusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        deleteCard.add(deleteStatusLabel);
+        deleteCard.add(Box.createRigidArea(new Dimension(0, 10)));
+
         deleteAccountButton.setFont(new Font("SansSerif", Font.BOLD, 14));
         deleteAccountButton.setFocusPainted(false);
         deleteAccountButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -786,6 +842,16 @@ public class AccountCenterPage extends JPanel {
         panel.add(subtitleLabel);
 
         return panel;
+    }
+
+    private JLabel createHeaderCell(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("SansSerif", Font.BOLD, 12));
+        label.setForeground(UITheme.TEXT_MEDIUM);
+        if (!"Notification Type".equals(text)) {
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+        }
+        return label;
     }
 
     private JPanel createLabeledFieldCard(String label, JComponent component, boolean editable) {
@@ -904,11 +970,13 @@ public class AccountCenterPage extends JPanel {
         saveProfileButton.addActionListener(e -> saveProfileChanges());
         updatePasswordButton.addActionListener(e -> updatePassword());
         showPasswordsCheck.addActionListener(e -> togglePasswordVisibility(showPasswordsCheck.isSelected()));
-
-        ActionListener preferenceListener = e -> savePreferences();
-        emailReceiptsCheck.addActionListener(preferenceListener);
-        reservationReminderCheck.addActionListener(preferenceListener);
-        shopPromotionsCheck.addActionListener(preferenceListener);
+        ActionListener preferenceListener = e -> saveNotificationPreferences();
+        for (JCheckBox emailCheck : emailNotificationChecks.values()) {
+            emailCheck.addActionListener(preferenceListener);
+        }
+        for (JCheckBox inAppCheck : inAppNotificationChecks.values()) {
+            inAppCheck.addActionListener(preferenceListener);
+        }
     }
 
     public void refreshInfo() {
@@ -932,10 +1000,13 @@ public class AccountCenterPage extends JPanel {
         avatarStatusLabel.setText(account.getProfileImagePath() == null || account.getProfileImagePath().isBlank()
                 ? "No profile photo uploaded yet."
                 : "Profile photo is uploaded and ready.");
+        deleteEmailField.setText("");
+        deleteCodeField.setText("");
+        deleteStatusLabel.setText(" ");
 
         clearPasswordFields();
         togglePasswordVisibility(showPasswordsCheck.isSelected());
-        loadPreferences(account);
+        loadNotificationPreferences(account);
 
         revalidate();
         repaint();
@@ -947,24 +1018,33 @@ public class AccountCenterPage extends JPanel {
         roleLabel.setText("Guest");
         avatarPanel.clear();
         profileAvatarPanel.clear();
+        deleteEmailField.setText("");
+        deleteCodeField.setText("");
+        deleteStatusLabel.setText(" ");
         clearPasswordFields();
         showPasswordsCheck.setSelected(false);
         togglePasswordVisibility(false);
     }
 
-    private void loadPreferences(Account account) {
+    private void loadNotificationPreferences(Account account) {
         loadingPreferences = true;
         try {
-            Preferences prefs = preferencesFor(account);
-            emailReceiptsCheck.setSelected(prefs.getBoolean("emailReceipts", true));
-            reservationReminderCheck.setSelected(prefs.getBoolean("reservationReminders", true));
-            shopPromotionsCheck.setSelected(prefs.getBoolean("shopPromotions", false));
+            for (NotificationType type : NotificationType.values()) {
+                JCheckBox emailCheck = emailNotificationChecks.get(type);
+                JCheckBox inAppCheck = inAppNotificationChecks.get(type);
+                if (emailCheck != null) {
+                    emailCheck.setSelected(notificationService.isEmailEnabled(account.getEmail(), type));
+                }
+                if (inAppCheck != null) {
+                    inAppCheck.setSelected(notificationService.isInAppEnabled(account.getEmail(), type));
+                }
+            }
         } finally {
             loadingPreferences = false;
         }
     }
 
-    private void savePreferences() {
+    private void saveNotificationPreferences() {
         if (loadingPreferences) {
             return;
         }
@@ -974,10 +1054,16 @@ public class AccountCenterPage extends JPanel {
             return;
         }
 
-        Preferences prefs = preferencesFor(account);
-        prefs.putBoolean("emailReceipts", emailReceiptsCheck.isSelected());
-        prefs.putBoolean("reservationReminders", reservationReminderCheck.isSelected());
-        prefs.putBoolean("shopPromotions", shopPromotionsCheck.isSelected());
+        for (NotificationType type : NotificationType.values()) {
+            JCheckBox emailCheck = emailNotificationChecks.get(type);
+            JCheckBox inAppCheck = inAppNotificationChecks.get(type);
+            if (emailCheck != null) {
+                notificationService.setEmailEnabled(account.getEmail(), type, emailCheck.isSelected());
+            }
+            if (inAppCheck != null) {
+                notificationService.setInAppEnabled(account.getEmail(), type, inAppCheck.isSelected());
+            }
+        }
     }
 
     private Preferences preferencesFor(Account account) {
@@ -1017,6 +1103,7 @@ public class AccountCenterPage extends JPanel {
             accountController.updateProfileDetails(firstName, lastName, account.getProfileImagePath());
             Main.headerBar.refreshInfo();
             refreshInfo();
+            notificationService.publishForCurrentAccount(NotificationType.ACCOUNT_ACTIVITY, "Your profile information was updated.");
         } catch (Exception ex) {
             // Handle error silently or show notification
         }
@@ -1032,6 +1119,7 @@ public class AccountCenterPage extends JPanel {
             clearPasswordFields();
             Main.headerBar.refreshInfo();
             refreshInfo();
+            notificationService.publishForCurrentAccount(NotificationType.ACCOUNT_ACTIVITY, "Your password was changed successfully.");
         } catch (Exception ex) {
             // Handle error
         }
@@ -1060,6 +1148,7 @@ public class AccountCenterPage extends JPanel {
             deleteManagedAvatar(previousPath);
             Main.headerBar.refreshInfo();
             refreshInfo();
+            notificationService.publishForCurrentAccount(NotificationType.ACCOUNT_ACTIVITY, "Profile photo updated.");
         } catch (Exception ex) {
             // Handle error
         }
@@ -1081,6 +1170,7 @@ public class AccountCenterPage extends JPanel {
             deleteManagedAvatar(previousPath);
             Main.headerBar.refreshInfo();
             refreshInfo();
+            notificationService.publishForCurrentAccount(NotificationType.ACCOUNT_ACTIVITY, "Profile photo removed.");
         } catch (Exception ex) {
             // Handle error
         }
@@ -1103,37 +1193,21 @@ public class AccountCenterPage extends JPanel {
         }
 
         String expectedEmail = account.getEmail();
-        String emailInput = JOptionPane.showInputDialog(
-                this,
-                "Enter your account email to continue:",
-                "Verify Account Email",
-                JOptionPane.QUESTION_MESSAGE
-        );
-        if (emailInput == null) {
-            return;
-        }
+        String emailInput = deleteEmailField.getText().trim();
         if (!expectedEmail.equalsIgnoreCase(emailInput.trim())) {
+            deleteStatusLabel.setText("Email does not match the logged-in account.");
             JOptionPane.showMessageDialog(this, "Email does not match the logged-in account.", "Verification Failed", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        try {
-            accountController.sendAccountActionCode(expectedEmail);
-        } catch (RuntimeException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Email Verification Failed", JOptionPane.ERROR_MESSAGE);
+        String codeInput = deleteCodeField.getText().trim();
+        if (codeInput.isEmpty()) {
+            deleteStatusLabel.setText("Enter the verification code sent to your email.");
+            JOptionPane.showMessageDialog(this, "Please enter the verification code.", "Missing Code", JOptionPane.WARNING_MESSAGE);
             return;
         }
-
-        String codeInput = JOptionPane.showInputDialog(
-                this,
-                "Enter the 6-digit verification code sent to your email:",
-                "Email Verification Code",
-                JOptionPane.QUESTION_MESSAGE
-        );
-        if (codeInput == null || codeInput.trim().isEmpty()) {
-            return;
-        }
-        if (!accountController.verifyAccountActionCode(expectedEmail, codeInput.trim())) {
+        if (!accountController.verifyAccountActionCode(expectedEmail, codeInput)) {
+            deleteStatusLabel.setText("Invalid or expired verification code.");
             JOptionPane.showMessageDialog(this, "Invalid or expired verification code.", "Verification Failed", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -1146,6 +1220,7 @@ public class AccountCenterPage extends JPanel {
                 JOptionPane.WARNING_MESSAGE
         );
         if (confirmStepOne != JOptionPane.YES_OPTION) {
+            deleteStatusLabel.setText("Account deletion cancelled.");
             return;
         }
 
@@ -1159,6 +1234,7 @@ public class AccountCenterPage extends JPanel {
             return;
         }
         if (!"DELETE".equals(confirmStepTwo.trim())) {
+            deleteStatusLabel.setText("Final confirmation text did not match.");
             JOptionPane.showMessageDialog(this, "Final confirmation text did not match.", "Deletion Cancelled", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -1175,10 +1251,35 @@ public class AccountCenterPage extends JPanel {
                 Main.shopPage.clearTransientCart();
             }
             Main.headerBar.refreshInfo();
+            deleteStatusLabel.setText(" ");
             JOptionPane.showMessageDialog(this, "Your account has been deleted.", "Account Deleted", JOptionPane.INFORMATION_MESSAGE);
             cardLayout.show(pages, "home");
         } catch (RuntimeException ex) {
+            deleteStatusLabel.setText(ex.getMessage());
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Deletion Failed", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void sendDeleteVerificationCodeInline() {
+        Account account = AccountController.currentAccount;
+        if (account == null) {
+            return;
+        }
+
+        String expectedEmail = account.getEmail();
+        String emailInput = deleteEmailField.getText().trim();
+        if (!expectedEmail.equalsIgnoreCase(emailInput)) {
+            deleteStatusLabel.setText("Enter your exact account email before requesting a code.");
+            JOptionPane.showMessageDialog(this, "Email does not match the logged-in account.", "Verification Failed", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            accountController.sendAccountActionCode(expectedEmail);
+            deleteStatusLabel.setText("Verification code sent. Check your inbox and enter it above.");
+        } catch (RuntimeException ex) {
+            deleteStatusLabel.setText(ex.getMessage());
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Email Verification Failed", JOptionPane.ERROR_MESSAGE);
         }
     }
 
