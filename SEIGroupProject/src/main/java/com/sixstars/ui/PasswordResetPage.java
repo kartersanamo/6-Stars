@@ -18,10 +18,14 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import com.sixstars.app.Main;
 import com.sixstars.service.AccountService;
@@ -44,7 +48,7 @@ public class PasswordResetPage extends JPanel {
         this.cardLayout = cardLayout;
         this.accountService = accountService;
 
-        setLayout(new GridBagLayout());
+        setLayout(new BorderLayout());
         setBackground(UITheme.PAGE_BACKGROUND);
 
         JPanel card = new JPanel();
@@ -54,7 +58,7 @@ public class PasswordResetPage extends JPanel {
                 BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
                 new EmptyBorder(32, 44, 32, 44)
         ));
-        card.setPreferredSize(new Dimension(460, 620));
+        card.setPreferredSize(new Dimension(460, 850));
 
         JLabel title = new JLabel("Reset Password");
         title.setFont(UITheme.TITLE_FONT);
@@ -89,6 +93,13 @@ public class PasswordResetPage extends JPanel {
         stylePasswordField(newPasswordField);
         stylePasswordField(confirmPasswordField);
 
+        JLabel passwordLengthRequirementLabel = createRequirementLabel("At least 8 characters");
+        JLabel passwordUpperRequirementLabel = createRequirementLabel("At least 1 uppercase letter");
+        JLabel passwordLowerRequirementLabel = createRequirementLabel("At least 1 lowercase letter");
+        JLabel passwordDigitRequirementLabel = createRequirementLabel("At least 1 number");
+        JLabel passwordSpecialRequirementLabel = createRequirementLabel("At least 1 special character");
+        JLabel passwordMatchRequirementLabel = createRequirementLabel("Passwords match");
+
         JButton sendCodeButton = new JButton("Send Access Code");
         stylePrimaryButton(sendCodeButton);
         sendCodeButton.addActionListener(_ -> sendAccessCode());
@@ -106,47 +117,73 @@ public class PasswordResetPage extends JPanel {
             cardLayout.show(pages, "login");
         });
 
-        gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 12, 0);
+        int row = 0;
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 10, 0);
         formPanel.add(emailLabel, gbc);
 
-        gbc.gridy = 1;
+        gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 18, 0);
         formPanel.add(emailField, gbc);
 
-        gbc.gridy = 2;
+        gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 12, 0);
         formPanel.add(sendCodeButton, gbc);
 
-        gbc.gridy = 3;
-        gbc.insets = new Insets(14, 0, 12, 0);
+        gbc.gridy = row++;
+        gbc.insets = new Insets(14, 0, 10, 0);
         formPanel.add(codeLabel, gbc);
 
-        gbc.gridy = 4;
+        gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 18, 0);
         formPanel.add(codeField, gbc);
 
-        gbc.gridy = 5;
-        gbc.insets = new Insets(0, 0, 12, 0);
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 10, 0);
         formPanel.add(newPasswordLabel, gbc);
 
-        gbc.gridy = 6;
+        gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 18, 0);
         formPanel.add(newPasswordField, gbc);
 
-        gbc.gridy = 7;
-        gbc.insets = new Insets(0, 0, 12, 0);
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 10, 0);
         formPanel.add(confirmPasswordLabel, gbc);
 
-        gbc.gridy = 8;
-        gbc.insets = new Insets(0, 0, 20, 0);
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
         formPanel.add(confirmPasswordField, gbc);
 
-        gbc.gridy = 9;
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 4, 0);
+        formPanel.add(passwordLengthRequirementLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 4, 0);
+        formPanel.add(passwordUpperRequirementLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 4, 0);
+        formPanel.add(passwordLowerRequirementLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 4, 0);
+        formPanel.add(passwordDigitRequirementLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(passwordSpecialRequirementLabel, gbc);
+
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 18, 0);
+        formPanel.add(passwordMatchRequirementLabel, gbc);
+
+        gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 12, 0);
         formPanel.add(resetButton, gbc);
 
-        gbc.gridy = 10;
+        gbc.gridy = row;
         gbc.insets = new Insets(0, 0, 0, 0);
         formPanel.add(backButton, gbc);
 
@@ -160,7 +197,62 @@ public class PasswordResetPage extends JPanel {
         card.add(formPanel);
         card.add(Box.createVerticalGlue());
 
-        add(card);
+        JPanel cardContainer = new JPanel(new GridBagLayout());
+        cardContainer.setOpaque(false);
+        cardContainer.add(card);
+
+        JScrollPane scrollPane = new JScrollPane(cardContainer);
+        scrollPane.setBorder(null);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getViewport().setBackground(UITheme.PAGE_BACKGROUND);
+        scrollPane.setOpaque(false);
+
+        add(scrollPane, BorderLayout.CENTER);
+
+        Runnable refreshValidationUI = () -> {
+            String passwordText = new String(newPasswordField.getPassword());
+            String confirmPasswordText = new String(confirmPasswordField.getPassword());
+
+            boolean hasLength = passwordText.length() >= 8;
+            boolean hasUpper = passwordText.chars().anyMatch(Character::isUpperCase);
+            boolean hasLower = passwordText.chars().anyMatch(Character::isLowerCase);
+            boolean hasDigit = passwordText.chars().anyMatch(Character::isDigit);
+            boolean hasSpecial = passwordText.chars().anyMatch(ch -> !Character.isLetterOrDigit(ch));
+            boolean passwordsMatch = !passwordText.isEmpty() && passwordText.equals(confirmPasswordText);
+
+            updateRequirementLabel(passwordLengthRequirementLabel, "At least 8 characters", hasLength);
+            updateRequirementLabel(passwordUpperRequirementLabel, "At least 1 uppercase letter", hasUpper);
+            updateRequirementLabel(passwordLowerRequirementLabel, "At least 1 lowercase letter", hasLower);
+            updateRequirementLabel(passwordDigitRequirementLabel, "At least 1 number", hasDigit);
+            updateRequirementLabel(passwordSpecialRequirementLabel, "At least 1 special character", hasSpecial);
+            updateRequirementLabel(passwordMatchRequirementLabel, "Passwords match", passwordsMatch);
+
+            resetButton.setEnabled(!codeField.getText().trim().isEmpty() && hasLength && hasUpper && hasLower && hasDigit && hasSpecial && passwordsMatch);
+            updatePrimaryButtonState(resetButton);
+        };
+
+        DocumentListener validationListener = new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                refreshValidationUI.run();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                refreshValidationUI.run();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                refreshValidationUI.run();
+            }
+        };
+
+        newPasswordField.getDocument().addDocumentListener(validationListener);
+        confirmPasswordField.getDocument().addDocumentListener(validationListener);
+        codeField.getDocument().addDocumentListener(validationListener);
+        refreshValidationUI.run();
     }
 
     public void openForEmail(String email) {
@@ -267,6 +359,19 @@ public class PasswordResetPage extends JPanel {
         return label;
     }
 
+    private JLabel createRequirementLabel(String text) {
+        JLabel label = new JLabel("✗ " + text);
+        label.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        label.setHorizontalAlignment(SwingConstants.LEFT);
+        label.setForeground(new Color(180, 46, 46));
+        return label;
+    }
+
+    private void updateRequirementLabel(JLabel label, String text, boolean met) {
+        label.setText((met ? "✓ " : "✗ ") + text);
+        label.setForeground(met ? new Color(34, 139, 34) : new Color(180, 46, 46));
+    }
+
     private void styleTextField(JTextField field) {
         field.setPreferredSize(new Dimension(320, 42));
         field.setMaximumSize(new Dimension(320, 42));
@@ -296,6 +401,17 @@ public class PasswordResetPage extends JPanel {
         button.setOpaque(true);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
+        updatePrimaryButtonState(button);
+    }
+
+    private void updatePrimaryButtonState(JButton button) {
+        if (button.isEnabled()) {
+            button.setBackground(UITheme.ACCENT_GOLD);
+            button.setForeground(Color.WHITE);
+        } else {
+            button.setBackground(new Color(224, 224, 224));
+            button.setForeground(new Color(120, 120, 120));
+        }
     }
 
     private void styleSecondaryButton(JButton button) {
@@ -311,6 +427,5 @@ public class PasswordResetPage extends JPanel {
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
     }
 }
-
 
 

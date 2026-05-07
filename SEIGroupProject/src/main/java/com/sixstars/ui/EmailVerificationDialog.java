@@ -103,7 +103,6 @@ public class EmailVerificationDialog extends JDialog {
             try {
                 if (accountController.verifyAccountEmail(email, code)) {
                     verified = true;
-                    JOptionPane.showMessageDialog(this, "Email verified successfully.");
                     dispose();
                 } else {
                     JOptionPane.showMessageDialog(this, "Invalid or expired code.", "Verification Failed", JOptionPane.ERROR_MESSAGE);
