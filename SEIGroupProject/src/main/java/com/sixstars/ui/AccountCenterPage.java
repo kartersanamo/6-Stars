@@ -13,17 +13,16 @@ import java.awt.GridLayout;
 import java.awt.CardLayout;
 import java.awt.RenderingHints;
 import java.awt.Shape;
+import java.awt.geom.RoundRectangle2D;
+import java.awt.image.BufferedImage;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.geom.RoundRectangle2D;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.prefs.Preferences;
 
@@ -40,7 +39,6 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -57,6 +55,9 @@ public class AccountCenterPage extends JPanel {
     private static final int MIN_AVATAR_DIMENSION = 128;
     private static final char MASK_ECHO = new JPasswordField().getEchoChar();
     private static final String PREF_NODE_PREFIX = "account-center-";
+    private static final Color SIDEBAR_BG = new Color(245, 240, 228);
+    private static final Color SIDEBAR_HOVER = new Color(235, 225, 208);
+    private static final Color SIDEBAR_SELECTED = UITheme.ACCENT_GOLD;
 
     private final JPanel pages;
     private final CardLayout cardLayout;
@@ -144,7 +145,7 @@ public class AccountCenterPage extends JPanel {
     private JPanel createSidebar() {
         JPanel sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBackground(new Color(245, 240, 228));
+        sidebar.setBackground(SIDEBAR_BG);
         sidebar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 0, 1, UITheme.BORDER_COLOR),
                 new EmptyBorder(24, 0, 24, 0)
@@ -193,12 +194,12 @@ public class AccountCenterPage extends JPanel {
         sidebar.add(headerPanel);
 
         // Navigation buttons
-        accountInfoButton = createNavButton("Account Information", "account-info");
-        securityButton = createNavButton("Security", "security");
-        notificationsButton = createNavButton("Notifications", "notifications");
-        billingButton = createNavButton("Billing", "billing");
-        purchasesButton = createNavButton("Purchases", "purchases");
-        dangerZoneButton = createNavButton("Danger Zone", "danger-zone");
+        accountInfoButton = createNavButton("📋 Account Information", "account-info");
+        securityButton = createNavButton("🔒 Security", "security");
+        notificationsButton = createNavButton("🔔 Notifications", "notifications");
+        billingButton = createNavButton("💳 Billing", "billing");
+        purchasesButton = createNavButton("🛍️ Purchases", "purchases");
+        dangerZoneButton = createNavButton("⚠️ Danger Zone", "danger-zone");
 
         sidebar.add(accountInfoButton);
         sidebar.add(Box.createRigidArea(new Dimension(0, 8)));
@@ -235,7 +236,7 @@ public class AccountCenterPage extends JPanel {
         backButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         backButton.setFont(new Font("SansSerif", Font.PLAIN, 13));
         backButton.setForeground(UITheme.TEXT_MEDIUM);
-        backButton.setBackground(new Color(240, 240, 240));
+        backButton.setBackground(new Color(250, 248, 244));
         backButton.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(UITheme.BORDER_COLOR, 1, true),
                 new EmptyBorder(8, 16, 8, 16)
@@ -244,10 +245,6 @@ public class AccountCenterPage extends JPanel {
         backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         backButton.setOpaque(true);
         backButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
-        backButton.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(UITheme.BORDER_COLOR, 1, true),
-                new EmptyBorder(8, 16, 8, 16)
-        ));
         backButton.addActionListener(_ -> navigateBack());
 
         JPanel backPanel = new JPanel();
@@ -269,7 +266,7 @@ public class AccountCenterPage extends JPanel {
         JButton button = new JButton(text);
         button.setFont(new Font("SansSerif", Font.PLAIN, 14));
         button.setForeground(UITheme.TEXT_DARK);
-        button.setBackground(new Color(245, 240, 228));
+        button.setBackground(SIDEBAR_BG);
         button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
         button.setFocusPainted(false);
         button.setBorderPainted(false);
@@ -286,7 +283,9 @@ public class AccountCenterPage extends JPanel {
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                button.setBackground(new Color(235, 225, 208));
+                if (!button.getForeground().equals(Color.WHITE)) {
+                    button.setBackground(SIDEBAR_HOVER);
+                }
             }
 
             @Override
@@ -294,8 +293,8 @@ public class AccountCenterPage extends JPanel {
                 if (button.getModel().isArmed()) {
                     return;
                 }
-                if (!button.equals(getSelectedButton())) {
-                    button.setBackground(new Color(245, 240, 228));
+                if (!button.getForeground().equals(Color.WHITE)) {
+                    button.setBackground(SIDEBAR_BG);
                 }
             }
         });
@@ -305,27 +304,24 @@ public class AccountCenterPage extends JPanel {
 
     private void selectNavButton(JButton button) {
         // Deselect all buttons
-        accountInfoButton.setBackground(new Color(245, 240, 228));
-        securityButton.setBackground(new Color(245, 240, 228));
-        notificationsButton.setBackground(new Color(245, 240, 228));
-        billingButton.setBackground(new Color(245, 240, 228));
-        purchasesButton.setBackground(new Color(245, 240, 228));
-        dangerZoneButton.setBackground(new Color(245, 240, 228));
+        accountInfoButton.setBackground(SIDEBAR_BG);
+        accountInfoButton.setForeground(UITheme.TEXT_DARK);
+        securityButton.setBackground(SIDEBAR_BG);
+        securityButton.setForeground(UITheme.TEXT_DARK);
+        notificationsButton.setBackground(SIDEBAR_BG);
+        notificationsButton.setForeground(UITheme.TEXT_DARK);
+        billingButton.setBackground(SIDEBAR_BG);
+        billingButton.setForeground(UITheme.TEXT_DARK);
+        purchasesButton.setBackground(SIDEBAR_BG);
+        purchasesButton.setForeground(UITheme.TEXT_DARK);
+        dangerZoneButton.setBackground(SIDEBAR_BG);
+        dangerZoneButton.setForeground(UITheme.TEXT_DARK);
 
         // Select the clicked button
-        button.setBackground(UITheme.ACCENT_GOLD);
+        button.setBackground(SIDEBAR_SELECTED);
         button.setForeground(Color.WHITE);
     }
 
-    private JButton getSelectedButton() {
-        if (accountInfoButton.getForeground().equals(Color.WHITE)) return accountInfoButton;
-        if (securityButton.getForeground().equals(Color.WHITE)) return securityButton;
-        if (notificationsButton.getForeground().equals(Color.WHITE)) return notificationsButton;
-        if (billingButton.getForeground().equals(Color.WHITE)) return billingButton;
-        if (purchasesButton.getForeground().equals(Color.WHITE)) return purchasesButton;
-        if (dangerZoneButton.getForeground().equals(Color.WHITE)) return dangerZoneButton;
-        return accountInfoButton;
-    }
 
     private JPanel createAccountInfoPanel() {
         JPanel mainPanel = createContentPanel();
