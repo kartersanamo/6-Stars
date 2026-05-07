@@ -195,13 +195,13 @@ public class AccountCenterPage extends JPanel {
         navPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
         navPanel.add(createSidebarSectionLabel("Account"));
-        navPanel.add(accountInfoButton);
-        navPanel.add(securityButton);
-        navPanel.add(notificationsButton);
+        navPanel.add(createNavButtonRow(accountInfoButton));
+        navPanel.add(createNavButtonRow(securityButton));
+        navPanel.add(createNavButtonRow(notificationsButton));
         navPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         navPanel.add(createSidebarSectionLabel("Hotel Services"));
-        navPanel.add(billingButton);
-        navPanel.add(purchasesButton);
+        navPanel.add(createNavButtonRow(billingButton));
+        navPanel.add(createNavButtonRow(purchasesButton));
         sidebar.add(navPanel);
         sidebar.add(Box.createRigidArea(new Dimension(0, 12)));
 
@@ -215,7 +215,7 @@ public class AccountCenterPage extends JPanel {
         dangerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         dangerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 84));
         dangerPanel.add(createSidebarSectionLabel("Danger Zone"));
-        dangerPanel.add(dangerZoneButton);
+        dangerPanel.add(createNavButtonRow(dangerZoneButton));
         sidebar.add(dangerPanel);
 
         sidebar.add(Box.createVerticalGlue());
@@ -276,6 +276,8 @@ public class AccountCenterPage extends JPanel {
         button.setOpaque(true);
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
         button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        button.setPreferredSize(new Dimension(Integer.MAX_VALUE, 42));
+        button.setMinimumSize(new Dimension(0, 42));
 
         button.addActionListener(_ -> {
             selectNavButton(button);
@@ -332,6 +334,16 @@ public class AccountCenterPage extends JPanel {
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         label.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
         return label;
+    }
+
+    private JPanel createNavButtonRow(JButton button) {
+        JPanel row = new JPanel();
+        row.setOpaque(false);
+        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        row.add(button);
+        return row;
     }
 
 
