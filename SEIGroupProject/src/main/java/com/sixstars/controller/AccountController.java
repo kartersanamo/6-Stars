@@ -66,6 +66,20 @@ public class AccountController {
         return accountService.getAccountByEmail(email);
     }
 
+    public void sendAccountActionCode(String email) {
+        accountService.sendAccountActionCode(email);
+    }
+
+    public boolean verifyAccountActionCode(String email, String code) {
+        return accountService.verifyAccountActionCode(email, code);
+    }
+
+    public void deleteCurrentAccount() {
+        ensureCurrentAccount();
+        accountService.deleteAccount(currentAccount.getEmail());
+        currentAccount = null;
+    }
+
     private void ensureCurrentAccount() {
         if (currentAccount == null) {
             throw new IllegalStateException("No account is currently logged in.");

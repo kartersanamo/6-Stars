@@ -340,9 +340,81 @@ public class AccountService {
         sendVerificationCode(email);
     }
 
+    public void sendAccountActionCode(String email) {
+        issueActionCode(email, "Account action verification");
+    }
+
+    public boolean verifyAccountActionCode(String email, String code) {
+        String normalizedEmail = email == null ? null : email.trim().toLowerCase();
+        if (normalizedEmail == null || normalizedEmail.isBlank() || code == null || code.isBlank()) {
+            return false;
+        }
+
+        Account account = accountDAO.getAccountByEmail(normalizedEmail);
+        if (account == null || account.getVerificationCodeHash() == null || account.getVerificationExpiresAt() == null) {
+            return false;
+        }
+
+        Instant expiresAt;
+        try {
+            expiresAt = Instant.parse(account.getVerificationExpiresAt());
+        } catch (Exception ex) {
+            return false;
+        }
+
+        if (Instant.now().isAfter(expiresAt)) {
+            return false;
+        }
+
+        if (!hashPassword(code).equals(account.getVerificationCodeHash())) {
+            return false;
+        }
+
+        accountDAO.updateVerificationState(normalizedEmail, account.isEmailVerified(), null, null);
+        return true;
+    }
+
+    public void deleteAccount(String email) {
+        String normalizedEmail = email == null ? null : email.trim().toLowerCase();
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            throw new RuntimeException("Account email is required.");
+        }
+        if (accountDAO.getAccountByEmail(normalizedEmail) == null) {
+            throw new RuntimeException("Account not found.");
+        }
+        accountDAO.deleteAccountByEmail(normalizedEmail);
+    }
+
     private String generateVerificationCode() {
         int value = 100000 + SECURE_RANDOM.nextInt(900000);
         return Integer.toString(value);
+    }
+
+    private void issueActionCode(String email, String purpose) {
+        if (mailgunEmailSender == null) {
+            throw new RuntimeException("Mailgun is not configured. Set MAILGUN_API_KEY, MAILGUN_DOMAIN, and MAILGUN_FROM_EMAIL.");
+        }
+
+        String normalizedEmail = email == null ? null : email.trim().toLowerCase();
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            throw new RuntimeException("Email is required.");
+        }
+
+        Account account = accountDAO.getAccountByEmail(normalizedEmail);
+        if (account == null) {
+            throw new RuntimeException("Account not found.");
+        }
+
+        String code = generateVerificationCode();
+        String codeHash = hashPassword(code);
+        String expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES).toString();
+        accountDAO.updateVerificationState(normalizedEmail, account.isEmailVerified(), codeHash, expiresAt);
+
+        try {
+            mailgunEmailSender.sendVerificationCode(normalizedEmail, code);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send " + purpose.toLowerCase() + " email: " + e.getMessage(), e);
+        }
     }
 
 

@@ -634,6 +634,38 @@ public class AccountCenterPage extends JPanel {
         logoutCard.add(logoutButton);
 
         mainPanel.add(logoutCard);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        JPanel deleteCard = createCardPanel();
+        deleteCard.setBackground(new Color(252, 244, 244));
+        deleteCard.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(220, 150, 150), 1, true),
+                new EmptyBorder(20, 20, 20, 20)
+        ));
+        deleteCard.add(createSectionTitle("Delete Account", "Permanently remove your account from the system"));
+        deleteCard.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        JLabel deleteInfo = new JLabel("<html>This action is permanent and cannot be undone. " +
+                "You must verify your email first, then pass two confirmations.</html>");
+        deleteInfo.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        deleteInfo.setForeground(UITheme.TEXT_MEDIUM);
+        deleteCard.add(deleteInfo);
+        deleteCard.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        JButton deleteAccountButton = new JButton("Delete My Account");
+        deleteAccountButton.setFont(new Font("SansSerif", Font.BOLD, 14));
+        deleteAccountButton.setFocusPainted(false);
+        deleteAccountButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        deleteAccountButton.setOpaque(true);
+        deleteAccountButton.setBorderPainted(false);
+        deleteAccountButton.setPreferredSize(new Dimension(10, 42));
+        deleteAccountButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        deleteAccountButton.setBackground(new Color(179, 35, 35));
+        deleteAccountButton.setForeground(Color.WHITE);
+        deleteAccountButton.addActionListener(_ -> deleteAccountWithVerification());
+        deleteCard.add(deleteAccountButton);
+
+        mainPanel.add(deleteCard);
 
         return mainPanel;
     }
@@ -1001,6 +1033,92 @@ public class AccountCenterPage extends JPanel {
         AccountController.currentAccount = null;
         Main.headerBar.refreshInfo();
         cardLayout.show(pages, "home");
+    }
+
+    private void deleteAccountWithVerification() {
+        Account account = AccountController.currentAccount;
+        if (account == null) {
+            return;
+        }
+
+        String expectedEmail = account.getEmail();
+        String emailInput = JOptionPane.showInputDialog(
+                this,
+                "Enter your account email to continue:",
+                "Verify Account Email",
+                JOptionPane.QUESTION_MESSAGE
+        );
+        if (emailInput == null) {
+            return;
+        }
+        if (!expectedEmail.equalsIgnoreCase(emailInput.trim())) {
+            JOptionPane.showMessageDialog(this, "Email does not match the logged-in account.", "Verification Failed", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            accountController.sendAccountActionCode(expectedEmail);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Email Verification Failed", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String codeInput = JOptionPane.showInputDialog(
+                this,
+                "Enter the 6-digit verification code sent to your email:",
+                "Email Verification Code",
+                JOptionPane.QUESTION_MESSAGE
+        );
+        if (codeInput == null || codeInput.trim().isEmpty()) {
+            return;
+        }
+        if (!accountController.verifyAccountActionCode(expectedEmail, codeInput.trim())) {
+            JOptionPane.showMessageDialog(this, "Invalid or expired verification code.", "Verification Failed", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int confirmStepOne = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to permanently delete this account?",
+                "Confirm Account Deletion",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        if (confirmStepOne != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        String confirmStepTwo = JOptionPane.showInputDialog(
+                this,
+                "Type DELETE to permanently remove your account:",
+                "Final Confirmation",
+                JOptionPane.WARNING_MESSAGE
+        );
+        if (confirmStepTwo == null) {
+            return;
+        }
+        if (!"DELETE".equals(confirmStepTwo.trim())) {
+            JOptionPane.showMessageDialog(this, "Final confirmation text did not match.", "Deletion Cancelled", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            String previousImagePath = account.getProfileImagePath();
+            accountController.deleteCurrentAccount();
+            deleteManagedAvatar(previousImagePath);
+            try {
+                preferencesFor(account).removeNode();
+            } catch (Exception ignored) {
+            }
+            if (Main.shopPage != null) {
+                Main.shopPage.clearTransientCart();
+            }
+            Main.headerBar.refreshInfo();
+            JOptionPane.showMessageDialog(this, "Your account has been deleted.", "Account Deleted", JOptionPane.INFORMATION_MESSAGE);
+            cardLayout.show(pages, "home");
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Deletion Failed", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void navigateBack() {
