@@ -11,10 +11,12 @@ import java.util.stream.Collectors;
 public class ReservationService {
     private final ReservationDAO reservationDAO;
     private final RoomDAO roomDAO;
+    private final NotificationService notificationService;
 
     public ReservationService() {
         reservationDAO = new ReservationDAO();
         roomDAO = new RoomDAO();
+        notificationService = NotificationService.getInstance();
     }
 
     public List<Room> filterAvailableRooms(LocalDate start, LocalDate end, BedType type, Theme theme, QualityLevel quality) {
@@ -67,6 +69,8 @@ public class ReservationService {
 
         // 5. Save
         reservationDAO.saveReservation(newBooking);
+        notificationService.publish(NotificationType.RESERVATION_UPDATES, guestEmail,
+                "Reservation booked for " + start + " to " + end + ".");
 
         return newBooking;
     }
@@ -92,6 +96,11 @@ public class ReservationService {
 
     // Updates existing reservation
     public void updateReservation(int id, LocalDate start, LocalDate end, List<Room> rooms) {
+        Reservation existingReservation = reservationDAO.getAllReservations().stream()
+                .filter(r -> r.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
+
         if (start == null || end == null) {
             throw new IllegalStateException("Start date and end date are required.");
         }
@@ -113,6 +122,8 @@ public class ReservationService {
         }
 
         reservationDAO.updateReservationDates(id, start, end);
+        notificationService.publish(NotificationType.RESERVATION_UPDATES, existingReservation.getGuestEmail(),
+                "Reservation dates updated to " + start + " through " + end + ".");
     }
 
     public void updateStatus(int reservationId, String status) {
@@ -140,6 +151,13 @@ public class ReservationService {
         }
 
         reservationDAO.updateReservationStatus(reservationId, status);
+        if ("CHECKED_IN".equalsIgnoreCase(status)) {
+            notificationService.publish(NotificationType.RESERVATION_UPDATES, res.getGuestEmail(),
+                    "You have been checked in for reservation #" + reservationId + ".");
+        } else if ("CHECKED_OUT".equalsIgnoreCase(status)) {
+            notificationService.publish(NotificationType.RESERVATION_UPDATES, res.getGuestEmail(),
+                    "You have been checked out for reservation #" + reservationId + ".");
+        }
     }
 
     public String getRoomStatus(Room room, List<Reservation> allReservations) {
@@ -182,6 +200,8 @@ public class ReservationService {
             // If today is past the end date and status is not already checked out
             if (today.isAfter(res.getEndDate()) && !"CHECKED_OUT".equalsIgnoreCase(res.getStatus())) {
                 reservationDAO.updateReservationStatus(res.getId(), "CHECKED_OUT");
+                notificationService.publish(NotificationType.RESERVATION_UPDATES, res.getGuestEmail(),
+                        "Reservation #" + res.getId() + " was automatically checked out.");
             }
         }
     }
@@ -221,6 +241,8 @@ public class ReservationService {
 
         reservationDAO.updateReservationStatus(res.getId(), "CANCELLED");
         reservationDAO.updateReservationCost(res.getId(), penalty);
+        notificationService.publish(NotificationType.RESERVATION_UPDATES, res.getGuestEmail(),
+                "Reservation #" + res.getId() + " was cancelled.");
 
         if (penalty > 0) {
             return String.format(
