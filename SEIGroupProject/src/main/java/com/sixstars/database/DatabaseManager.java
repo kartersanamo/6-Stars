@@ -119,6 +119,32 @@ public class DatabaseManager {
             addColumnIfMissing(conn, "reservations", "ratePlan", "TEXT DEFAULT 'STANDARD'");
             ensureReservationRoomsForeignKey(conn);
 
+            stmt.execute("CREATE TABLE IF NOT EXISTS saved_payment_methods (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "guest_email TEXT NOT NULL, " +
+                    "nickname TEXT, " +
+                    "card_brand TEXT NOT NULL, " +
+                    "last_four TEXT NOT NULL, " +
+                    "exp_month INTEGER NOT NULL, " +
+                    "exp_year INTEGER NOT NULL, " +
+                    "name_on_card TEXT NOT NULL, " +
+                    "line1 TEXT NOT NULL, " +
+                    "line2 TEXT, " +
+                    "city TEXT NOT NULL, " +
+                    "state TEXT NOT NULL, " +
+                    "zip TEXT NOT NULL, " +
+                    "phone TEXT, " +
+                    "created_at TEXT NOT NULL)");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS guest_payments (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "guest_email TEXT NOT NULL, " +
+                    "amount REAL NOT NULL, " +
+                    "payment_kind TEXT NOT NULL, " +
+                    "method_summary TEXT NOT NULL, " +
+                    "saved_method_id INTEGER, " +
+                    "created_at TEXT NOT NULL)");
+
         } catch (SQLException e) {
             e.printStackTrace();
         }

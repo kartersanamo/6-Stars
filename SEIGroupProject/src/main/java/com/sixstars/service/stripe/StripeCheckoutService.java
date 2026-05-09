@@ -118,6 +118,45 @@ public final class StripeCheckoutService {
         return SessionCreateResult.ok(session.getUrl(), session.getId(), estimatedTotal);
     }
 
+    /**
+     * Checkout for the exact amount still owed in the app (charges minus payments already recorded).
+     * Uses one line item so the Stripe total always matches the in-app ledger after partial simulated payments.
+     */
+    public SessionCreateResult createCheckoutSessionPayAmountDue(String guestEmail, double amountDueUsd,
+            String successUrlMustIncludeSessionMacro, String cancelUrl) throws StripeException {
+        configureKeyIfAbsent();
+        String normalizedEmail = guestEmail.trim().toLowerCase(Locale.ROOT);
+        BigDecimal dueBd = BigDecimal.valueOf(amountDueUsd).setScale(2, RoundingMode.HALF_UP);
+        long cents = dueBd.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact();
+        if (cents <= 0) {
+            return SessionCreateResult.fail("Nothing to pay right now.");
+        }
+        if (cents < MIN_CHARGE_US_CENTS) {
+            return SessionCreateResult.fail(
+                    "Stripe requires at least $" + MIN_CHARGE_US_CENTS / 100.0 + " USD per charge.");
+        }
+
+        String desc = "6 Stars Hotel — remaining guest balance (" + normalizedEmail + ")";
+        SessionCreateParams.LineItem lineItem = buildLineUsd(desc, "Guest balance due", cents);
+
+        SessionCreateParams.Builder builder = SessionCreateParams.builder()
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .setBillingAddressCollection(SessionCreateParams.BillingAddressCollection.REQUIRED)
+                .setSuccessUrl(successUrlMustIncludeSessionMacro)
+                .setCancelUrl(cancelUrl)
+                .setCustomerEmail(normalizedEmail)
+                .setAllowPromotionCodes(Boolean.TRUE)
+                .putMetadata("guest_email", normalizedEmail)
+                .putMetadata("amount_due_usd", dueBd.toPlainString());
+
+        SessionCreateParams params = appendCustomer(builder, guestEmail)
+                .addLineItem(lineItem)
+                .build();
+
+        Session session = Session.create(params);
+        return SessionCreateResult.ok(session.getUrl(), session.getId(), cents);
+    }
+
     /** Saved card path — card details captured only on Stripe; we store customer id afterward. */
     public SessionCreateResult createCheckoutSessionAttachPaymentMethodSetup(String guestEmail,
             String successUrlMustIncludeSessionMacro, String cancelUrl) throws StripeException {

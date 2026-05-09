@@ -4,8 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
-import java.awt.Toolkit;
-import java.awt.datatransfer.StringSelection;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -37,6 +35,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.plaf.basic.BasicButtonUI;
 
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
@@ -48,15 +47,14 @@ import com.sixstars.model.ShopOrder;
 import com.sixstars.model.ShopOrderItem;
 import com.sixstars.service.NotificationService;
 import com.sixstars.service.BillingService;
+import com.sixstars.service.GuestLedgerService;
+import com.sixstars.service.SavedPaymentMethodService;
+import com.sixstars.model.SavedPaymentMethod;
 import com.sixstars.service.stripe.PaymentBillingValidator;
-import com.sixstars.service.stripe.StripeCheckoutService;
-import com.sixstars.service.stripe.StripeCheckoutSessionReader;
 import com.sixstars.service.stripe.StripeConfig;
 import com.sixstars.service.stripe.StripeConnectOAuthTokenClient;
 import com.sixstars.service.stripe.StripeGuestPreferences;
 import com.sixstars.service.stripe.StripeHostedLocalServer;
-import com.stripe.exception.StripeException;
-
 public class AccountCenterPage extends JPanel {
     private static final int AVATAR_SIZE = 120;
     private static final int AVATAR_EXPORT_SIZE = 512;
@@ -78,7 +76,8 @@ public class AccountCenterPage extends JPanel {
     private final AccountController accountController;
     private final Preferences preferencesRoot = Preferences.userNodeForPackage(AccountCenterPage.class);
     private final BillingService billingService = new BillingService();
-    private final StripeCheckoutService stripeCheckoutService = new StripeCheckoutService();
+    private final SavedPaymentMethodService savedPaymentMethodService = new SavedPaymentMethodService();
+    private final GuestLedgerService guestLedgerService = new GuestLedgerService();
 
     // Sidebar navigation buttons
     private JButton accountInfoButton;
@@ -91,10 +90,7 @@ public class AccountCenterPage extends JPanel {
     private JPanel stripeConnectBannerOuter;
     private JLabel stripeBannerStatusLarge;
     private JLabel stripeBannerDetailSmall;
-    private JButton stripeConnectAuthorizeButton;
-    private JButton stripeConnectDisconnectButton;
-    private JButton copyStripeOAuthRedirectButton;
-    private JButton viewOAuthSetupButton;
+    private JButton stripeConnectSoleActionButton;
     private JLabel stripeIdsSummaryLabel;
 
     private JTextField payFullNameField;
@@ -107,9 +103,12 @@ public class AccountCenterPage extends JPanel {
     private JPasswordField payCardNumberField;
     private JTextField payCardExpiryField;
     private JPasswordField payCardCvvField;
-    private JButton paySaveBillingButton;
-    private JButton payAddCardStripeButton;
+    private JTextField payCardNicknameField;
     private JLabel paymentWorkspaceStatusLabel;
+    private JPanel paymentMethodsListPanel;
+    private JPanel addPaymentFormOuter;
+    private JButton toggleAddPaymentFormButton;
+    private JLabel paymentBalanceSnapshotLabel;
     private JButton dangerZoneButton;
 
     // Content panels for each section
@@ -863,7 +862,8 @@ public class AccountCenterPage extends JPanel {
         mainPanel.add(subtitle);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        stripeConnectBannerOuter = new JPanel(new BorderLayout(12, 8));
+        stripeConnectBannerOuter = new JPanel();
+        stripeConnectBannerOuter.setLayout(new BoxLayout(stripeConnectBannerOuter, BoxLayout.Y_AXIS));
         stripeConnectBannerOuter.setOpaque(true);
         stripeConnectBannerOuter.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(214, 160, 160), 1, true),
@@ -871,65 +871,97 @@ public class AccountCenterPage extends JPanel {
         ));
         stripeConnectBannerOuter.setBackground(new Color(255, 235, 235));
         stripeConnectBannerOuter.setAlignmentX(Component.LEFT_ALIGNMENT);
-        stripeConnectBannerOuter.setMaximumSize(new Dimension(Integer.MAX_VALUE, 320));
+        stripeConnectBannerOuter.setMaximumSize(new Dimension(Integer.MAX_VALUE, 280));
 
-        JPanel bannerText = new JPanel();
-        bannerText.setLayout(new BoxLayout(bannerText, BoxLayout.Y_AXIS));
-        bannerText.setOpaque(false);
         stripeBannerStatusLarge = new JLabel("Not connected");
-        stripeBannerStatusLarge.setFont(new Font("SansSerif", Font.BOLD, 18));
+        stripeBannerStatusLarge.setFont(new Font("SansSerif", Font.BOLD, 20));
         stripeBannerStatusLarge.setForeground(new Color(160, 40, 40));
-        stripeBannerDetailSmall = new JLabel(" ");
-        stripeBannerDetailSmall.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        stripeBannerStatusLarge.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        stripeBannerDetailSmall = new JLabel(stripeNotConnectedInstructionPlain());
+        stripeBannerDetailSmall.setFont(new Font("SansSerif", Font.PLAIN, 14));
         stripeBannerDetailSmall.setForeground(UITheme.TEXT_MEDIUM);
-        stripeBannerDetailSmall.setText(stripeOAuthRedirectHelpHtml());
+        stripeBannerDetailSmall.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         stripeIdsSummaryLabel = new JLabel(" ");
         stripeIdsSummaryLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         stripeIdsSummaryLabel.setForeground(UITheme.TEXT_MEDIUM);
+        stripeIdsSummaryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JPanel bannerButtons = new JPanel();
-        bannerButtons.setLayout(new BoxLayout(bannerButtons, BoxLayout.Y_AXIS));
-        bannerButtons.setOpaque(false);
-        stripeConnectAuthorizeButton = new JButton("Connect your Stripe account");
-        styleButton(stripeConnectAuthorizeButton, true);
-        stripeConnectAuthorizeButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
-        stripeConnectAuthorizeButton.addActionListener(_ -> beginStripeOAuthFromAccountCenter());
-        stripeConnectDisconnectButton = new JButton("Disconnect");
-        styleButton(stripeConnectDisconnectButton, false);
-        stripeConnectDisconnectButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
-        stripeConnectDisconnectButton.addActionListener(_ -> disconnectStripeSandboxLink());
-        copyStripeOAuthRedirectButton = new JButton("Copy OAuth redirect URL");
-        styleButton(copyStripeOAuthRedirectButton, false);
-        copyStripeOAuthRedirectButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
-        copyStripeOAuthRedirectButton.addActionListener(_ -> copyStripeOAuthRedirectUriToClipboard());
-        viewOAuthSetupButton = new JButton("View OAuth setup in app");
-        styleButton(viewOAuthSetupButton, false);
-        viewOAuthSetupButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
-        viewOAuthSetupButton.addActionListener(_ -> showStripeOAuthSetupInDialog(false));
-        bannerButtons.add(stripeConnectAuthorizeButton);
-        bannerButtons.add(Box.createRigidArea(new Dimension(0, 8)));
-        bannerButtons.add(stripeConnectDisconnectButton);
-        bannerButtons.add(Box.createRigidArea(new Dimension(0, 8)));
-        bannerButtons.add(copyStripeOAuthRedirectButton);
-        bannerButtons.add(Box.createRigidArea(new Dimension(0, 8)));
-        bannerButtons.add(viewOAuthSetupButton);
+        stripeConnectSoleActionButton = new JButton("Connect with Stripe");
+        stripeConnectSoleActionButton.setUI(new BasicButtonUI());
+        stripeConnectSoleActionButton.setFocusPainted(false);
+        stripeConnectSoleActionButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        stripeConnectSoleActionButton.setFont(new Font("SansSerif", Font.BOLD, 14));
 
-        bannerText.add(stripeBannerStatusLarge);
-        bannerText.add(Box.createRigidArea(new Dimension(0, 6)));
-        bannerText.add(stripeBannerDetailSmall);
-        bannerText.add(Box.createRigidArea(new Dimension(0, 10)));
-        bannerText.add(stripeIdsSummaryLabel);
+        JPanel soleActionRow = new JPanel(new BorderLayout(0, 0));
+        soleActionRow.setOpaque(false);
+        soleActionRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        soleActionRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
+        soleActionRow.add(stripeConnectSoleActionButton, BorderLayout.CENTER);
 
-        stripeConnectBannerOuter.add(bannerText, BorderLayout.CENTER);
-        stripeConnectBannerOuter.add(bannerButtons, BorderLayout.EAST);
+        stripeConnectBannerOuter.add(stripeBannerStatusLarge);
+        stripeConnectBannerOuter.add(Box.createRigidArea(new Dimension(0, 8)));
+        stripeConnectBannerOuter.add(stripeBannerDetailSmall);
+        stripeConnectBannerOuter.add(Box.createRigidArea(new Dimension(0, 10)));
+        stripeConnectBannerOuter.add(stripeIdsSummaryLabel);
+        stripeConnectBannerOuter.add(Box.createRigidArea(new Dimension(0, 16)));
+        stripeConnectBannerOuter.add(soleActionRow);
 
         mainPanel.add(stripeConnectBannerOuter);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 22)));
 
-        JPanel billingCard = createCardPanel();
-        billingCard.add(createSectionTitle("Billing & card practice form",
-                "Validate addresses and card-shaped fields locally — card PAN is typed only during Stripe's hosted Checkout."));
-        billingCard.add(Box.createRigidArea(new Dimension(0, 14)));
+        JPanel balanceSnapshot = createCardPanel();
+        balanceSnapshot.setBackground(BILLING_SECTION_BG);
+        balanceSnapshot.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(230, 221, 199), 1, true),
+                new EmptyBorder(16, 18, 16, 18)
+        ));
+        balanceSnapshot.add(createSectionTitle("Balance snapshot", "Charges minus payments recorded in this app"));
+        balanceSnapshot.add(Box.createRigidArea(new Dimension(0, 10)));
+        paymentBalanceSnapshotLabel = new JLabel(" ");
+        paymentBalanceSnapshotLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        paymentBalanceSnapshotLabel.setForeground(UITheme.TEXT_MEDIUM);
+        paymentBalanceSnapshotLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        balanceSnapshot.add(paymentBalanceSnapshotLabel);
+        mainPanel.add(balanceSnapshot);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        JPanel methodsCard = createCardPanel();
+        methodsCard.setBackground(BILLING_SECTION_BG);
+        methodsCard.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(231, 223, 204), 1, true),
+                new EmptyBorder(18, 18, 18, 18)
+        ));
+        methodsCard.add(createSectionTitle("Saved payment methods",
+                "Cards you save here are stored securely in the hotel database (last four digits only)."));
+        methodsCard.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        paymentMethodsListPanel = new JPanel();
+        paymentMethodsListPanel.setLayout(new BoxLayout(paymentMethodsListPanel, BoxLayout.Y_AXIS));
+        paymentMethodsListPanel.setOpaque(false);
+        paymentMethodsListPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        methodsCard.add(paymentMethodsListPanel);
+        methodsCard.add(Box.createRigidArea(new Dimension(0, 14)));
+
+        toggleAddPaymentFormButton = new JButton("Add a payment method");
+        styleButton(toggleAddPaymentFormButton, true);
+        toggleAddPaymentFormButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        toggleAddPaymentFormButton.addActionListener(_ -> toggleAddPaymentFormVisibility());
+        methodsCard.add(toggleAddPaymentFormButton);
+        methodsCard.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        addPaymentFormOuter = new JPanel();
+        addPaymentFormOuter.setLayout(new BoxLayout(addPaymentFormOuter, BoxLayout.Y_AXIS));
+        addPaymentFormOuter.setOpaque(true);
+        addPaymentFormOuter.setBackground(new Color(255, 255, 252));
+        addPaymentFormOuter.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(210, 200, 180), 1, true),
+                new EmptyBorder(16, 16, 16, 16)
+        ));
+        addPaymentFormOuter.setAlignmentX(Component.LEFT_ALIGNMENT);
+        addPaymentFormOuter.setMaximumSize(new Dimension(Integer.MAX_VALUE, 720));
+        addPaymentFormOuter.setVisible(false);
 
         payFullNameField = new JTextField();
         payAddressLine1Field = new JTextField();
@@ -938,83 +970,60 @@ public class AccountCenterPage extends JPanel {
         payStateField = new JTextField();
         payZipField = new JTextField();
         payPhoneField = new JTextField();
+        payCardNicknameField = new JTextField();
         payCardNumberField = new JPasswordField();
         payCardExpiryField = new JTextField();
         payCardCvvField = new JPasswordField();
 
-        billingCard.add(makeLabeledStripeFieldRow("Full name", payFullNameField));
-        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
-        billingCard.add(makeLabeledStripeFieldRow("Billing address line 1", payAddressLine1Field));
-        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
-        billingCard.add(makeLabeledStripeFieldRow("Address line 2 (optional)", payAddressLine2Field));
-        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
-
+        JLabel formIntro = new JLabel("<html>All fields are validated before the card is saved. We never store your full card number.</html>");
+        formIntro.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        formIntro.setForeground(UITheme.TEXT_MEDIUM);
+        formIntro.setAlignmentX(Component.LEFT_ALIGNMENT);
+        addPaymentFormOuter.add(formIntro);
+        addPaymentFormOuter.add(Box.createRigidArea(new Dimension(0, 12)));
+        addPaymentFormOuter.add(makeLabeledStripeFieldRow("Card nickname (optional)", payCardNicknameField));
+        addPaymentFormOuter.add(Box.createRigidArea(new Dimension(0, 10)));
+        addPaymentFormOuter.add(makeLabeledStripeFieldRow("Name on card", payFullNameField));
+        addPaymentFormOuter.add(Box.createRigidArea(new Dimension(0, 10)));
+        addPaymentFormOuter.add(makeLabeledStripeFieldRow("Billing address line 1", payAddressLine1Field));
+        addPaymentFormOuter.add(Box.createRigidArea(new Dimension(0, 10)));
+        addPaymentFormOuter.add(makeLabeledStripeFieldRow("Address line 2 (optional)", payAddressLine2Field));
+        addPaymentFormOuter.add(Box.createRigidArea(new Dimension(0, 10)));
         JPanel cityStateZip = new JPanel(new GridLayout(1, 3, 14, 0));
         cityStateZip.setOpaque(false);
-        JPanel cityWrap = labeledStripeMini("City", payCityField);
-        JPanel stateWrap = labeledStripeMini("State (2-letter)", payStateField);
-        JPanel zipWrap = labeledStripeMini("ZIP code", payZipField);
-        cityStateZip.add(cityWrap);
-        cityStateZip.add(stateWrap);
-        cityStateZip.add(zipWrap);
+        cityStateZip.add(labeledStripeMini("City", payCityField));
+        cityStateZip.add(labeledStripeMini("State (2-letter)", payStateField));
+        cityStateZip.add(labeledStripeMini("ZIP code", payZipField));
         cityStateZip.setAlignmentX(Component.LEFT_ALIGNMENT);
         cityStateZip.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
-        billingCard.add(cityStateZip);
-
-        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
-        billingCard.add(makeLabeledStripeFieldRow("Phone (optional)", payPhoneField));
-        billingCard.add(Box.createRigidArea(new Dimension(0, 14)));
-        JLabel cardHint = new JLabel("<html>Use any Stripe test PAN (for example <code>4242 4242 4242 4242</code>) here for dry-run verification. Actual card vaulting occurs on Stripe's page.</html>");
-        cardHint.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        cardHint.setForeground(UITheme.TEXT_MEDIUM);
-        billingCard.add(cardHint);
-        billingCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        billingCard.add(makeLabeledStripeFieldPassword("Practice card number", payCardNumberField));
-        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
+        addPaymentFormOuter.add(cityStateZip);
+        addPaymentFormOuter.add(Box.createRigidArea(new Dimension(0, 10)));
+        addPaymentFormOuter.add(makeLabeledStripeFieldRow("Phone (optional)", payPhoneField));
+        addPaymentFormOuter.add(Box.createRigidArea(new Dimension(0, 14)));
+        addPaymentFormOuter.add(makeLabeledStripeFieldPassword("Card number", payCardNumberField));
+        addPaymentFormOuter.add(Box.createRigidArea(new Dimension(0, 10)));
         JPanel expCvvRow = new JPanel(new GridLayout(1, 2, 14, 0));
         expCvvRow.setOpaque(false);
         expCvvRow.add(labeledStripeMini("Expiry MM/YY", payCardExpiryField));
-        expCvvRow.add(makeLabeledStripeFieldPasswordMini("Practice CVV", payCardCvvField));
+        expCvvRow.add(makeLabeledStripeFieldPasswordMini("CVV", payCardCvvField));
         expCvvRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         expCvvRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
-        billingCard.add(expCvvRow);
-        billingCard.add(Box.createRigidArea(new Dimension(0, 16)));
-
-        paySaveBillingButton = new JButton("Save billing profile on this computer");
-        styleButton(paySaveBillingButton, false);
-        paySaveBillingButton.addActionListener(_ -> saveStripeBillingSnapshot());
-        payAddCardStripeButton = new JButton("Open Stripe sandbox to vault a card");
-        styleButton(payAddCardStripeButton, true);
-        payAddCardStripeButton.addActionListener(_ -> startStripeHostedSavedCardCapture());
-
-        JPanel payActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        payActions.setOpaque(false);
-        payActions.setAlignmentX(Component.LEFT_ALIGNMENT);
-        payActions.add(paySaveBillingButton);
-        payActions.add(payAddCardStripeButton);
-        billingCard.add(payActions);
-        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
+        addPaymentFormOuter.add(expCvvRow);
+        addPaymentFormOuter.add(Box.createRigidArea(new Dimension(0, 16)));
+        JButton savePaymentMethodButton = new JButton("Save payment method");
+        styleButton(savePaymentMethodButton, true);
+        savePaymentMethodButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        savePaymentMethodButton.addActionListener(_ -> saveNewPaymentMethodFromForm());
+        addPaymentFormOuter.add(savePaymentMethodButton);
+        addPaymentFormOuter.add(Box.createRigidArea(new Dimension(0, 10)));
         paymentWorkspaceStatusLabel = new JLabel(" ");
         paymentWorkspaceStatusLabel.setFont(new Font("SansSerif", Font.ITALIC, 12));
         paymentWorkspaceStatusLabel.setForeground(UITheme.TEXT_MEDIUM);
-        billingCard.add(paymentWorkspaceStatusLabel);
+        paymentWorkspaceStatusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        addPaymentFormOuter.add(paymentWorkspaceStatusLabel);
 
-        mainPanel.add(billingCard);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 18)));
-
-        JPanel shopPeek = createCardPanel();
-        shopPeek.add(createSectionTitle("Need something delivered?", "You can still browse the boutique from the toolbar."));
-        shopPeek.add(Box.createRigidArea(new Dimension(0, 12)));
-        JButton viewShopQuick = new JButton("Open Shop");
-        viewShopQuick.addActionListener(_ -> {
-            if (Main.shopPage != null) {
-                Main.shopPage.refreshPage();
-            }
-            cardLayout.show(pages, "shop");
-        });
-        styleButton(viewShopQuick, false);
-        shopPeek.add(viewShopQuick);
-        mainPanel.add(shopPeek);
+        methodsCard.add(addPaymentFormOuter);
+        mainPanel.add(methodsCard);
 
         return mainPanel;
     }
@@ -1425,6 +1434,30 @@ public class AccountCenterPage extends JPanel {
         repaint();
     }
 
+    /** Opens the Payment tab (e.g. from Billing when Stripe needs to be connected). */
+    public void navigateToPaymentTab() {
+        navigateToPaymentTab(false);
+    }
+
+    /**
+     * @param expandAddPaymentForm when true, opens the collapsible “add card” form (e.g. from Billing “Add a card”).
+     */
+    public void navigateToPaymentTab(boolean expandAddPaymentForm) {
+        SwingUtilities.invokeLater(() -> {
+            selectNavButton(paymentButton);
+            contentLayout.show(contentArea, "payment");
+            refreshPaymentWorkspace();
+            if (expandAddPaymentForm && addPaymentFormOuter != null && toggleAddPaymentFormButton != null) {
+                addPaymentFormOuter.setVisible(true);
+                toggleAddPaymentFormButton.setText("Hide payment form");
+                addPaymentFormOuter.revalidate();
+            }
+            if (Main.headerBar != null) {
+                Main.headerBar.refreshInfo();
+            }
+        });
+    }
+
     private void resetForNoAccount() {
         nameLabel.setText("User");
         emailLabel.setText("email@example.com");
@@ -1438,7 +1471,9 @@ public class AccountCenterPage extends JPanel {
         showPasswordsCheck.setSelected(false);
         togglePasswordVisibility(false);
 
-        paymentWorkspaceStatusLabel.setText(" ");
+        if (paymentWorkspaceStatusLabel != null) {
+            paymentWorkspaceStatusLabel.setText(" ");
+        }
         if (payFullNameField != null) {
             payFullNameField.setText("");
             payAddressLine1Field.setText("");
@@ -1451,6 +1486,19 @@ public class AccountCenterPage extends JPanel {
             payCardExpiryField.setText("");
             payCardCvvField.setText("");
         }
+        if (payCardNicknameField != null) {
+            payCardNicknameField.setText("");
+        }
+        if (paymentBalanceSnapshotLabel != null) {
+            paymentBalanceSnapshotLabel.setText(" ");
+        }
+        if (addPaymentFormOuter != null) {
+            addPaymentFormOuter.setVisible(false);
+        }
+        if (toggleAddPaymentFormButton != null) {
+            toggleAddPaymentFormButton.setText("Add a payment method");
+        }
+        rebuildPaymentMethodsList();
     }
 
     private void loadNotificationPreferences(Account account) {
@@ -1972,12 +2020,17 @@ public class AccountCenterPage extends JPanel {
         }
         Account account = AccountController.currentAccount;
         if (account == null) {
-            paymentWorkspaceStatusLabel.setText("");
-            payCardNumberField.setText("");
-            payCardCvvField.setText("");
+            if (paymentWorkspaceStatusLabel != null) {
+                paymentWorkspaceStatusLabel.setText("");
+            }
+            if (payCardNumberField != null) {
+                payCardNumberField.setText("");
+                payCardCvvField.setText("");
+            }
             return;
         }
-        StripeGuestPreferences.BillingProfileSnapshot snap = StripeGuestPreferences.loadBillingProfile(account.getEmail());
+        String email = account.getEmail();
+        StripeGuestPreferences.BillingProfileSnapshot snap = StripeGuestPreferences.loadBillingProfile(email);
         payFullNameField.setText(snap.nameOnCard());
         payAddressLine1Field.setText(snap.line1());
         payAddressLine2Field.setText(snap.line2());
@@ -1985,14 +2038,211 @@ public class AccountCenterPage extends JPanel {
         payStateField.setText(snap.state());
         payZipField.setText(snap.zip());
         payPhoneField.setText(snap.phone());
+        payCardNicknameField.setText("");
         payCardNumberField.setText("");
         payCardExpiryField.setText("");
         payCardCvvField.setText("");
-        updateStripeConnectBannerUi(account.getEmail());
+
+        double charges = guestLedgerService.getChargesTotal(email);
+        double paid = guestLedgerService.getPaymentsApplied(email);
+        double due = guestLedgerService.getAmountDue(email);
+        if (paymentBalanceSnapshotLabel != null) {
+            paymentBalanceSnapshotLabel.setText(String.format(
+                    "<html>Total charges <b>$%,.2f</b> &nbsp;·&nbsp; Payments recorded <b>$%,.2f</b> &nbsp;·&nbsp; "
+                            + "<span style='color:#6b4f1a;'>Amount due <b>$%,.2f</b></span></html>",
+                    charges, paid, due));
+        }
+
+        rebuildPaymentMethodsList();
+        updateStripeConnectBannerUi(email);
+    }
+
+    private void rebuildPaymentMethodsList() {
+        if (paymentMethodsListPanel == null) {
+            return;
+        }
+        paymentMethodsListPanel.removeAll();
+        Account account = AccountController.currentAccount;
+        if (account == null) {
+            paymentMethodsListPanel.add(paymentMethodsHintLabel("Sign in to manage saved cards."));
+        } else {
+            List<SavedPaymentMethod> list = savedPaymentMethodService.listForGuest(account.getEmail());
+            if (list.isEmpty()) {
+                paymentMethodsListPanel.add(paymentMethodsHintLabel("No saved cards yet. Expand the form below to add one."));
+            } else {
+                for (SavedPaymentMethod m : list) {
+                    paymentMethodsListPanel.add(buildSavedPaymentMethodRow(m));
+                    paymentMethodsListPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+                }
+            }
+        }
+        paymentMethodsListPanel.revalidate();
+        paymentMethodsListPanel.repaint();
+    }
+
+    private JLabel paymentMethodsHintLabel(String text) {
+        JLabel l = new JLabel(text);
+        l.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        l.setForeground(UITheme.TEXT_MEDIUM);
+        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return l;
+    }
+
+    private JPanel buildSavedPaymentMethodRow(SavedPaymentMethod m) {
+        JPanel row = new JPanel(new BorderLayout(14, 0));
+        row.setOpaque(true);
+        row.setBackground(Color.WHITE);
+        row.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(228, 218, 200), 1, true),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 64));
+        String nick = m.getNickname() == null || m.getNickname().isBlank() ? "Unnamed" : escapeHtmlLite(m.getNickname());
+        String yy = String.format("%02d", m.getExpYear() % 100);
+        JLabel info = new JLabel("<html><div style=\"font-size:13px;\"><b>" + escapeHtmlLite(m.getCardBrand()) + "</b> ending in "
+                + "<b>" + escapeHtmlLite(m.getLastFour()) + "</b> &nbsp;·&nbsp; " + nick + "<br/>"
+                + "<span style=\"color:#777;\">Exp " + m.getExpMonth() + "/" + yy + " · "
+                + escapeHtmlLite(m.getNameOnCard()) + "</span></div></html>");
+        JButton remove = new JButton("Remove");
+        styleButton(remove, false);
+        // styleButton uses width 10 so full-width rows expand in BoxLayout; here we need a real width in BorderLayout.EAST.
+        Dimension removeSize = new Dimension(96, 42);
+        remove.setPreferredSize(removeSize);
+        remove.setMinimumSize(removeSize);
+        remove.setMaximumSize(new Dimension(120, 42));
+        remove.addActionListener(_ -> deleteSavedPaymentMethod(m));
+        JPanel eastWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        eastWrap.setOpaque(false);
+        eastWrap.add(remove);
+        row.add(info, BorderLayout.CENTER);
+        row.add(eastWrap, BorderLayout.EAST);
+        return row;
+    }
+
+    private static String escapeHtmlLite(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        return raw.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
+    private void deleteSavedPaymentMethod(SavedPaymentMethod m) {
+        Account account = AccountController.currentAccount;
+        if (account == null) {
+            return;
+        }
+        int ok = JOptionPane.showConfirmDialog(this,
+                "Remove this card from your saved payment methods?",
+                "Remove card",
+                JOptionPane.OK_CANCEL_OPTION);
+        if (ok != JOptionPane.OK_OPTION) {
+            return;
+        }
+        try {
+            savedPaymentMethodService.deleteMethod(m.getId(), account.getEmail());
+            paymentWorkspaceStatusLabel.setText("Removed saved card.");
+            rebuildPaymentMethodsList();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not remove card: " + ex.getMessage(),
+                    "Payment methods",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void toggleAddPaymentFormVisibility() {
+        if (addPaymentFormOuter == null) {
+            return;
+        }
+        boolean next = !addPaymentFormOuter.isVisible();
+        addPaymentFormOuter.setVisible(next);
+        toggleAddPaymentFormButton.setText(next ? "Hide payment form" : "Add a payment method");
+        if (!next) {
+            paymentWorkspaceStatusLabel.setText(" ");
+        }
+        addPaymentFormOuter.revalidate();
+        addPaymentFormOuter.getParent().revalidate();
+    }
+
+    private void saveNewPaymentMethodFromForm() {
+        Account account = AccountController.currentAccount;
+        if (account == null) {
+            return;
+        }
+        PaymentBillingValidator.ValidationResult nick = PaymentBillingValidator.validateOptionalNickname(payCardNicknameField.getText());
+        if (!nick.ok()) {
+            JOptionPane.showMessageDialog(this, nick.message(), "Validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        PaymentBillingValidator.ValidationResult bill = PaymentBillingValidator.validateBillingProfile(
+                payFullNameField.getText(),
+                payAddressLine1Field.getText(),
+                payCityField.getText(),
+                payStateField.getText(),
+                payZipField.getText());
+        if (!bill.ok()) {
+            JOptionPane.showMessageDialog(this, bill.message(), "Billing validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String pan = new String(payCardNumberField.getPassword()).trim();
+        String cvv = new String(payCardCvvField.getPassword()).trim();
+        PaymentBillingValidator.ValidationResult card = PaymentBillingValidator.validateCardPracticeFields(
+                pan, payCardExpiryField.getText(), cvv, payZipField.getText());
+        if (!card.ok()) {
+            JOptionPane.showMessageDialog(this, card.message(), "Card validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int[] exp = PaymentBillingValidator.parseExpiryMonthYear(payCardExpiryField.getText());
+        if (exp == null) {
+            JOptionPane.showMessageDialog(this, "Invalid expiry.", "Card validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String brand = PaymentBillingValidator.inferCardBrand(pan);
+        String last4 = PaymentBillingValidator.lastFourDigits(pan);
+        try {
+            savedPaymentMethodService.saveMethod(
+                    account.getEmail(),
+                    payCardNicknameField.getText(),
+                    brand,
+                    last4,
+                    exp[0],
+                    exp[1],
+                    payFullNameField.getText().trim(),
+                    payAddressLine1Field.getText().trim(),
+                    payAddressLine2Field.getText(),
+                    payCityField.getText().trim(),
+                    payStateField.getText().trim().toUpperCase(java.util.Locale.ROOT),
+                    payZipField.getText().trim(),
+                    payPhoneField.getText());
+            StripeGuestPreferences.saveBillingProfile(
+                    account.getEmail(),
+                    payFullNameField.getText(),
+                    payAddressLine1Field.getText(),
+                    payAddressLine2Field.getText(),
+                    payCityField.getText(),
+                    payStateField.getText(),
+                    payZipField.getText(),
+                    payPhoneField.getText());
+            payCardNumberField.setText("");
+            payCardCvvField.setText("");
+            payCardExpiryField.setText("");
+            payCardNicknameField.setText("");
+            paymentWorkspaceStatusLabel.setText("Payment method saved.");
+            addPaymentFormOuter.setVisible(false);
+            toggleAddPaymentFormButton.setText("Add a payment method");
+            rebuildPaymentMethodsList();
+            refreshPaymentWorkspace();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not save payment method: " + ex.getMessage(),
+                    "Payment methods",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void updateStripeConnectBannerUi(String email) {
-        if (stripeConnectBannerOuter == null) {
+        if (stripeConnectBannerOuter == null || stripeConnectSoleActionButton == null) {
             return;
         }
 
@@ -2008,16 +2258,15 @@ public class AccountCenterPage extends JPanel {
             ));
             stripeBannerStatusLarge.setForeground(new Color(150, 114, 42));
             if (!hasSecret && !hasClient) {
-                stripeBannerStatusLarge.setText("Stripe not configured (.env)");
+                stripeBannerStatusLarge.setText("Stripe not configured");
+                stripeBannerDetailSmall.setText("Add STRIPE_SECRET_KEY and STRIPE_CONNECT_CLIENT_ID to your .env file, then restart the app.");
             } else if (!hasSecret) {
-                stripeBannerStatusLarge.setText("Missing STRIPE_SECRET_KEY");
+                stripeBannerStatusLarge.setText("Stripe not configured");
+                stripeBannerDetailSmall.setText("Add STRIPE_SECRET_KEY to your .env file, then restart the app.");
             } else {
-                stripeBannerStatusLarge.setText("Missing STRIPE_CONNECT_CLIENT_ID");
+                stripeBannerStatusLarge.setText("Stripe not configured");
+                stripeBannerDetailSmall.setText("Add STRIPE_CONNECT_CLIENT_ID to your .env file, then restart the app.");
             }
-            stripeBannerDetailSmall.setText("<html><div style=\"width:440px\">Set both keys in <code>.env</code>. "
-                    + "In Stripe (Test mode): <b>Connect → Settings</b> → OAuth → add redirect URI exactly:<br/>"
-                    + "<span style=\"font-family:monospace;font-size:11px;\">" + StripeConfig.oauthRedirectUri() + "</span><br/>"
-                    + "Checkout uses port " + StripeConfig.CHECKOUT_HTTP_PORT + ".</div></html>");
         } else if (connected) {
             stripeConnectBannerOuter.setBackground(new Color(225, 246, 228));
             stripeConnectBannerOuter.setBorder(BorderFactory.createCompoundBorder(
@@ -2026,7 +2275,7 @@ public class AccountCenterPage extends JPanel {
             ));
             stripeBannerStatusLarge.setText("Connected");
             stripeBannerStatusLarge.setForeground(new Color(46, 120, 74));
-            stripeBannerDetailSmall.setText("Stripe Connect linked for this workstation (sandbox). You can vault cards with the button below.");
+            stripeBannerDetailSmall.setText("Your Stripe account is linked for this computer (sandbox).");
         } else {
             stripeConnectBannerOuter.setBackground(new Color(255, 235, 235));
             stripeConnectBannerOuter.setBorder(BorderFactory.createCompoundBorder(
@@ -2035,12 +2284,27 @@ public class AccountCenterPage extends JPanel {
             ));
             stripeBannerStatusLarge.setText("Not connected");
             stripeBannerStatusLarge.setForeground(new Color(160, 40, 40));
-            stripeBannerDetailSmall.setText(stripeOAuthRedirectHelpHtml());
+            stripeBannerDetailSmall.setText(stripeNotConnectedInstructionPlain());
         }
 
-        stripeConnectAuthorizeButton.setEnabled(hasSecret && hasClient);
-        stripeConnectDisconnectButton.setEnabled(hasSecret && hasClient && connected);
-        copyStripeOAuthRedirectButton.setEnabled(true);
+        if (!hasSecret || !hasClient) {
+            stripeConnectSoleActionButton.setText("Connect with Stripe");
+            applyStripeSoleButtonTheme(StripeSoleButtonTheme.WARN_BOX);
+            clearStripeSoleActionListeners();
+            stripeConnectSoleActionButton.setEnabled(false);
+        } else if (connected) {
+            stripeConnectSoleActionButton.setText("Disconnect from Stripe");
+            applyStripeSoleButtonTheme(StripeSoleButtonTheme.GREEN_BOX);
+            clearStripeSoleActionListeners();
+            stripeConnectSoleActionButton.addActionListener(_ -> disconnectStripeSandboxLink());
+            stripeConnectSoleActionButton.setEnabled(true);
+        } else {
+            stripeConnectSoleActionButton.setText("Connect with Stripe");
+            applyStripeSoleButtonTheme(StripeSoleButtonTheme.ROSE_BOX);
+            clearStripeSoleActionListeners();
+            stripeConnectSoleActionButton.addActionListener(_ -> beginStripeOAuthFromAccountCenter());
+            stripeConnectSoleActionButton.setEnabled(true);
+        }
 
         String acctDisplay = shortenId(StripeGuestPreferences.getConnectedAccountId(email));
         String custDisplay = shortenId(StripeGuestPreferences.getStripeCustomerId(email));
@@ -2048,26 +2312,57 @@ public class AccountCenterPage extends JPanel {
                 + " &nbsp;·&nbsp; <span style=\"color:#545454;\">Saved customer:</span> " + custDisplay + "</html>");
     }
 
-    private static String stripeOAuthRedirectHelpHtml() {
-        String u = StripeConfig.oauthRedirectUri();
-        return "<html><div style=\"width:480px\"><b>Before</b> clicking Connect: in Stripe Dashboard, turn on <b>Test mode</b>, "
-                + "then go to <b>Connect → Settings</b> and under <b>OAuth</b> add this redirect URI "
-                + "(use <b>Copy OAuth redirect URL</b> — paste with <b>no space</b> before or after; a trailing space causes "
-                + "<code>redirect_uri_mismatch</code>):<br/>"
-                + "<span style=\"font-family:monospace;font-size:11px;\">" + u + "</span><br/>"
-                + "<span style=\"color:#8b4513;\">If Stripe only lists <code>localhost</code>, set in <code>.env</code>: "
-                + "<code>STRIPE_OAUTH_REDIRECT_URI=http://localhost:45263/stripe/oauth/callback</code> "
-                + "and register that <b>exact</b> URL (restart the app). Your <code>ca_…</code> must be the <b>Test</b> client id from the "
-                + "<b>same</b> Stripe account.</span></div></html>";
+    private static String stripeNotConnectedInstructionPlain() {
+        return "Click \"Connect with Stripe\" below to sign in with Stripe (sandbox).";
     }
 
-    private void copyStripeOAuthRedirectUriToClipboard() {
-        String url = StripeConfig.oauthRedirectUri();
-        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(url), null);
-        JOptionPane.showMessageDialog(this,
-                "Copied to clipboard:\n" + url,
-                "Stripe OAuth redirect",
-                JOptionPane.INFORMATION_MESSAGE);
+    private enum StripeSoleButtonTheme {
+        /** Matches amber “not configured” banner */
+        WARN_BOX,
+        /** Matches rose “not connected” banner */
+        ROSE_BOX,
+        /** Matches mint “connected” banner */
+        GREEN_BOX
+    }
+
+    private void clearStripeSoleActionListeners() {
+        for (ActionListener al : stripeConnectSoleActionButton.getActionListeners()) {
+            stripeConnectSoleActionButton.removeActionListener(al);
+        }
+    }
+
+    private void applyStripeSoleButtonTheme(StripeSoleButtonTheme theme) {
+        JButton b = stripeConnectSoleActionButton;
+        b.setOpaque(true);
+        b.setBorderPainted(true);
+        b.setContentAreaFilled(true);
+        b.setHorizontalAlignment(SwingConstants.CENTER);
+        b.setMinimumSize(new Dimension(120, 46));
+        b.setPreferredSize(new Dimension(400, 46));
+        b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
+        switch (theme) {
+            case WARN_BOX -> {
+                b.setBackground(new Color(244, 218, 165));
+                b.setForeground(new Color(105, 72, 18));
+                b.setBorder(BorderFactory.createCompoundBorder(
+                        new LineBorder(new Color(205, 165, 95), 1, true),
+                        new EmptyBorder(12, 20, 12, 20)));
+            }
+            case ROSE_BOX -> {
+                b.setBackground(new Color(214, 118, 118));
+                b.setForeground(new Color(255, 252, 250));
+                b.setBorder(BorderFactory.createCompoundBorder(
+                        new LineBorder(new Color(168, 62, 62), 1, true),
+                        new EmptyBorder(12, 20, 12, 20)));
+            }
+            case GREEN_BOX -> {
+                b.setBackground(new Color(142, 198, 152));
+                b.setForeground(new Color(22, 78, 38));
+                b.setBorder(BorderFactory.createCompoundBorder(
+                        new LineBorder(new Color(92, 158, 108), 1, true),
+                        new EmptyBorder(12, 20, 12, 20)));
+            }
+        }
     }
 
     /**
@@ -2232,148 +2527,8 @@ public class AccountCenterPage extends JPanel {
             return;
         }
         StripeGuestPreferences.setConnectedAccountId(account.getEmail(), "");
-        paymentWorkspaceStatusLabel.setText("Disconnected Stripe sandbox link locally.");
-        refreshPaymentWorkspace();
-    }
-
-    private void saveStripeBillingSnapshot() {
-        Account account = AccountController.currentAccount;
-        if (account == null) {
-            return;
-        }
-        PaymentBillingValidator.ValidationResult vr = PaymentBillingValidator.validateBillingProfile(
-                payFullNameField.getText(),
-                payAddressLine1Field.getText(),
-                payCityField.getText(),
-                payStateField.getText(),
-                payZipField.getText());
-        if (!vr.ok()) {
-            JOptionPane.showMessageDialog(this, vr.message(), "Billing validation", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        StripeGuestPreferences.saveBillingProfile(
-                account.getEmail(),
-                payFullNameField.getText(),
-                payAddressLine1Field.getText(),
-                payAddressLine2Field.getText(),
-                payCityField.getText(),
-                payStateField.getText(),
-                payZipField.getText(),
-                payPhoneField.getText());
-        paymentWorkspaceStatusLabel.setText("Saved billing profile securely on this device (not sent to Stripe).");
-    }
-
-    private void startStripeHostedSavedCardCapture() {
-        Account account = AccountController.currentAccount;
-        if (account == null) {
-            return;
-        }
-        if (!StripeConfig.hasSecretKey()) {
-            JOptionPane.showMessageDialog(this,
-                    "Add STRIPE_SECRET_KEY to enable Stripe Hosted Setup.",
-                    "Stripe",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        PaymentBillingValidator.ValidationResult profile = PaymentBillingValidator.validateBillingProfile(
-                payFullNameField.getText(),
-                payAddressLine1Field.getText(),
-                payCityField.getText(),
-                payStateField.getText(),
-                payZipField.getText());
-        if (!profile.ok()) {
-            JOptionPane.showMessageDialog(this,
-                    "<html>" + profile.message().replace("\n", "<br/>") + "</html>",
-                    "Billing validation",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String pan = new String(payCardNumberField.getPassword()).trim();
-        String cvv = new String(payCardCvvField.getPassword()).trim();
-        PaymentBillingValidator.ValidationResult cardPractice = PaymentBillingValidator.validateCardPracticeFields(
-                pan,
-                payCardExpiryField.getText(),
-                cvv,
-                payZipField.getText());
-        if (!cardPractice.ok()) {
-            JOptionPane.showMessageDialog(this,
-                    "<html>" + cardPractice.message().replace("\n", "<br/>") + "</html>",
-                    "Card validation",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        payCardNumberField.setText("");
-        payCardCvvField.setText("");
-
-        new SwingWorker<Void, Void>() {
-            private volatile String fatal;
-
-            @Override
-            protected Void doInBackground() {
-                StripeHostedLocalServer.BindHandle binder = null;
-                try {
-                    binder = StripeHostedLocalServer.bindCheckout(
-                            sid -> SwingUtilities.invokeLater(() -> handleHostedStripeSessionForPaymentTab(account.getEmail(), sid)),
-                            () -> SwingUtilities.invokeLater(() ->
-                                    JOptionPane.showMessageDialog(AccountCenterPage.this,
-                                            "Stripe setup was canceled.",
-                                            "Stripe",
-                                            JOptionPane.INFORMATION_MESSAGE)));
-                    StripeCheckoutService.SessionCreateResult session = stripeCheckoutService.createCheckoutSessionAttachPaymentMethodSetup(
-                            account.getEmail(),
-                            StripeConfig.checkoutSuccessUrlTemplateWithSessionMacro(),
-                            StripeConfig.checkoutCancelUrl());
-                    if (!session.success()) {
-                        fatal = session.message();
-                        binder.stopQuietly();
-                        return null;
-                    }
-                    if (!StripeHostedLocalServer.browse(session.url())) {
-                        fatal = "Unable to open a browser.";
-                        binder.stopQuietly();
-                    }
-                    return null;
-                } catch (StripeException | IOException ex) {
-                    fatal = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
-                    if (binder != null) {
-                        binder.stopQuietly();
-                    }
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                if (fatal != null && !fatal.isBlank()) {
-                    JOptionPane.showMessageDialog(AccountCenterPage.this, fatal, "Stripe setup", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        }.execute();
-    }
-
-    private void handleHostedStripeSessionForPaymentTab(String guestEmail, String checkoutSessionId) {
-        try {
-            StripeCheckoutSessionReader.StripeCheckoutSummary snap = StripeCheckoutSessionReader.read(checkoutSessionId);
-            if (snap.stripeCustomerId() != null && !snap.stripeCustomerId().isBlank()) {
-                StripeGuestPreferences.setStripeCustomerId(guestEmail, snap.stripeCustomerId());
-                paymentWorkspaceStatusLabel.setText("Saved Stripe Customer id locally for faster future checkouts.");
-            } else if (snap.suggestsSetupSucceeded()) {
-                paymentWorkspaceStatusLabel.setText("Stripe setup completed — customer id unavailable from session API yet.");
-            } else {
-                paymentWorkspaceStatusLabel.setText("Hosted Stripe returned — review Dashboard.");
-            }
-
-            JOptionPane.showMessageDialog(this,
-                    "Stripe Hosted flow finished.\nSandbox cards are accepted directly on Stripe's page.",
-                    "Stripe sandbox",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } catch (StripeException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Could not read Checkout session metadata:\n" + ex.getMessage(),
-                    "Stripe",
-                    JOptionPane.WARNING_MESSAGE);
+        if (paymentWorkspaceStatusLabel != null) {
+            paymentWorkspaceStatusLabel.setText("Disconnected Stripe sandbox link locally.");
         }
         refreshPaymentWorkspace();
     }

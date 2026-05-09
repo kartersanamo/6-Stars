@@ -137,6 +137,61 @@ public final class PaymentBillingValidator {
         return b.toString();
     }
 
+    /** Visa / Mastercard / Amex / Discover heuristic from PAN digits only. */
+    public static String inferCardBrand(String rawPan) {
+        String pan = normalizeDigits(rawPan == null ? "" : rawPan);
+        if (pan.isEmpty()) {
+            return "Card";
+        }
+        char c0 = pan.charAt(0);
+        if (c0 == '4') {
+            return "Visa";
+        }
+        if (c0 == '5') {
+            return "Mastercard";
+        }
+        if (c0 == '3') {
+            char c1 = pan.length() > 1 ? pan.charAt(1) : '0';
+            if (c1 == '4' || c1 == '7') {
+                return "Amex";
+            }
+            return "Card";
+        }
+        if (c0 == '6') {
+            return "Discover";
+        }
+        return "Card";
+    }
+
+    public static String lastFourDigits(String rawPan) {
+        String pan = normalizeDigits(rawPan == null ? "" : rawPan);
+        if (pan.length() < 4) {
+            return "0000";
+        }
+        return pan.substring(pan.length() - 4);
+    }
+
+    /** @return {month, fourDigitYear} or null if invalid */
+    public static int[] parseExpiryMonthYear(String mmYyInput) {
+        String mmYyClean = normalizeExpiryMmYy(mmYyInput == null ? "" : mmYyInput);
+        YearMonth ym = parseExpiry(mmYyClean);
+        if (ym == null) {
+            return null;
+        }
+        return new int[]{ym.getMonthValue(), ym.getYear()};
+    }
+
+    public static ValidationResult validateOptionalNickname(String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            return new ValidationResult(true, "");
+        }
+        String t = nickname.trim();
+        if (t.length() > 48) {
+            return new ValidationResult(false, "Nickname must be at most 48 characters.");
+        }
+        return new ValidationResult(true, "");
+    }
+
     public record ValidationResult(boolean ok, String message) {
     }
 }
