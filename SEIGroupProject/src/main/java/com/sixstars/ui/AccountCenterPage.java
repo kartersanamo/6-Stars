@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -91,6 +93,7 @@ public class AccountCenterPage extends JPanel {
     private JLabel stripeBannerDetailSmall;
     private JButton stripeConnectAuthorizeButton;
     private JButton stripeConnectDisconnectButton;
+    private JButton copyStripeOAuthRedirectButton;
     private JLabel stripeIdsSummaryLabel;
 
     private JTextField payFullNameField;
@@ -867,7 +870,7 @@ public class AccountCenterPage extends JPanel {
         ));
         stripeConnectBannerOuter.setBackground(new Color(255, 235, 235));
         stripeConnectBannerOuter.setAlignmentX(Component.LEFT_ALIGNMENT);
-        stripeConnectBannerOuter.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
+        stripeConnectBannerOuter.setMaximumSize(new Dimension(Integer.MAX_VALUE, 320));
 
         JPanel bannerText = new JPanel();
         bannerText.setLayout(new BoxLayout(bannerText, BoxLayout.Y_AXIS));
@@ -878,8 +881,7 @@ public class AccountCenterPage extends JPanel {
         stripeBannerDetailSmall = new JLabel(" ");
         stripeBannerDetailSmall.setFont(new Font("SansSerif", Font.PLAIN, 12));
         stripeBannerDetailSmall.setForeground(UITheme.TEXT_MEDIUM);
-        stripeBannerDetailSmall.setText("<html>Connect Stripe (sandbox) so we can streamline checkout flows. Redirect URI:"
-                + " <span style=\"font-family:monospace;\">" + StripeConfig.OAUTH_FULL_URL + "</span></html>");
+        stripeBannerDetailSmall.setText(stripeOAuthRedirectHelpHtml());
         stripeIdsSummaryLabel = new JLabel(" ");
         stripeIdsSummaryLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         stripeIdsSummaryLabel.setForeground(UITheme.TEXT_MEDIUM);
@@ -895,9 +897,15 @@ public class AccountCenterPage extends JPanel {
         styleButton(stripeConnectDisconnectButton, false);
         stripeConnectDisconnectButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
         stripeConnectDisconnectButton.addActionListener(_ -> disconnectStripeSandboxLink());
+        copyStripeOAuthRedirectButton = new JButton("Copy OAuth redirect URL");
+        styleButton(copyStripeOAuthRedirectButton, false);
+        copyStripeOAuthRedirectButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        copyStripeOAuthRedirectButton.addActionListener(_ -> copyStripeOAuthRedirectUriToClipboard());
         bannerButtons.add(stripeConnectAuthorizeButton);
         bannerButtons.add(Box.createRigidArea(new Dimension(0, 8)));
         bannerButtons.add(stripeConnectDisconnectButton);
+        bannerButtons.add(Box.createRigidArea(new Dimension(0, 8)));
+        bannerButtons.add(copyStripeOAuthRedirectButton);
 
         bannerText.add(stripeBannerStatusLarge);
         bannerText.add(Box.createRigidArea(new Dimension(0, 6)));
@@ -1999,9 +2007,10 @@ public class AccountCenterPage extends JPanel {
             } else {
                 stripeBannerStatusLarge.setText("Missing STRIPE_CONNECT_CLIENT_ID");
             }
-            stripeBannerDetailSmall.setText("<html>Set both keys plus register redirect <span style=\"font-family:monospace;\">"
-                    + StripeConfig.OAUTH_FULL_URL + "</span> and Checkout ports "
-                    + StripeConfig.CHECKOUT_HTTP_PORT + " / " + StripeConfig.OAUTH_HTTP_PORT + ".</html>");
+            stripeBannerDetailSmall.setText("<html><div style=\"width:440px\">Set both keys in <code>.env</code>. "
+                    + "In Stripe (Test mode): <b>Connect → Settings</b> → OAuth → add redirect URI exactly:<br/>"
+                    + "<span style=\"font-family:monospace;font-size:11px;\">" + StripeConfig.OAUTH_FULL_URL + "</span><br/>"
+                    + "Checkout uses port " + StripeConfig.CHECKOUT_HTTP_PORT + ".</div></html>");
         } else if (connected) {
             stripeConnectBannerOuter.setBackground(new Color(225, 246, 228));
             stripeConnectBannerOuter.setBorder(BorderFactory.createCompoundBorder(
@@ -2019,17 +2028,38 @@ public class AccountCenterPage extends JPanel {
             ));
             stripeBannerStatusLarge.setText("Not connected");
             stripeBannerStatusLarge.setForeground(new Color(160, 40, 40));
-            stripeBannerDetailSmall.setText("<html>Authorize Stripe Connect — redirect must match "
-                    + "<span style=\"font-family:monospace;\">" + StripeConfig.OAUTH_FULL_URL + "</span></html>");
+            stripeBannerDetailSmall.setText(stripeOAuthRedirectHelpHtml());
         }
 
         stripeConnectAuthorizeButton.setEnabled(hasSecret && hasClient);
         stripeConnectDisconnectButton.setEnabled(hasSecret && hasClient && connected);
+        copyStripeOAuthRedirectButton.setEnabled(true);
 
         String acctDisplay = shortenId(StripeGuestPreferences.getConnectedAccountId(email));
         String custDisplay = shortenId(StripeGuestPreferences.getStripeCustomerId(email));
         stripeIdsSummaryLabel.setText("<html><span style=\"color:#545454;\">Stripe Connect account:</span> " + acctDisplay
                 + " &nbsp;·&nbsp; <span style=\"color:#545454;\">Saved customer:</span> " + custDisplay + "</html>");
+    }
+
+    private static String stripeOAuthRedirectHelpHtml() {
+        String u = StripeConfig.OAUTH_FULL_URL;
+        return "<html><div style=\"width:460px\"><b>Before</b> clicking Connect: in Stripe Dashboard, turn on <b>Test mode</b>, "
+                + "then go to <b>Connect → Settings</b> and under <b>OAuth</b> add this redirect URI "
+                + "(use <b>Copy OAuth redirect URL</b> — paste with <b>no space</b> before or after; a trailing space causes "
+                + "<code>redirect_uri_mismatch</code>):<br/>"
+                + "<span style=\"font-family:monospace;font-size:11px;\">" + u + "</span><br/>"
+                + "<span style=\"color:#8b4513;\">Use <code>127.0.0.1</code> (not <code>localhost</code>) unless you also register a "
+                + "<code>localhost</code> URL. Your <code>ca_…</code> in <code>.env</code> must be the <b>Test</b> client id from the "
+                + "<b>same</b> Stripe account where you saved this URI.</span></div></html>";
+    }
+
+    private void copyStripeOAuthRedirectUriToClipboard() {
+        String url = StripeConfig.OAUTH_FULL_URL;
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(url), null);
+        JOptionPane.showMessageDialog(this,
+                "Copied to clipboard:\n" + url,
+                "Stripe OAuth redirect",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private static String shortenId(String id) {
@@ -2060,8 +2090,8 @@ public class AccountCenterPage extends JPanel {
         }
         if (!StripeConfig.hasConnectClientId()) {
             JOptionPane.showMessageDialog(this,
-                    "<html>Add STRIPE_CONNECT_CLIENT_ID (<code>ca_…</code>) and register redirect URI:<br/><code>"
-                            + StripeConfig.OAUTH_FULL_URL + "</code></html>",
+                    "<html>Add STRIPE_CONNECT_CLIENT_ID (<code>ca_…</code>) and in Stripe (Test mode) register this OAuth redirect URI exactly:<br/><code>"
+                            + StripeConfig.OAUTH_FULL_URL + "</code><br/>(must include <code>/oauth/</code> in the path.)</html>",
                     "Stripe Connect",
                     JOptionPane.WARNING_MESSAGE);
             return;

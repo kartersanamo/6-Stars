@@ -42,26 +42,32 @@ public final class StripeConfig {
 
     /** Secret API key ({@code sk_test_...}). */
     public static String getSecretKey() {
-        return prop("STRIPE_SECRET_KEY");
+        return trimOrNull(prop("STRIPE_SECRET_KEY"));
     }
 
     /** Connect OAuth application client ID ({@code ca_...}). */
     public static String getConnectClientId() {
-        return prop("STRIPE_CONNECT_CLIENT_ID");
+        return trimOrNull(prop("STRIPE_CONNECT_CLIENT_ID"));
     }
 
     /** Optional publishable key for display/logging only ({@code pk_test_...}). */
     public static String getPublishableKey() {
-        return prop("STRIPE_PUBLISHABLE_KEY");
+        return trimOrNull(prop("STRIPE_PUBLISHABLE_KEY"));
+    }
+
+    private static String trimOrNull(String v) {
+        if (v == null) {
+            return null;
+        }
+        String t = v.trim();
+        return t.isEmpty() ? null : t;
     }
 
     public static boolean hasSecretKey() {
-        String k = getSecretKey();
-        return k != null && !k.isBlank();
+        return getSecretKey() != null;
     }
 
     public static boolean hasConnectClientId() {
-        String k = getConnectClientId();
-        return k != null && !k.isBlank();
+        return getConnectClientId() != null;
     }
 }
