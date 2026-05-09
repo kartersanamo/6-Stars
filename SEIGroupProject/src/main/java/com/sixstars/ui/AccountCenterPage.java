@@ -27,6 +27,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
@@ -72,6 +73,7 @@ public class AccountCenterPage extends JPanel {
     private JButton accountInfoButton;
     private JButton securityButton;
     private JButton notificationsButton;
+    private JButton myReservationsButton;
     private JButton billingButton;
     private JButton purchasesButton;
     private JButton dangerZoneButton;
@@ -111,6 +113,10 @@ public class AccountCenterPage extends JPanel {
     private final NotificationService notificationService = NotificationService.getInstance();
 
     // Billing Section Components
+    private JPanel myReservationsContainer;
+    private JLabel myReservationsTotalLabel;
+    private JLabel myReservationsActiveLabel;
+    private JLabel myReservationsNextCheckInLabel;
     private JPanel reservationsContainer;
     private JPanel shopContainer;
     private JLabel reservationTotalLabel;
@@ -140,6 +146,7 @@ public class AccountCenterPage extends JPanel {
         contentArea.add(wrapInScrollPane(createAccountInfoPanel()), "account-info");
         contentArea.add(wrapInScrollPane(createSecurityPanel()), "security");
         contentArea.add(wrapInScrollPane(createNotificationsPanel()), "notifications");
+        contentArea.add(wrapInScrollPane(createMyReservationsPanel()), "my-reservations");
         contentArea.add(wrapInScrollPane(createBillingPanel()), "billing");
         contentArea.add(wrapInScrollPane(createPurchasesPanel()), "purchases");
         contentArea.add(wrapInScrollPane(createDangerZonePanel()), "danger-zone");
@@ -212,6 +219,7 @@ public class AccountCenterPage extends JPanel {
         accountInfoButton = createNavButton("Account Information", "account-info");
         securityButton = createNavButton("Security", "security");
         notificationsButton = createNavButton("Notifications", "notifications");
+        myReservationsButton = createNavButton("My Reservations", "my-reservations");
         billingButton = createNavButton("Billing", "billing");
         purchasesButton = createNavButton("Purchases", "purchases");
         dangerZoneButton = createNavButton("Danger Zone", "danger-zone");
@@ -230,6 +238,7 @@ public class AccountCenterPage extends JPanel {
         navPanel.add(createNavButtonRow(accountInfoButton));
         navPanel.add(createNavButtonRow(securityButton));
         navPanel.add(createNavButtonRow(notificationsButton));
+        navPanel.add(createNavButtonRow(myReservationsButton));
         navPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         navPanel.add(createSidebarSectionLabel("Hotel Services"));
         navPanel.add(createNavButtonRow(billingButton));
@@ -324,6 +333,8 @@ public class AccountCenterPage extends JPanel {
             // Refresh billing content when switching to billing tab
             if ("billing".equals(contentKey)) {
                 refreshBillingContent();
+            } else if ("my-reservations".equals(contentKey)) {
+                refreshMyReservationsContent();
             }
             contentLayout.show(contentArea, contentKey);
         });
@@ -358,6 +369,8 @@ public class AccountCenterPage extends JPanel {
         securityButton.setForeground(UITheme.TEXT_DARK);
         notificationsButton.setBackground(SIDEBAR_PANEL);
         notificationsButton.setForeground(UITheme.TEXT_DARK);
+        myReservationsButton.setBackground(SIDEBAR_PANEL);
+        myReservationsButton.setForeground(UITheme.TEXT_DARK);
         billingButton.setBackground(SIDEBAR_PANEL);
         billingButton.setForeground(UITheme.TEXT_DARK);
         purchasesButton.setBackground(SIDEBAR_PANEL);
@@ -623,7 +636,87 @@ public class AccountCenterPage extends JPanel {
         return mainPanel;
     }
 
+    private JPanel createMyReservationsPanel() {
+        JPanel mainPanel = createContentPanel();
+
+        JLabel title = new JLabel("My Reservations");
+        title.setFont(new Font("Serif", Font.BOLD, 26));
+        title.setForeground(UITheme.TEXT_DARK);
+
+        JLabel subtitle = new JLabel("View and manage all your room reservations.");
+        subtitle.setFont(UITheme.SUBTITLE_FONT);
+        subtitle.setForeground(UITheme.TEXT_MEDIUM);
+
+        mainPanel.add(title);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 4)));
+        mainPanel.add(subtitle);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 18)));
+
+        JPanel metricsRow = new JPanel(new GridLayout(1, 3, 12, 0));
+        metricsRow.setOpaque(false);
+        metricsRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        myReservationsTotalLabel = createMetricValueLabel();
+        myReservationsActiveLabel = createMetricValueLabel();
+        myReservationsNextCheckInLabel = createMetricValueLabel();
+
+        metricsRow.add(createMetricCard("Total Reservations", myReservationsTotalLabel));
+        metricsRow.add(createMetricCard("Active", myReservationsActiveLabel));
+        metricsRow.add(createMetricCard("Next Check-In", myReservationsNextCheckInLabel));
+        mainPanel.add(metricsRow);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        JPanel listCard = createCardPanel();
+        listCard.setBackground(BILLING_SECTION_BG);
+        listCard.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(231, 223, 204), 1, true),
+                new EmptyBorder(18, 18, 18, 18)
+        ));
+        listCard.add(createSectionTitle("Reservation Timeline", "Review your upcoming, active, and historical reservations"));
+        listCard.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        myReservationsContainer = new JPanel();
+        myReservationsContainer.setLayout(new BoxLayout(myReservationsContainer, BoxLayout.Y_AXIS));
+        myReservationsContainer.setOpaque(false);
+        myReservationsContainer.setAlignmentX(Component.LEFT_ALIGNMENT);
+        listCard.add(myReservationsContainer);
+
+        mainPanel.add(listCard);
+
+        return mainPanel;
+    }
+
+    private JPanel createMetricCard(String title, JLabel valueLabel) {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(BILLING_SECTION_BG);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(231, 223, 204), 1, true),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        titleLabel.setForeground(UITheme.TEXT_MEDIUM);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        valueLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titleLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(valueLabel);
+        return card;
+    }
+
+    private JLabel createMetricValueLabel() {
+        JLabel label = new JLabel("0");
+        label.setFont(new Font("SansSerif", Font.BOLD, 24));
+        label.setForeground(UITheme.TEXT_DARK);
+        return label;
+    }
+
     private JPanel createBillingPanel() {
+
         JPanel mainPanel = createContentPanel();
 
         JLabel title = new JLabel("Billing & Invoices");
@@ -1090,6 +1183,7 @@ public class AccountCenterPage extends JPanel {
         clearPasswordFields();
         togglePasswordVisibility(showPasswordsCheck.isSelected());
         loadNotificationPreferences(account);
+        refreshMyReservationsContent();
         refreshBillingContent();
 
         revalidate();
@@ -1456,6 +1550,115 @@ public class AccountCenterPage extends JPanel {
     }
 
     // Billing panel refresh and helper methods
+    private void refreshMyReservationsContent() {
+        if (myReservationsContainer == null) {
+            return;
+        }
+
+        myReservationsContainer.removeAll();
+
+        Account current = AccountController.currentAccount;
+        if (current == null) {
+            myReservationsContainer.add(createEmptyCard("No account is currently logged in."));
+            myReservationsTotalLabel.setText("0");
+            myReservationsActiveLabel.setText("0");
+            myReservationsNextCheckInLabel.setText("--");
+            myReservationsContainer.revalidate();
+            myReservationsContainer.repaint();
+            return;
+        }
+
+        List<Reservation> reservations = billingService.getReservationCharges(current.getEmail()).stream()
+                .sorted(Comparator.comparing(Reservation::getStartDate))
+                .toList();
+
+        long activeCount = reservations.stream()
+                .filter(r -> !"CANCELLED".equalsIgnoreCase(r.getStatus()) && !"CHECKED_OUT".equalsIgnoreCase(r.getStatus()))
+                .count();
+
+        String nextCheckIn = reservations.stream()
+                .filter(r -> !"CANCELLED".equalsIgnoreCase(r.getStatus()) && !r.getStartDate().isBefore(java.time.LocalDate.now()))
+                .min(Comparator.comparing(Reservation::getStartDate))
+                .map(r -> r.getStartDate().toString())
+                .orElse("--");
+
+        myReservationsTotalLabel.setText(String.valueOf(reservations.size()));
+        myReservationsActiveLabel.setText(String.valueOf(activeCount));
+        myReservationsNextCheckInLabel.setText(nextCheckIn);
+
+        if (reservations.isEmpty()) {
+            myReservationsContainer.add(createEmptyCard("No reservations found yet."));
+        } else {
+            for (Reservation reservation : reservations) {
+                myReservationsContainer.add(createProfileReservationCard(reservation));
+                myReservationsContainer.add(Box.createRigidArea(new Dimension(0, 10)));
+            }
+        }
+
+        myReservationsContainer.revalidate();
+        myReservationsContainer.repaint();
+    }
+
+    private JPanel createProfileReservationCard(Reservation reservation) {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(228, 223, 214), 1, true),
+                new EmptyBorder(14, 14, 14, 14)
+        ));
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        String roomText = reservation.getRooms().stream()
+                .map(r -> "Room " + r.getRoomNumber())
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("No rooms");
+
+        JPanel topRow = new JPanel(new BorderLayout(12, 0));
+        topRow.setOpaque(false);
+        JLabel roomLabel = new JLabel(roomText);
+        roomLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+        roomLabel.setForeground(UITheme.TEXT_DARK);
+
+        JLabel statusBadge = new JLabel(reservation.getStatus().replace('_', ' '));
+        statusBadge.setFont(new Font("SansSerif", Font.BOLD, 11));
+        statusBadge.setOpaque(true);
+        statusBadge.setBorder(new EmptyBorder(4, 8, 4, 8));
+        if ("CANCELLED".equalsIgnoreCase(reservation.getStatus())) {
+            statusBadge.setBackground(new Color(255, 233, 233));
+            statusBadge.setForeground(new Color(180, 40, 40));
+        } else if ("CHECKED_IN".equalsIgnoreCase(reservation.getStatus())) {
+            statusBadge.setBackground(new Color(231, 246, 236));
+            statusBadge.setForeground(new Color(38, 109, 64));
+        } else if ("CHECKED_OUT".equalsIgnoreCase(reservation.getStatus())) {
+            statusBadge.setBackground(new Color(235, 235, 235));
+            statusBadge.setForeground(new Color(90, 90, 90));
+        } else {
+            statusBadge.setBackground(new Color(234, 240, 255));
+            statusBadge.setForeground(new Color(56, 113, 182));
+        }
+
+        topRow.add(roomLabel, BorderLayout.WEST);
+        topRow.add(statusBadge, BorderLayout.EAST);
+        card.add(topRow);
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+
+        JLabel dates = new JLabel("Stay: " + reservation.getStartDate() + " to " + reservation.getEndDate());
+        dates.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        dates.setForeground(UITheme.TEXT_MEDIUM);
+        dates.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(dates);
+        card.add(Box.createRigidArea(new Dimension(0, 4)));
+
+        JLabel pricing = new JLabel("Rate: $" + reservation.getNightlyRate() + "/night  |  Total: $" + reservation.getTotalCost());
+        pricing.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        pricing.setForeground(UITheme.TEXT_MEDIUM);
+        pricing.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(pricing);
+
+        return card;
+    }
+
     public void refreshBillingContent() {
         if (reservationsContainer == null || shopContainer == null) {
             return;
