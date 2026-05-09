@@ -85,7 +85,8 @@ public final class StripeHostedLocalServer {
 
     /** OAuth listener; exposes the browser URL ({@link OAuthListening#authorizeUrl()}). */
     public static OAuthListening bindOAuth(Consumer<String> onAuthorizationCodeOrNull) throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", StripeConfig.OAUTH_HTTP_PORT), 0);
+        HttpServer server = HttpServer.create(
+                new InetSocketAddress(StripeConfig.oauthListenHost(), StripeConfig.oauthListenPort()), 0);
         ExecutorService pool = Executors.newCachedThreadPool();
         AtomicBoolean stopped = new AtomicBoolean();
 
@@ -99,7 +100,7 @@ public final class StripeHostedLocalServer {
         final String oauthState = UUID.randomUUID().toString();
         String authorizeUri = buildAuthorizeUri(oauthState);
 
-        server.createContext(StripeConfig.OAUTH_CALLBACK_PATH, exchange -> {
+        server.createContext(StripeConfig.oauthCallbackPath(), exchange -> {
             Map<String, String> q = parseQuery(exchange.getRequestURI().getRawQuery());
             String returned = q.get("state");
             String code = q.get("code");
