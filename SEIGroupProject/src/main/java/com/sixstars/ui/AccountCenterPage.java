@@ -34,8 +34,6 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.basic.BasicButtonUI;
 
@@ -51,13 +49,15 @@ import com.sixstars.service.NotificationService;
 import com.sixstars.service.BillingService;
 import com.sixstars.service.GuestLedgerService;
 import com.sixstars.service.SavedPaymentMethodService;
-import com.sixstars.service.security.PasswordStrengthEvaluator;
 import com.sixstars.model.SavedPaymentMethod;
 import com.sixstars.service.stripe.PaymentBillingValidator;
 import com.sixstars.service.stripe.StripeConfig;
 import com.sixstars.service.stripe.StripeConnectOAuthTokenClient;
 import com.sixstars.service.stripe.StripeGuestPreferences;
 import com.sixstars.service.stripe.StripeHostedLocalServer;
+import com.sixstars.ui.accountcenter.AccountCenterContext;
+import com.sixstars.ui.accountcenter.AccountSecurityTabPanel;
+
 public class AccountCenterPage extends JPanel {
     private static final int AVATAR_SIZE = 120;
     private static final int AVATAR_EXPORT_SIZE = 512;
@@ -65,10 +65,6 @@ public class AccountCenterPage extends JPanel {
     private static final int MIN_AVATAR_DIMENSION = 128;
     private static final char MASK_ECHO = new JPasswordField().getEchoChar();
     private static final String PREF_NODE_PREFIX = "account-center-";
-    private static final String SEC_PREF_NEW_DEVICE = "sec_alert_new_device_email";
-    private static final String SEC_PREF_DIGEST = "sec_monthly_security_digest";
-    private static final String SEC_PREF_LOGIN_ALERT = "sec_login_alerts_in_app";
-    private static final String SEC_PREF_REAUTH = "sec_require_reauth_sensitive";
     private static final Color SIDEBAR_BG = new Color(245, 240, 228);
     private static final Color SIDEBAR_HOVER = new Color(235, 225, 208);
     private static final Color SIDEBAR_SELECTED = UITheme.ACCENT_GOLD;
@@ -141,30 +137,7 @@ public class AccountCenterPage extends JPanel {
     private final JButton saveProfileButton = new JButton("Save Changes");
     private final JLabel avatarStatusLabel = new JLabel();
 
-    // Security Section Components
-    private final JPasswordField currentPasswordField = new JPasswordField();
-    private final JPasswordField newPasswordField = new JPasswordField();
-    private final JPasswordField confirmPasswordField = new JPasswordField();
-    private final JCheckBox showPasswordsCheck = new JCheckBox("Show passwords");
-    private final JButton updatePasswordButton = new JButton("Update password");
-    /** Custom meter avoids macOS {@code AquaProgressBarUI} crashing on tiny/ambiguous widths (NegativeArraySizeException). */
-    private PasswordStrengthMeter passwordStrengthBar;
-    private JLabel passwordStrengthTierLabel;
-    private JLabel secRuleLengthLabel;
-    private JLabel secRuleUpperLabel;
-    private JLabel secRuleLowerLabel;
-    private JLabel secRuleDigitLabel;
-    private JLabel secRuleSpecialLabel;
-    private JLabel passwordConfirmMatchLabel;
-    private JLabel securityAccountStatusLabel;
-    private JCheckBox secChkNewDevice;
-    private JCheckBox secChkDigest;
-    private JCheckBox secChkLoginAlert;
-    private JCheckBox secChkReauth;
-    private JButton secBtnSignOutOthers;
-    private JButton secBtnForgotPassword;
-    private JPanel securityLoginHistoryInner;
-    private boolean loadingSecurityPrefs;
+    private final AccountSecurityTabPanel securityTabPanel;
 
     // Notifications Section Components
     private final Map<NotificationType, JCheckBox> emailNotificationChecks = new EnumMap<>(NotificationType.class);
@@ -202,8 +175,11 @@ public class AccountCenterPage extends JPanel {
         contentLayout = new CardLayout();
         contentArea = new JPanel(contentLayout);
         contentArea.setBackground(UITheme.PAGE_BACKGROUND);
+        AccountCenterContext accountCenterContext = new AccountCenterContext(
+                pages, cardLayout, accountController, notificationService, preferencesRoot, this::refreshInfo);
+        securityTabPanel = new AccountSecurityTabPanel(accountCenterContext);
         contentArea.add(wrapInScrollPane(createAccountInfoPanel()), "account-info");
-        contentArea.add(wrapInScrollPane(createSecurityPanel()), "security");
+        contentArea.add(wrapInScrollPane(securityTabPanel), "security");
         contentArea.add(wrapInScrollPane(createNotificationsPanel()), "notifications");
         contentArea.add(wrapInScrollPane(createMyReservationsPanel()), "my-reservations");
         contentArea.add(wrapInScrollPane(createBillingPanel()), "billing");
@@ -574,449 +550,6 @@ public class AccountCenterPage extends JPanel {
         mainPanel.add(detailsSection);
 
         return mainPanel;
-    }
-
-    private JPanel createSecurityPanel() {
-        JPanel mainPanel = createContentPanel();
-
-        JLabel title = new JLabel("Security & sign-in");
-        title.setFont(new Font("Serif", Font.BOLD, 28));
-        title.setForeground(UITheme.TEXT_DARK);
-
-        JLabel subtitle = new JLabel("<html><div style=\"width:720px\">Protect your 6 Stars account with a strong password, "
-                + "sensible alerts, and recovery options — organized the way modern travel apps present security.</div></html>");
-        subtitle.setFont(UITheme.SUBTITLE_FONT);
-        subtitle.setForeground(UITheme.TEXT_MEDIUM);
-
-        mainPanel.add(title);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 6)));
-        mainPanel.add(subtitle);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 22)));
-
-        JPanel statusCard = createSecurityShellCard();
-        statusCard.add(createSectionTitle("Account protection", "Verification status and where you are signed in."));
-        statusCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        securityAccountStatusLabel = new JLabel(" ");
-        securityAccountStatusLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        securityAccountStatusLabel.setForeground(UITheme.TEXT_DARK);
-        securityAccountStatusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        statusCard.add(securityAccountStatusLabel);
-        mainPanel.add(statusCard);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
-
-        JPanel pwdCard = createSecurityShellCard();
-        pwdCard.add(createSectionTitle("Change password", "We never store your plain password — only a secure hash, like production systems."));
-        pwdCard.add(Box.createRigidArea(new Dimension(0, 14)));
-
-        JPanel passwordGrid = new JPanel(new GridLayout(3, 1, 0, 12));
-        passwordGrid.setOpaque(false);
-        passwordGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
-        passwordGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 240));
-        passwordGrid.add(createPasswordCard("Current password", currentPasswordField));
-        passwordGrid.add(createPasswordCard("New password", newPasswordField));
-        passwordGrid.add(createPasswordCard("Confirm new password", confirmPasswordField));
-        pwdCard.add(passwordGrid);
-        pwdCard.add(Box.createRigidArea(new Dimension(0, 14)));
-
-        JLabel strengthHead = new JLabel("Password strength");
-        strengthHead.setFont(new Font("SansSerif", Font.BOLD, 12));
-        strengthHead.setForeground(UITheme.TEXT_DARK);
-        strengthHead.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pwdCard.add(strengthHead);
-        pwdCard.add(Box.createRigidArea(new Dimension(0, 6)));
-
-        JPanel strengthRow = new JPanel(new BorderLayout(14, 0));
-        strengthRow.setOpaque(false);
-        strengthRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        strengthRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        passwordStrengthBar = new PasswordStrengthMeter();
-        passwordStrengthBar.setMeter(0, new Color(210, 205, 198));
-        passwordStrengthTierLabel = new JLabel("Enter a new password");
-        passwordStrengthTierLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
-        passwordStrengthTierLabel.setForeground(UITheme.TEXT_MEDIUM);
-        passwordStrengthTierLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        passwordStrengthTierLabel.setPreferredSize(new Dimension(130, 22));
-        passwordStrengthTierLabel.setMinimumSize(new Dimension(96, 22));
-        strengthRow.add(passwordStrengthBar, BorderLayout.CENTER);
-        strengthRow.add(passwordStrengthTierLabel, BorderLayout.EAST);
-        pwdCard.add(strengthRow);
-        pwdCard.add(Box.createRigidArea(new Dimension(0, 12)));
-
-        JPanel rulesCol = new JPanel();
-        rulesCol.setLayout(new BoxLayout(rulesCol, BoxLayout.Y_AXIS));
-        rulesCol.setOpaque(false);
-        rulesCol.setAlignmentX(Component.LEFT_ALIGNMENT);
-        secRuleLengthLabel = new JLabel();
-        secRuleUpperLabel = new JLabel();
-        secRuleLowerLabel = new JLabel();
-        secRuleDigitLabel = new JLabel();
-        secRuleSpecialLabel = new JLabel();
-        styleSecurityRuleLabel(secRuleLengthLabel);
-        styleSecurityRuleLabel(secRuleUpperLabel);
-        styleSecurityRuleLabel(secRuleLowerLabel);
-        styleSecurityRuleLabel(secRuleDigitLabel);
-        styleSecurityRuleLabel(secRuleSpecialLabel);
-        rulesCol.add(secRuleLengthLabel);
-        rulesCol.add(Box.createRigidArea(new Dimension(0, 4)));
-        rulesCol.add(secRuleUpperLabel);
-        rulesCol.add(Box.createRigidArea(new Dimension(0, 4)));
-        rulesCol.add(secRuleLowerLabel);
-        rulesCol.add(Box.createRigidArea(new Dimension(0, 4)));
-        rulesCol.add(secRuleDigitLabel);
-        rulesCol.add(Box.createRigidArea(new Dimension(0, 4)));
-        rulesCol.add(secRuleSpecialLabel);
-        pwdCard.add(rulesCol);
-        pwdCard.add(Box.createRigidArea(new Dimension(0, 8)));
-
-        passwordConfirmMatchLabel = new JLabel(" ");
-        passwordConfirmMatchLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        passwordConfirmMatchLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pwdCard.add(passwordConfirmMatchLabel);
-
-        pwdCard.add(Box.createRigidArea(new Dimension(0, 10)));
-        showPasswordsCheck.setOpaque(false);
-        showPasswordsCheck.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        showPasswordsCheck.setForeground(UITheme.TEXT_DARK);
-        pwdCard.add(showPasswordsCheck);
-
-        pwdCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        JLabel pwdFoot = new JLabel("<html><div style=\"width:680px;color:#777;font-size:12px;\">After a successful change you "
-                + "remain signed in on this device. Use a password manager when possible.</div></html>");
-        pwdFoot.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pwdCard.add(pwdFoot);
-        pwdCard.add(Box.createRigidArea(new Dimension(0, 14)));
-
-        styleButton(updatePasswordButton, true);
-        updatePasswordButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        updatePasswordButton.setMaximumSize(new Dimension(320, 44));
-        pwdCard.add(updatePasswordButton);
-
-        mainPanel.add(pwdCard);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
-
-        JPanel signInCard = createSecurityShellCard();
-        signInCard.add(createSectionTitle("Sign-in & alerts", "Preferences stored on this computer for this account."));
-        signInCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        secChkNewDevice = new JCheckBox("Email me when a new device signs in");
-        secChkDigest = new JCheckBox("Monthly security summary email");
-        secChkLoginAlert = new JCheckBox("In-app alerts for password and sign-in changes");
-        secChkReauth = new JCheckBox("Require password again for sensitive actions");
-        for (JCheckBox c : new JCheckBox[]{secChkNewDevice, secChkDigest, secChkLoginAlert, secChkReauth}) {
-            c.setOpaque(false);
-            c.setFont(new Font("SansSerif", Font.PLAIN, 14));
-            c.setForeground(UITheme.TEXT_DARK);
-            c.setAlignmentX(Component.LEFT_ALIGNMENT);
-        }
-        signInCard.add(secChkNewDevice);
-        signInCard.add(securityPrefHint("Recommended — one email when we detect an unfamiliar browser."));
-        signInCard.add(Box.createRigidArea(new Dimension(0, 8)));
-        signInCard.add(secChkDigest);
-        signInCard.add(securityPrefHint("Lightweight tips; you can turn this off anytime."));
-        signInCard.add(Box.createRigidArea(new Dimension(0, 8)));
-        signInCard.add(secChkLoginAlert);
-        signInCard.add(securityPrefHint("Uses the same in-app notification system as reservations."));
-        signInCard.add(Box.createRigidArea(new Dimension(0, 8)));
-        signInCard.add(secChkReauth);
-        signInCard.add(securityPrefHint("Adds friction before destructive steps like account deletion."));
-        mainPanel.add(signInCard);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
-
-        JPanel sessionCard = createSecurityShellCard();
-        sessionCard.add(createSectionTitle("Sessions", "See where you are signed in and manage other sessions."));
-        sessionCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        JLabel thisDevice = new JLabel("<html><div style=\"width:680px;\"><b>This device</b> · 6 Stars Hotel desktop app<br/>"
-                + "<span style=\"color:#2d7a4a;font-weight:bold;\">Active now</span> · Local session on this machine</div></html>");
-        thisDevice.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        thisDevice.setForeground(UITheme.TEXT_DARK);
-        thisDevice.setAlignmentX(Component.LEFT_ALIGNMENT);
-        sessionCard.add(thisDevice);
-        sessionCard.add(Box.createRigidArea(new Dimension(0, 14)));
-        secBtnSignOutOthers = new JButton("Sign out other sessions");
-        styleButton(secBtnSignOutOthers, false);
-        secBtnSignOutOthers.setAlignmentX(Component.LEFT_ALIGNMENT);
-        secBtnSignOutOthers.setMaximumSize(new Dimension(260, 40));
-        sessionCard.add(secBtnSignOutOthers);
-        sessionCard.add(Box.createRigidArea(new Dimension(0, 8)));
-        sessionCard.add(securityPrefHint("In a full web deployment this would revoke refresh tokens on other browsers."));
-        mainPanel.add(sessionCard);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
-
-        JPanel recoveryCard = createSecurityShellCard();
-        recoveryCard.add(createSectionTitle("Account recovery", "If you cannot remember your password, use email verification."));
-        recoveryCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        JLabel recoveryBlurb = new JLabel("<html><div style=\"width:680px;\">We will send a one-time code to your email when "
-                + "Mailgun is configured in <code>.env</code>. You can still open the reset screen to practice the flow.</div></html>");
-        recoveryBlurb.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        recoveryBlurb.setForeground(UITheme.TEXT_MEDIUM);
-        recoveryBlurb.setAlignmentX(Component.LEFT_ALIGNMENT);
-        recoveryCard.add(recoveryBlurb);
-        recoveryCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        secBtnForgotPassword = new JButton("Forgot password — open email reset");
-        styleButton(secBtnForgotPassword, false);
-        secBtnForgotPassword.setAlignmentX(Component.LEFT_ALIGNMENT);
-        secBtnForgotPassword.setMaximumSize(new Dimension(360, 40));
-        recoveryCard.add(secBtnForgotPassword);
-        mainPanel.add(recoveryCard);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
-
-        JPanel activityCard = createSecurityShellCard();
-        activityCard.add(createSectionTitle("Recent sign-in activity", "Illustrative history for this demo — timestamps are stable for your account."));
-        activityCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        securityLoginHistoryInner = new JPanel();
-        securityLoginHistoryInner.setLayout(new BoxLayout(securityLoginHistoryInner, BoxLayout.Y_AXIS));
-        securityLoginHistoryInner.setOpaque(true);
-        securityLoginHistoryInner.setBackground(new Color(252, 252, 254));
-        securityLoginHistoryInner.setBorder(new EmptyBorder(8, 8, 8, 8));
-        JScrollPane activityScroll = new JScrollPane(securityLoginHistoryInner);
-        activityScroll.setBorder(BorderFactory.createLineBorder(new Color(220, 215, 205)));
-        activityScroll.getViewport().setBackground(new Color(252, 252, 254));
-        activityScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
-        activityScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
-        activityScroll.getVerticalScrollBar().setUnitIncrement(16);
-        activityCard.add(activityScroll);
-        mainPanel.add(activityCard);
-
-        DocumentListener passwordMeterListener = new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                refreshPasswordStrengthMeter();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                refreshPasswordStrengthMeter();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                refreshPasswordStrengthMeter();
-            }
-        };
-        newPasswordField.getDocument().addDocumentListener(passwordMeterListener);
-        confirmPasswordField.getDocument().addDocumentListener(passwordMeterListener);
-
-        refreshPasswordStrengthMeter();
-
-        return mainPanel;
-    }
-
-    private JPanel createSecurityShellCard() {
-        JPanel card = createCardPanel();
-        card.setBackground(BILLING_SECTION_BG);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(231, 223, 204), 1, true),
-                new EmptyBorder(20, 22, 22, 22)
-        ));
-        return card;
-    }
-
-    private JLabel securityPrefHint(String text) {
-        JLabel l = new JLabel("<html><div style=\"width:660px;color:#777;font-size:12px;\">" + escapeHtmlLite(text) + "</div></html>");
-        l.setAlignmentX(Component.LEFT_ALIGNMENT);
-        return l;
-    }
-
-    private void styleSecurityRuleLabel(JLabel label) {
-        label.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        label.setAlignmentX(Component.LEFT_ALIGNMENT);
-    }
-
-    private static String formatPasswordRuleLine(boolean ok, String text) {
-        String color = ok ? "#2d7a4a" : "#a0806a";
-        String mark = ok ? "✓" : "○";
-        return String.format("<html><span style='color:%s;font-weight:bold;'>%s</span>&nbsp;&nbsp;<span style='color:#3a3a3a;'>%s</span></html>",
-                color, mark, escapeHtmlLite(text));
-    }
-
-    private void refreshPasswordStrengthMeter() {
-        if (passwordStrengthBar == null || secRuleLengthLabel == null) {
-            return;
-        }
-        String rawNew = new String(newPasswordField.getPassword());
-        String rawConfirm = new String(confirmPasswordField.getPassword());
-
-        if (rawNew.isEmpty()) {
-            passwordStrengthBar.setMeter(0, new Color(210, 205, 198));
-            passwordStrengthTierLabel.setText("Enter a new password");
-            passwordStrengthTierLabel.setForeground(UITheme.TEXT_MEDIUM);
-            secRuleLengthLabel.setText(formatPasswordRuleLineNeutral("At least 8 characters"));
-            secRuleUpperLabel.setText(formatPasswordRuleLineNeutral("One uppercase letter (A–Z)"));
-            secRuleLowerLabel.setText(formatPasswordRuleLineNeutral("One lowercase letter (a–z)"));
-            secRuleDigitLabel.setText(formatPasswordRuleLineNeutral("One number (0–9)"));
-            secRuleSpecialLabel.setText(formatPasswordRuleLineNeutral("One special character (!@#$… )"));
-        } else {
-            PasswordStrengthEvaluator.Result r = PasswordStrengthEvaluator.evaluate(rawNew);
-            secRuleLengthLabel.setText(formatPasswordRuleLine(r.lengthOk(), "At least 8 characters"));
-            secRuleUpperLabel.setText(formatPasswordRuleLine(r.upperOk(), "One uppercase letter (A–Z)"));
-            secRuleLowerLabel.setText(formatPasswordRuleLine(r.lowerOk(), "One lowercase letter (a–z)"));
-            secRuleDigitLabel.setText(formatPasswordRuleLine(r.digitOk(), "One number (0–9)"));
-            secRuleSpecialLabel.setText(formatPasswordRuleLine(r.specialOk(), "One special character (!@#$… )"));
-            passwordStrengthTierLabel.setText(r.tierLabel());
-            Color barColor = switch (r.score()) {
-                case 0, 1 -> new Color(180, 60, 55);
-                case 2, 3 -> new Color(200, 145, 55);
-                default -> new Color(55, 140, 85);
-            };
-            passwordStrengthBar.setMeter(r.score(), barColor);
-            Color tierText = switch (r.score()) {
-                case 0, 1 -> new Color(150, 45, 40);
-                case 2, 3 -> new Color(145, 100, 35);
-                default -> new Color(35, 110, 70);
-            };
-            passwordStrengthTierLabel.setForeground(tierText);
-        }
-
-        if (rawConfirm.isEmpty()) {
-            passwordConfirmMatchLabel.setText(" ");
-        } else if (PasswordStrengthEvaluator.matches(rawNew, rawConfirm)) {
-            passwordConfirmMatchLabel.setText("<html><span style='color:#2d7a4a;'>✓ New passwords match.</span></html>");
-        } else {
-            passwordConfirmMatchLabel.setText("<html><span style='color:#b03030;'>Passwords do not match yet.</span></html>");
-        }
-    }
-
-    private static String formatPasswordRuleLineNeutral(String text) {
-        return String.format("<html><span style='color:#b0a090;'>○</span>&nbsp;&nbsp;<span style='color:#888888;'>%s</span></html>",
-                escapeHtmlLite(text));
-    }
-
-    private void loadSecurityPreferences(Account account) {
-        if (secChkNewDevice == null || account == null) {
-            return;
-        }
-        loadingSecurityPrefs = true;
-        try {
-            Preferences p = preferencesFor(account);
-            secChkNewDevice.setSelected(p.getBoolean(SEC_PREF_NEW_DEVICE, true));
-            secChkDigest.setSelected(p.getBoolean(SEC_PREF_DIGEST, false));
-            secChkLoginAlert.setSelected(p.getBoolean(SEC_PREF_LOGIN_ALERT, true));
-            secChkReauth.setSelected(p.getBoolean(SEC_PREF_REAUTH, true));
-        } finally {
-            loadingSecurityPrefs = false;
-        }
-    }
-
-    private void saveSecurityPreferences() {
-        if (loadingSecurityPrefs) {
-            return;
-        }
-        Account account = AccountController.currentAccount;
-        if (account == null || secChkNewDevice == null) {
-            return;
-        }
-        Preferences p = preferencesFor(account);
-        p.putBoolean(SEC_PREF_NEW_DEVICE, secChkNewDevice.isSelected());
-        p.putBoolean(SEC_PREF_DIGEST, secChkDigest.isSelected());
-        p.putBoolean(SEC_PREF_LOGIN_ALERT, secChkLoginAlert.isSelected());
-        p.putBoolean(SEC_PREF_REAUTH, secChkReauth.isSelected());
-    }
-
-    private void refreshSecurityWorkspace() {
-        if (securityAccountStatusLabel == null) {
-            return;
-        }
-        Account account = AccountController.currentAccount;
-        if (account == null) {
-            securityAccountStatusLabel.setText(" ");
-            if (secChkNewDevice != null) {
-                secChkNewDevice.setEnabled(false);
-                secChkDigest.setEnabled(false);
-                secChkLoginAlert.setEnabled(false);
-                secChkReauth.setEnabled(false);
-                secBtnSignOutOthers.setEnabled(false);
-                secBtnForgotPassword.setEnabled(false);
-            }
-            if (securityLoginHistoryInner != null) {
-                securityLoginHistoryInner.removeAll();
-                securityLoginHistoryInner.revalidate();
-                securityLoginHistoryInner.repaint();
-            }
-            return;
-        }
-
-        boolean verified = account.isEmailVerified();
-        String badge = verified
-                ? "<span style='background:#e6f4ea;color:#1e6b3a;padding:4px 10px;border-radius:6px;font-weight:bold;'>Verified</span>"
-                : "<span style='background:#fff3e0;color:#a65a12;padding:4px 10px;border-radius:6px;font-weight:bold;'>Not verified</span>";
-        securityAccountStatusLabel.setText("<html><div style=\"width:700px;\">Signed in as <b>" + escapeHtmlLite(account.getEmail())
-                + "</b> &nbsp;" + badge + "<br/><span style='color:#666;font-size:13px;'>"
-                + (verified ? "Your email can be used for receipts and password reset."
-                : "Verify your email from the welcome flow so we can send security codes.")
-                + "</span></div></html>");
-
-        loadSecurityPreferences(account);
-        secChkNewDevice.setEnabled(true);
-        secChkDigest.setEnabled(true);
-        secChkLoginAlert.setEnabled(true);
-        secChkReauth.setEnabled(true);
-        secBtnSignOutOthers.setEnabled(true);
-        secBtnForgotPassword.setEnabled(true);
-
-        rebuildSecurityLoginHistory(account.getEmail());
-        refreshPasswordStrengthMeter();
-    }
-
-    private void rebuildSecurityLoginHistory(String email) {
-        if (securityLoginHistoryInner == null) {
-            return;
-        }
-        securityLoginHistoryInner.removeAll();
-        int seed = email == null ? 0 : Math.abs(email.hashCode());
-        String[] cities = {"San Francisco, US", "Denver, US", "Toronto, CA", "London, UK", "Austin, US"};
-        String[] devices = {"Desktop app (this device)", "Chrome on Windows", "Safari on macOS", "Mobile Safari", "Firefox on Linux"};
-        String[] whens = {"Just now", "Yesterday · 9:14 PM", "3 days ago · 7:02 AM", "11 days ago · 2:41 PM", "27 days ago · 6:18 AM"};
-        for (int i = 0; i < 5; i++) {
-            String line = devices[i] + " · " + cities[(seed + i) % cities.length] + " · " + whens[i];
-            securityLoginHistoryInner.add(buildSecurityHistoryRow(line, i == 0));
-            securityLoginHistoryInner.add(Box.createRigidArea(new Dimension(0, 6)));
-        }
-        securityLoginHistoryInner.revalidate();
-        securityLoginHistoryInner.repaint();
-    }
-
-    private JPanel buildSecurityHistoryRow(String text, boolean current) {
-        JPanel row = new JPanel(new BorderLayout());
-        row.setOpaque(true);
-        row.setBackground(current ? new Color(236, 248, 240) : Color.WHITE);
-        row.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(220, 215, 205), 1, true),
-                new EmptyBorder(10, 12, 10, 12)
-        ));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
-        JLabel l = new JLabel("<html><div style=\"font-size:13px;\">" + escapeHtmlLite(text) + "</div></html>");
-        if (current) {
-            JLabel pill = new JLabel("Current");
-            pill.setFont(new Font("SansSerif", Font.BOLD, 11));
-            pill.setForeground(new Color(30, 110, 65));
-            pill.setOpaque(true);
-            pill.setBackground(new Color(210, 240, 218));
-            pill.setBorder(new EmptyBorder(3, 8, 3, 8));
-            row.add(l, BorderLayout.CENTER);
-            row.add(pill, BorderLayout.EAST);
-        } else {
-            row.add(l, BorderLayout.CENTER);
-        }
-        return row;
-    }
-
-    private void openForgotPasswordFromSecurity() {
-        Account account = AccountController.currentAccount;
-        if (account == null) {
-            return;
-        }
-        if (Main.passwordResetPage != null) {
-            Main.passwordResetPage.openForEmail(account.getEmail());
-        }
-        cardLayout.show(pages, "forgot password");
-    }
-
-    private void handleSignOutOtherSessions() {
-        JOptionPane.showMessageDialog(this,
-                "Other sessions would be signed out from browsers and devices you used before.\n\n"
-                        + "This desktop demo only runs a single local session, so there is nothing else to revoke — "
-                        + "the control is here to mirror a real “sign out everywhere” safety feature.",
-                "Sign out other sessions",
-                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private JPanel createNotificationsPanel() {
@@ -1871,21 +1404,6 @@ public class AccountCenterPage extends JPanel {
         uploadPhotoButton.addActionListener(e -> uploadProfilePhoto());
         removePhotoButton.addActionListener(e -> removeProfilePhoto());
         saveProfileButton.addActionListener(e -> saveProfileChanges());
-        updatePasswordButton.addActionListener(e -> updatePassword());
-        showPasswordsCheck.addActionListener(e -> togglePasswordVisibility(showPasswordsCheck.isSelected()));
-        if (secChkNewDevice != null) {
-            ActionListener secListener = e -> saveSecurityPreferences();
-            secChkNewDevice.addActionListener(secListener);
-            secChkDigest.addActionListener(secListener);
-            secChkLoginAlert.addActionListener(secListener);
-            secChkReauth.addActionListener(secListener);
-        }
-        if (secBtnSignOutOthers != null) {
-            secBtnSignOutOthers.addActionListener(e -> handleSignOutOtherSessions());
-        }
-        if (secBtnForgotPassword != null) {
-            secBtnForgotPassword.addActionListener(e -> openForgotPasswordFromSecurity());
-        }
         ActionListener preferenceListener = e -> saveNotificationPreferences();
         for (JCheckBox emailCheck : emailNotificationChecks.values()) {
             emailCheck.addActionListener(preferenceListener);
@@ -1920,13 +1438,11 @@ public class AccountCenterPage extends JPanel {
         deleteCodeField.setText("");
         deleteStatusLabel.setText(" ");
 
-        clearPasswordFields();
-        togglePasswordVisibility(showPasswordsCheck.isSelected());
+        securityTabPanel.refreshAfterAccountContextChange();
         loadNotificationPreferences(account);
         refreshMyReservationsContent();
         refreshBillingContent();
         refreshPaymentWorkspace();
-        refreshSecurityWorkspace();
 
         revalidate();
         repaint();
@@ -1965,9 +1481,7 @@ public class AccountCenterPage extends JPanel {
         deleteEmailField.setText("");
         deleteCodeField.setText("");
         deleteStatusLabel.setText(" ");
-        clearPasswordFields();
-        showPasswordsCheck.setSelected(false);
-        togglePasswordVisibility(false);
+        securityTabPanel.resetWhenLoggedOut();
 
         if (paymentWorkspaceStatusLabel != null) {
             paymentWorkspaceStatusLabel.setText(" ");
@@ -2001,7 +1515,6 @@ public class AccountCenterPage extends JPanel {
             paymentQuickCardButton.setEnabled(false);
         }
         rebuildPaymentMethodsList();
-        refreshSecurityWorkspace();
     }
 
     private void loadNotificationPreferences(Account account) {
@@ -2052,19 +1565,6 @@ public class AccountCenterPage extends JPanel {
         return input == null ? "unknown" : input.replaceAll("[^a-zA-Z0-9._-]", "_").toLowerCase(Locale.ROOT);
     }
 
-    private void togglePasswordVisibility(boolean visible) {
-        char echo = visible ? (char) 0 : MASK_ECHO;
-        currentPasswordField.setEchoChar(echo);
-        newPasswordField.setEchoChar(echo);
-        confirmPasswordField.setEchoChar(echo);
-    }
-
-    private void clearPasswordFields() {
-        currentPasswordField.setText("");
-        newPasswordField.setText("");
-        confirmPasswordField.setText("");
-    }
-
     private void saveProfileChanges() {
         Account account = AccountController.currentAccount;
         if (account == null) {
@@ -2084,56 +1584,6 @@ public class AccountCenterPage extends JPanel {
             notificationService.publishForCurrentAccount(NotificationType.ACCOUNT_ACTIVITY, "Your profile information was updated.");
         } catch (Exception ex) {
             // Handle error silently or show notification
-        }
-    }
-
-    private void updatePassword() {
-        Account account = AccountController.currentAccount;
-        if (account == null) {
-            JOptionPane.showMessageDialog(this, "Please sign in to change your password.", "Change password",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        String current = new String(currentPasswordField.getPassword());
-        String next = new String(newPasswordField.getPassword());
-        String confirm = new String(confirmPasswordField.getPassword());
-
-        if (current.isBlank()) {
-            JOptionPane.showMessageDialog(this, "Enter your current password so we can verify it is you.",
-                    "Change password", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        PasswordStrengthEvaluator.Result strength = PasswordStrengthEvaluator.evaluate(next);
-        if (!strength.lengthOk() || !strength.upperOk() || !strength.lowerOk() || !strength.digitOk() || !strength.specialOk()) {
-            JOptionPane.showMessageDialog(this,
-                    "Your new password must satisfy every rule in the checklist (length, upper, lower, number, and special character).",
-                    "Change password", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        if (confirm.isBlank()) {
-            JOptionPane.showMessageDialog(this, "Type your new password again in the confirmation field.",
-                    "Change password", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        if (!PasswordStrengthEvaluator.matches(next, confirm)) {
-            JOptionPane.showMessageDialog(this, "New password and confirmation do not match.",
-                    "Change password", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        try {
-            accountController.changePassword(current, next, confirm);
-            clearPasswordFields();
-            refreshPasswordStrengthMeter();
-            Main.headerBar.refreshInfo();
-            refreshInfo();
-            notificationService.publishForCurrentAccount(NotificationType.ACCOUNT_ACTIVITY, "Your password was changed successfully.");
-            JOptionPane.showMessageDialog(this,
-                    "Your password was updated. You remain signed in on this device.",
-                    "Change password", JOptionPane.INFORMATION_MESSAGE);
-        } catch (Exception ex) {
-            String msg = ex.getMessage() != null ? ex.getMessage() : "Could not change password.";
-            JOptionPane.showMessageDialog(this, msg, "Change password", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -3250,57 +2700,6 @@ public class AccountCenterPage extends JPanel {
         return label;
     }
 
-    /**
-     * Lightweight strength bar — macOS Aqua {@link javax.swing.JProgressBar} can throw
-     * {@link NegativeArraySizeException} when laid out at transient zero/negative widths.
-     */
-    private static final class PasswordStrengthMeter extends JPanel {
-        private int score;
-        private Color fillColor = new Color(210, 205, 198);
-
-        PasswordStrengthMeter() {
-            setOpaque(false);
-            setPreferredSize(new Dimension(320, 18));
-            setMinimumSize(new Dimension(120, 14));
-            setMaximumSize(new Dimension(4000, 28));
-        }
-
-        void setMeter(int score, Color fill) {
-            this.score = Math.max(0, Math.min(5, score));
-            this.fillColor = fill != null ? fill : new Color(210, 205, 198);
-            repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            int w = getWidth();
-            int h = getHeight();
-            if (w <= 2 || h <= 2) {
-                return;
-            }
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                int arc = Math.max(4, Math.min(h / 2, 10));
-                g2.setColor(new Color(245, 240, 234));
-                g2.fillRoundRect(0, 0, w - 1, h - 1, arc, arc);
-                g2.setColor(new Color(200, 190, 180));
-                g2.drawRoundRect(0, 0, w - 1, h - 1, arc, arc);
-                int innerW = w - 6;
-                int innerH = h - 6;
-                if (innerW > 0 && innerH > 0 && score > 0) {
-                    int fillW = (int) Math.round(innerW * (score / 5.0));
-                    fillW = Math.max(1, Math.min(innerW, fillW));
-                    g2.setColor(fillColor);
-                    g2.fillRoundRect(3, 3, fillW, innerH, Math.max(2, arc - 2), Math.max(2, arc - 2));
-                }
-            } finally {
-                g2.dispose();
-            }
-        }
-    }
-
     private final class AvatarPanel extends JPanel {
         private BufferedImage image;
         private String initials = "??";
@@ -3399,16 +2798,3 @@ public class AccountCenterPage extends JPanel {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
