@@ -109,6 +109,8 @@ public class AccountCenterPage extends JPanel {
     private JPanel addPaymentFormOuter;
     private JButton toggleAddPaymentFormButton;
     private JLabel paymentBalanceSnapshotLabel;
+    private JButton paymentQuickStripeButton;
+    private JButton paymentQuickCardButton;
     private JButton dangerZoneButton;
 
     // Content panels for each section
@@ -927,6 +929,38 @@ public class AccountCenterPage extends JPanel {
         mainPanel.add(balanceSnapshot);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
 
+        JPanel quickPayCard = createCardPanel();
+        quickPayCard.setBackground(BILLING_SECTION_BG);
+        quickPayCard.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(225, 207, 167), 1, true),
+                new EmptyBorder(16, 18, 18, 18)
+        ));
+        quickPayCard.add(createSectionTitle("Pay your balance",
+                "Jump to guest billing to pay with Stripe or a saved card."));
+        quickPayCard.add(Box.createRigidArea(new Dimension(0, 12)));
+        JPanel quickPayRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        quickPayRow.setOpaque(false);
+        quickPayRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        paymentQuickStripeButton = new JButton("Pay with Stripe");
+        stylePaymentQuickAction(paymentQuickStripeButton);
+        paymentQuickStripeButton.addActionListener(_ -> openMainGuestBillingThen(() -> {
+            if (Main.billingPage != null) {
+                Main.billingPage.triggerPayWithStripe();
+            }
+        }));
+        paymentQuickCardButton = new JButton("Pay with card");
+        stylePaymentQuickAction(paymentQuickCardButton);
+        paymentQuickCardButton.addActionListener(_ -> openMainGuestBillingThen(() -> {
+            if (Main.billingPage != null) {
+                Main.billingPage.triggerPayWithCard();
+            }
+        }));
+        quickPayRow.add(paymentQuickStripeButton);
+        quickPayRow.add(paymentQuickCardButton);
+        quickPayCard.add(quickPayRow);
+        mainPanel.add(quickPayCard);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
+
         JPanel methodsCard = createCardPanel();
         methodsCard.setBackground(BILLING_SECTION_BG);
         methodsCard.setBorder(BorderFactory.createCompoundBorder(
@@ -1341,6 +1375,36 @@ public class AccountCenterPage extends JPanel {
         return card;
     }
 
+    private void stylePaymentQuickAction(JButton button) {
+        button.setFont(new Font("SansSerif", Font.BOLD, 14));
+        button.setBackground(UITheme.ACCENT_GOLD);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(200, 42));
+        button.setMinimumSize(new Dimension(160, 42));
+        button.setMaximumSize(new Dimension(280, 42));
+    }
+
+    /** Opens the top-level Guest Billing screen (same as header navigation), then runs an action on the EDT. */
+    private void openMainGuestBillingThen(Runnable afterRefresh) {
+        Account me = AccountController.currentAccount;
+        if (me == null) {
+            return;
+        }
+        cardLayout.show(pages, "billing page");
+        if (Main.headerBar != null) {
+            Main.headerBar.refreshInfo();
+        }
+        if (Main.billingPage != null) {
+            Main.billingPage.refresh();
+        }
+        if (afterRefresh != null) {
+            SwingUtilities.invokeLater(afterRefresh);
+        }
+    }
+
     private JButton styleButton(JButton button, boolean primary) {
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
         button.setFont(new Font("SansSerif", Font.BOLD, 14));
@@ -1497,6 +1561,10 @@ public class AccountCenterPage extends JPanel {
         }
         if (toggleAddPaymentFormButton != null) {
             toggleAddPaymentFormButton.setText("Add a payment method");
+        }
+        if (paymentQuickStripeButton != null) {
+            paymentQuickStripeButton.setEnabled(false);
+            paymentQuickCardButton.setEnabled(false);
         }
         rebuildPaymentMethodsList();
     }
@@ -2027,6 +2095,10 @@ public class AccountCenterPage extends JPanel {
                 payCardNumberField.setText("");
                 payCardCvvField.setText("");
             }
+            if (paymentQuickStripeButton != null) {
+                paymentQuickStripeButton.setEnabled(false);
+                paymentQuickCardButton.setEnabled(false);
+            }
             return;
         }
         String email = account.getEmail();
@@ -2054,6 +2126,16 @@ public class AccountCenterPage extends JPanel {
         }
 
         rebuildPaymentMethodsList();
+
+        if (paymentQuickStripeButton != null && paymentQuickCardButton != null) {
+            boolean stripeReady = StripeConfig.hasSecretKey()
+                    && StripeConfig.hasConnectClientId()
+                    && StripeGuestPreferences.isStripeAccountConnected(email);
+            paymentQuickStripeButton.setEnabled(stripeReady && due > 0.009);
+            boolean hasSaved = !savedPaymentMethodService.listForGuest(email).isEmpty();
+            paymentQuickCardButton.setEnabled(hasSaved && due > 0.009);
+        }
+
         updateStripeConnectBannerUi(email);
     }
 

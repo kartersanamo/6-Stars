@@ -53,12 +53,12 @@ public class BillingPage extends JPanel {
 
     private final JLabel stripePayTitle;
     private final JLabel stripePayBlurb;
-    private final JButton btnStripeCheckout;
+    private final JButton btnPayWithStripe;
     private final JButton btnConnectStripeFromBilling;
 
     private final JLabel savedPayBlurb;
     private final JComboBox<SavedPaymentMethod> savedMethodCombo;
-    private final JButton btnPayWithSavedMethod;
+    private final JButton btnPayWithCard;
     private final JButton btnAddPaymentMethod;
 
     private final JPanel paymentHistoryInner;
@@ -193,6 +193,24 @@ public class BillingPage extends JPanel {
         payNowShell.add(payNowHeading);
         payNowShell.add(Box.createRigidArea(new Dimension(0, 8)));
         payNowShell.add(payNowSub);
+        payNowShell.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        JPanel payHeroRow = new JPanel(new GridLayout(1, 2, 14, 0));
+        payHeroRow.setOpaque(false);
+        payHeroRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        payHeroRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+
+        btnPayWithStripe = new JButton("Pay with Stripe");
+        stylePrimaryGoldButton(btnPayWithStripe);
+        btnPayWithStripe.addActionListener(e -> startStripeSandboxCheckout());
+
+        btnPayWithCard = new JButton("Pay with card");
+        stylePrimaryGoldButton(btnPayWithCard);
+        btnPayWithCard.addActionListener(e -> payWithSelectedSavedMethod());
+
+        payHeroRow.add(btnPayWithStripe);
+        payHeroRow.add(btnPayWithCard);
+        payNowShell.add(payHeroRow);
         payNowShell.add(Box.createRigidArea(new Dimension(0, 20)));
 
         JPanel stripeZone = softInsetPanel(STRIPE_ZONE_BG);
@@ -200,7 +218,7 @@ public class BillingPage extends JPanel {
         stripeZone.setAlignmentX(Component.LEFT_ALIGNMENT);
         stripeZone.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
 
-        stripePayTitle = new JLabel("Pay with Stripe");
+        stripePayTitle = new JLabel("Stripe");
         stripePayTitle.setFont(new Font("SansSerif", Font.BOLD, 17));
         stripePayTitle.setForeground(UITheme.TEXT_DARK);
         stripePayTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -214,15 +232,10 @@ public class BillingPage extends JPanel {
         stripeBtnRow.setOpaque(false);
         stripeBtnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        btnStripeCheckout = new JButton("Open Stripe Checkout");
-        stylePrimaryGoldButton(btnStripeCheckout);
-        btnStripeCheckout.addActionListener(e -> startStripeSandboxCheckout());
-
         btnConnectStripeFromBilling = new JButton("Connect Stripe in Account Center");
         styleSecondaryButton(btnConnectStripeFromBilling);
         btnConnectStripeFromBilling.addActionListener(e -> navigateToAccountCenterPayment(false));
 
-        stripeBtnRow.add(btnStripeCheckout);
         stripeBtnRow.add(btnConnectStripeFromBilling);
 
         stripeZone.add(stripePayTitle);
@@ -258,15 +271,10 @@ public class BillingPage extends JPanel {
         savedBtnRow.setOpaque(false);
         savedBtnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        btnPayWithSavedMethod = new JButton("Mark amount due as paid");
-        stylePrimaryGoldButton(btnPayWithSavedMethod);
-        btnPayWithSavedMethod.addActionListener(e -> payWithSelectedSavedMethod());
-
         btnAddPaymentMethod = new JButton("Add or manage cards");
         styleSecondaryButton(btnAddPaymentMethod);
         btnAddPaymentMethod.addActionListener(e -> navigateToAccountCenterPayment(true));
 
-        savedBtnRow.add(btnPayWithSavedMethod);
         savedBtnRow.add(btnAddPaymentMethod);
 
         savedZone.add(savedTitle);
@@ -428,15 +436,15 @@ public class BillingPage extends JPanel {
     }
 
     private void updatePayNowForSignedOut() {
-        stripePayTitle.setText("Pay with Stripe");
+        stripePayTitle.setText("Stripe");
         stripePayBlurb.setText("<html><div style=\"width:600px\">Sign in as a guest to see Stripe and saved-card options.</div></html>");
-        btnStripeCheckout.setEnabled(false);
+        btnPayWithStripe.setEnabled(false);
         btnConnectStripeFromBilling.setEnabled(false);
         btnConnectStripeFromBilling.setText("Connect Stripe in Account Center");
         savedPayBlurb.setText(" ");
         savedMethodCombo.removeAllItems();
         savedMethodCombo.setEnabled(false);
-        btnPayWithSavedMethod.setEnabled(false);
+        btnPayWithCard.setEnabled(false);
         btnAddPaymentMethod.setEnabled(false);
     }
 
@@ -462,7 +470,7 @@ public class BillingPage extends JPanel {
                     + "(after any simulated saved-card payments).</div></html>");
         }
 
-        btnStripeCheckout.setEnabled(stripeReady && amountDue > 0.009);
+        btnPayWithStripe.setEnabled(stripeReady && amountDue > 0.009);
         btnConnectStripeFromBilling.setEnabled(true);
         if (connected) {
             btnConnectStripeFromBilling.setText("Open Payment settings");
@@ -471,11 +479,11 @@ public class BillingPage extends JPanel {
         }
 
         if (stripeReady && amountDue <= 0.009) {
-            btnStripeCheckout.setToolTipText("You are caught up — nothing to pay.");
+            btnPayWithStripe.setToolTipText("You are caught up — nothing to pay.");
         } else if (!stripeReady) {
-            btnStripeCheckout.setToolTipText("Connect Stripe from Account Center first.");
+            btnPayWithStripe.setToolTipText("Connect Stripe from Account Center first.");
         } else {
-            btnStripeCheckout.setToolTipText("Opens Stripe Checkout in your browser (test mode).");
+            btnPayWithStripe.setToolTipText("Opens Stripe Checkout in your browser (test mode).");
         }
 
         List<SavedPaymentMethod> methods = savedPaymentMethodService.listForGuest(email);
@@ -485,7 +493,17 @@ public class BillingPage extends JPanel {
         }
         boolean hasSaved = !methods.isEmpty();
         savedMethodCombo.setEnabled(hasSaved);
-        btnPayWithSavedMethod.setEnabled(hasSaved && amountDue > 0.009);
+        btnPayWithCard.setEnabled(hasSaved && amountDue > 0.009);
+        if (savedMethodCombo.getItemCount() > 0) {
+            savedMethodCombo.setSelectedIndex(0);
+        }
+        if (!hasSaved) {
+            btnPayWithCard.setToolTipText("Add a saved card in Account Center → Payment first.");
+        } else if (amountDue <= 0.009) {
+            btnPayWithCard.setToolTipText("Nothing due right now.");
+        } else {
+            btnPayWithCard.setToolTipText("Records a simulated payment for the full amount due (demo — no bank charge).");
+        }
         btnAddPaymentMethod.setEnabled(true);
 
         if (!hasSaved) {
@@ -923,5 +941,15 @@ public class BillingPage extends JPanel {
         if (Main.accountCenterPage != null) {
             Main.accountCenterPage.refreshPaymentWorkspace();
         }
+    }
+
+    /** Same as clicking Pay with Stripe on this page (used from Account Center quick actions). */
+    public void triggerPayWithStripe() {
+        startStripeSandboxCheckout();
+    }
+
+    /** Same as clicking Pay with card on this page (uses the selected saved card in the combo). */
+    public void triggerPayWithCard() {
+        payWithSelectedSavedMethod();
     }
 }
