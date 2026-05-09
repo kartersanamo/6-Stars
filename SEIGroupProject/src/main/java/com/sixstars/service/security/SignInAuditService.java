@@ -93,11 +93,8 @@ public final class SignInAuditService {
         sessionPrefs.put("last_device_id", deviceId);
 
         if (SecurityPreferenceKeys.isLoginInAppAlertEnabled(accountCenterRoot(), account)) {
-            NotificationService ns = NotificationService.getInstance();
-            if (ns.isInAppEnabled(email, NotificationType.ACCOUNT_ACTIVITY)) {
-                ns.publish(NotificationType.ACCOUNT_ACTIVITY, email,
-                        "Signed in — " + osLine + " (" + DISPLAY.format(now) + ")");
-            }
+            NotificationService.getInstance().publish(NotificationType.SECURITY_SIGN_IN, email,
+                    "Signed in — " + osLine + " (" + DISPLAY.format(now) + ")");
         }
     }
 

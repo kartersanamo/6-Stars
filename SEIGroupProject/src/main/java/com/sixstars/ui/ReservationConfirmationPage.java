@@ -36,8 +36,10 @@ import javax.swing.border.EmptyBorder;
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
+import com.sixstars.model.NotificationType;
 import com.sixstars.model.Role;
 import com.sixstars.model.Room;
+import com.sixstars.service.NotificationService;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
 
@@ -48,6 +50,7 @@ public class ReservationConfirmationPage extends JPanel {
     private final CardLayout cardLayout;
     private final ReservationService reservationService;
     private final RoomService roomService;
+    private final NotificationService notificationService = NotificationService.getInstance();
     private final Image roomImage;
 
     // Current draft state
@@ -523,13 +526,6 @@ public class ReservationConfirmationPage extends JPanel {
             return;
         }
 
-        // Validate room is still available
-        if (!reservationService.isRoomAvailable(draftRoom, draftStartDate, draftEndDate)) {
-            showNotification("Unfortunately, this room is no longer available for the selected dates. Please select another room.");
-            cardLayout.show(pages, "make reservation");
-            return;
-        }
-
         // Determine the email to use for the reservation
         String targetEmail;
         if (draftIsClerkBooking && draftClerkEmail != null) {
@@ -538,6 +534,16 @@ public class ReservationConfirmationPage extends JPanel {
             targetEmail = draftAccount.getEmail();
         } else {
             showNotification("Unable to determine guest email. Please try again.");
+            return;
+        }
+
+        // Validate room is still available
+        if (!reservationService.isRoomAvailable(draftRoom, draftStartDate, draftEndDate)) {
+            notificationService.publish(NotificationType.WAITLIST_AND_AVAILABILITY, targetEmail,
+                    "Room " + draftRoom.getRoomNumber() + " is no longer available for "
+                            + draftStartDate + " → " + draftEndDate + ". Pick another room or dates.");
+            showNotification("Unfortunately, this room is no longer available for the selected dates. Please select another room.");
+            cardLayout.show(pages, "make reservation");
             return;
         }
 

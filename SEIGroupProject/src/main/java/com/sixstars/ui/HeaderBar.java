@@ -9,6 +9,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Insets;
 import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.Window;
@@ -298,28 +299,39 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
             int showCount = Math.min(8, notifications.size());
             for (int i = 0; i < showCount; i++) {
                 AppNotification notification = notifications.get(i);
-                JPanel row = new JPanel(new BorderLayout(8, 0));
+                JPanel row = new JPanel(new BorderLayout(4, 0));
                 row.setOpaque(true);
                 row.setBackground(new Color(252, 250, 245));
                 row.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createLineBorder(new Color(232, 226, 214), 1),
-                        new EmptyBorder(8, 10, 8, 10)));
+                        new EmptyBorder(5, 8, 5, 6)));
                 row.setAlignmentX(Component.LEFT_ALIGNMENT);
-                row.setMaximumSize(new Dimension(PROFILE_POPUP_WIDTH, 120));
+                // Constrain width only so BoxLayout does not squash row height (fixed height was clipping HTML).
+                row.setMaximumSize(new Dimension(PROFILE_POPUP_WIDTH, Integer.MAX_VALUE));
 
                 String time = notification.getCreatedAt().atZone(ZoneId.systemDefault()).format(TIME_FORMAT);
-                JLabel text = new JLabel("<html><div style=\"width:220px\"><b>" + notification.getType().getDisplayName() + "</b><br/>"
-                        + notification.getMessage() + "<br/><span style='color:#888888;'>" + time + "</span></div></html>");
-                text.setFont(new Font("SansSerif", Font.PLAIN, 12));
+                String msg = escapeHtmlNotif(notification.getMessage());
+                if (msg.length() > 90) {
+                    msg = msg.substring(0, 87) + "…";
+                }
+                String typeName = escapeHtmlNotif(notification.getType().getDisplayName());
+                JLabel text = new JLabel("<html><div style=\"width:210px;margin:0;padding:2px 0 2px 0;font-size:11px;line-height:1.35;\">"
+                        + "<b>" + typeName + "</b><br/>"
+                        + "<span style=\"color:#555;\">" + msg + "</span>"
+                        + " <span style=\"color:#999;font-size:10px;\">· " + time + "</span></div></html>");
+                text.setFont(new Font("SansSerif", Font.PLAIN, 11));
                 text.setForeground(UITheme.TEXT_DARK);
+                text.setVerticalAlignment(SwingConstants.TOP);
 
                 JButton clearOne = new JButton("×");
-                clearOne.setFont(new Font("SansSerif", Font.BOLD, 14));
+                clearOne.setFont(new Font("SansSerif", Font.BOLD, 12));
+                clearOne.setMargin(new Insets(0, 2, 0, 2));
                 clearOne.setBorderPainted(false);
                 clearOne.setContentAreaFilled(false);
                 clearOne.setForeground(UITheme.TEXT_MEDIUM);
                 clearOne.setCursor(new Cursor(Cursor.HAND_CURSOR));
                 clearOne.setFocusPainted(false);
+                clearOne.setPreferredSize(new Dimension(18, 22));
                 clearOne.addActionListener(_ -> {
                     if (current != null) {
                         notificationService.clearNotification(current.getEmail(), notification.getId());
@@ -331,12 +343,16 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
                 row.add(clearOne, BorderLayout.EAST);
                 listPanel.add(row);
                 if (i < showCount - 1) {
-                    listPanel.add(Box.createRigidArea(new Dimension(0, 6)));
+                    listPanel.add(Box.createRigidArea(new Dimension(0, 3)));
                 }
             }
             JScrollPane scroll = new JScrollPane(listPanel);
             scroll.setBorder(BorderFactory.createLineBorder(new Color(232, 226, 214), 1));
-            scroll.setPreferredSize(new Dimension(PROFILE_POPUP_WIDTH, Math.min(220, 56 + showCount * 72)));
+            // Viewport height budget per row (multi-line HTML); scrollbar appears if list is taller.
+            int approxRow = 62;
+            int gapBetween = 3;
+            scroll.setPreferredSize(new Dimension(PROFILE_POPUP_WIDTH,
+                    Math.min(320, 12 + showCount * approxRow + Math.max(0, showCount - 1) * gapBetween)));
             scroll.getViewport().setBackground(popupBg);
             scroll.setAlignmentX(Component.LEFT_ALIGNMENT);
             scroll.getVerticalScrollBar().setUnitIncrement(16);
@@ -376,6 +392,16 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
         sep.setMaximumSize(new Dimension(PROFILE_POPUP_WIDTH, 10));
         sep.setAlignmentX(Component.LEFT_ALIGNMENT);
         return sep;
+    }
+
+    private static String escapeHtmlNotif(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        return raw.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
     }
 
     private static JButton profileMenuRowButton(String label) {

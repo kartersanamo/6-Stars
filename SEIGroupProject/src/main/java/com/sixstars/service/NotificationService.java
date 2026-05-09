@@ -21,6 +21,8 @@ public class NotificationService {
     private final Map<String, List<AppNotification>> notificationStore = new HashMap<>();
     private final List<NotificationListener> listeners = new CopyOnWriteArrayList<>();
     private final Preferences preferencesRoot = Preferences.userNodeForPackage(NotificationService.class);
+    /** Lazy to avoid init-order issues with {@link AccountService}. */
+    private volatile AccountService accountService;
 
     public static NotificationService getInstance() {
         return INSTANCE;
@@ -31,12 +33,48 @@ public class NotificationService {
             return;
         }
         String normalizedEmail = targetEmail.trim().toLowerCase(Locale.ROOT);
+        boolean wantInApp = isInAppEnabled(normalizedEmail, type);
+        boolean wantEmail = isEmailEnabled(normalizedEmail, type);
 
-        synchronized (notificationStore) {
-            notificationStore.computeIfAbsent(normalizedEmail, _ -> new ArrayList<>())
-                    .add(0, new AppNotification(type, message));
+        if (wantInApp) {
+            synchronized (notificationStore) {
+                notificationStore.computeIfAbsent(normalizedEmail, _ -> new ArrayList<>())
+                        .add(0, new AppNotification(type, message));
+            }
+            notifyListeners(normalizedEmail);
         }
-        notifyListeners(normalizedEmail);
+
+        if (wantEmail) {
+            String subject = "6 Stars Hotel — " + type.getDisplayName();
+            String html = "<p style=\"margin:0 0 12px 0;font-family:system-ui,sans-serif;font-size:15px;\">"
+                    + escapeHtml(message)
+                    + "</p>"
+                    + "<p style=\"margin:0;color:#666;font-family:system-ui,sans-serif;font-size:12px;\">"
+                    + "Category: " + escapeHtml(type.getCategory())
+                    + "</p>";
+            accountService().sendSecurityNoticeEmailIfConfigured(normalizedEmail, subject, html);
+        }
+    }
+
+    private AccountService accountService() {
+        AccountService svc = accountService;
+        if (svc == null) {
+            synchronized (this) {
+                svc = accountService;
+                if (svc == null) {
+                    svc = new AccountService();
+                    accountService = svc;
+                }
+            }
+        }
+        return svc;
+    }
+
+    private static String escapeHtml(String s) {
+        return s.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
     }
 
     public void publishForCurrentAccount(NotificationType type, String message) {

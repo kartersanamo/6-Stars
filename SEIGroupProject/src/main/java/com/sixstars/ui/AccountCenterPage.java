@@ -9,8 +9,11 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.CardLayout;
+import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.geom.RoundRectangle2D;
@@ -23,7 +26,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -75,6 +80,19 @@ public class AccountCenterPage extends JPanel {
     private static final Color BILLING_SECTION_BG = new Color(252, 250, 245);
     private static final Color BILLING_ACCENT = new Color(176, 132, 38);
     private static final Color BILLING_POSITIVE = new Color(44, 122, 72);
+
+    /** Category band order on the Notifications settings tab (must match {@link com.sixstars.model.NotificationType#getCategory()}). */
+    private static final List<String> NOTIFICATION_UI_CATEGORY_ORDER = List.of(
+            "Reservations & stay",
+            "Charges & folio",
+            "Shop & dining",
+            "Offers & loyalty",
+            "Messaging",
+            "Security & account",
+            "On-property",
+            "Experiences & travel",
+            "System"
+    );
 
     private final JPanel pages;
     private final CardLayout cardLayout;
@@ -558,74 +576,189 @@ public class AccountCenterPage extends JPanel {
         JPanel mainPanel = createContentPanel();
 
         JLabel title = new JLabel("Notifications");
-        title.setFont(new Font("Serif", Font.BOLD, 26));
+        title.setFont(new Font("Serif", Font.BOLD, 28));
         title.setForeground(UITheme.TEXT_DARK);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel subtitle = new JLabel("Choose exactly how each notification is delivered: Email, In-App, or both.");
-        subtitle.setFont(UITheme.SUBTITLE_FONT);
+        JLabel subtitle = new JLabel("<html><div style=\"width:760px;line-height:1.45;\">Choose email, in-app, or both "
+                + "for each alert. Preferences are stored on this device for your signed-in account.</div></html>");
+        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 13));
         subtitle.setForeground(UITheme.TEXT_MEDIUM);
+        subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         mainPanel.add(title);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 4)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 6)));
         mainPanel.add(subtitle);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        JPanel notificationCard = createCardPanel();
-        notificationCard.add(createSectionTitle("Delivery Preferences", "Toggle per category for Email and In-App alerts"));
-        notificationCard.add(Box.createRigidArea(new Dimension(0, 16)));
+        LinkedHashMap<String, List<NotificationType>> byCategory = new LinkedHashMap<>();
+        for (String c : NOTIFICATION_UI_CATEGORY_ORDER) {
+            byCategory.put(c, new ArrayList<>());
+        }
+        for (NotificationType t : NotificationType.values()) {
+            byCategory.computeIfAbsent(t.getCategory(), k -> new ArrayList<>()).add(t);
+        }
 
-        // Wrap notification content in its own non-expanding container
-        JPanel notificationContent = new JPanel();
-        notificationContent.setLayout(new BoxLayout(notificationContent, BoxLayout.Y_AXIS));
-        notificationContent.setOpaque(false);
-        notificationContent.setAlignmentX(Component.LEFT_ALIGNMENT);
-        notificationContent.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setOpaque(true);
+        card.setBackground(UITheme.CARD_BACKGROUND);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(UITheme.BORDER_COLOR, 1, true),
+                new EmptyBorder(14, 18, 18, 18)));
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.setMaximumSize(new Dimension(820, Integer.MAX_VALUE));
 
-        JPanel tableHeader = new JPanel(new GridLayout(1, 3, 12, 0));
-        tableHeader.setOpaque(false);
+        JLabel cardTitle = new JLabel("Delivery preferences");
+        cardTitle.setFont(new Font("SansSerif", Font.BOLD, 15));
+        cardTitle.setForeground(UITheme.TEXT_DARK);
+        cardTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(cardTitle);
+        JLabel cardSub = new JLabel("Grouped by topic · compact rows");
+        cardSub.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        cardSub.setForeground(UITheme.TEXT_MEDIUM);
+        cardSub.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(cardSub);
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        JPanel tableHeader = createNotificationTableHeader();
         tableHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
-        tableHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
-        tableHeader.add(createHeaderCell("Notification Type"));
-        tableHeader.add(createHeaderCell("Email"));
-        tableHeader.add(createHeaderCell("In-App"));
-        notificationContent.add(tableHeader);
-        notificationContent.add(Box.createRigidArea(new Dimension(0, 8)));
+        card.add(tableHeader);
+
+        JPanel rowsWrap = new JPanel();
+        rowsWrap.setLayout(new BoxLayout(rowsWrap, BoxLayout.Y_AXIS));
+        rowsWrap.setOpaque(true);
+        rowsWrap.setBackground(Color.WHITE);
+        rowsWrap.setBorder(BorderFactory.createLineBorder(new Color(232, 226, 214), 1));
+        rowsWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         emailNotificationChecks.clear();
         inAppNotificationChecks.clear();
-        for (NotificationType type : NotificationType.values()) {
-            JPanel row = new JPanel(new GridLayout(1, 3, 12, 0));
-            row.setOpaque(false);
-            row.setAlignmentX(Component.LEFT_ALIGNMENT);
-            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
-            JLabel typeLabel = new JLabel(type.getDisplayName());
-            typeLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
-            typeLabel.setForeground(UITheme.TEXT_DARK);
-
-            JCheckBox emailCheck = new JCheckBox();
-            emailCheck.setOpaque(false);
-            emailCheck.setHorizontalAlignment(SwingConstants.CENTER);
-
-            JCheckBox inAppCheck = new JCheckBox();
-            inAppCheck.setOpaque(false);
-            inAppCheck.setHorizontalAlignment(SwingConstants.CENTER);
-
-            emailNotificationChecks.put(type, emailCheck);
-            inAppNotificationChecks.put(type, inAppCheck);
-
-            row.add(typeLabel);
-            row.add(emailCheck);
-            row.add(inAppCheck);
-            notificationContent.add(row);
-            notificationContent.add(Box.createRigidArea(new Dimension(0, 6)));
+        int stripe = 0;
+        boolean firstCategory = true;
+        for (String category : NOTIFICATION_UI_CATEGORY_ORDER) {
+            List<NotificationType> types = byCategory.get(category);
+            if (types == null || types.isEmpty()) {
+                continue;
+            }
+            rowsWrap.add(buildNotificationCategoryHeader(category, !firstCategory));
+            firstCategory = false;
+            for (NotificationType type : types) {
+                rowsWrap.add(buildNotificationPreferenceRow(type, stripe % 2 == 1));
+                stripe++;
+            }
         }
 
-        notificationCard.add(notificationContent);
-        notificationCard.add(Box.createVerticalGlue());
-        mainPanel.add(notificationCard);
+        card.add(rowsWrap);
+        mainPanel.add(card);
 
         return mainPanel;
+    }
+
+    private JPanel createNotificationTableHeader() {
+        JPanel header = new JPanel(new GridBagLayout());
+        header.setOpaque(true);
+        header.setBackground(new Color(248, 244, 236));
+        header.setBorder(new EmptyBorder(6, 10, 6, 10));
+        header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridy = 0;
+        c.gridx = 0;
+        c.weightx = 1.0;
+        c.anchor = GridBagConstraints.WEST;
+        c.insets = new Insets(0, 2, 0, 8);
+        JLabel colType = new JLabel("Alert");
+        colType.setFont(new Font("SansSerif", Font.BOLD, 11));
+        colType.setForeground(new Color(110, 98, 82));
+        header.add(colType, c);
+
+        c.gridx = 1;
+        c.weightx = 0;
+        c.anchor = GridBagConstraints.CENTER;
+        c.insets = new Insets(0, 6, 0, 6);
+        JLabel colEmail = new JLabel("Email");
+        colEmail.setFont(new Font("SansSerif", Font.BOLD, 11));
+        colEmail.setForeground(new Color(110, 98, 82));
+        header.add(colEmail, c);
+
+        c.gridx = 2;
+        JLabel colInApp = new JLabel("In-app");
+        colInApp.setFont(new Font("SansSerif", Font.BOLD, 11));
+        colInApp.setForeground(new Color(110, 98, 82));
+        header.add(colInApp, c);
+
+        return header;
+    }
+
+    private JPanel buildNotificationCategoryHeader(String categoryTitle, boolean dividerAbove) {
+        JPanel band = new JPanel();
+        band.setLayout(new BoxLayout(band, BoxLayout.Y_AXIS));
+        band.setOpaque(false);
+        band.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        if (dividerAbove) {
+            band.add(Box.createRigidArea(new Dimension(0, 4)));
+            JSeparator sep = new JSeparator(JSeparator.HORIZONTAL);
+            sep.setForeground(new Color(236, 230, 218));
+            sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 8));
+            sep.setAlignmentX(Component.LEFT_ALIGNMENT);
+            band.add(sep);
+            band.add(Box.createRigidArea(new Dimension(0, 6)));
+        }
+
+        JLabel lab = new JLabel(categoryTitle.toUpperCase());
+        lab.setFont(new Font("SansSerif", Font.BOLD, 10));
+        lab.setForeground(new Color(130, 112, 82));
+        lab.setBorder(new EmptyBorder(dividerAbove ? 0 : 8, 12, 2, 0));
+        lab.setAlignmentX(Component.LEFT_ALIGNMENT);
+        band.add(lab);
+        return band;
+    }
+
+    private JPanel buildNotificationPreferenceRow(NotificationType type, boolean alternateStripe) {
+        JPanel row = new JPanel(new GridBagLayout());
+        row.setOpaque(true);
+        row.setBackground(alternateStripe ? new Color(252, 250, 245) : Color.WHITE);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(240, 234, 224)));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridy = 0;
+        c.gridx = 0;
+        c.weightx = 1.0;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.anchor = GridBagConstraints.WEST;
+        c.insets = new Insets(1, 12, 1, 8);
+        JLabel typeLabel = new JLabel(type.getDisplayName());
+        typeLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        typeLabel.setForeground(UITheme.TEXT_DARK);
+        row.add(typeLabel, c);
+
+        JCheckBox emailCheck = new JCheckBox();
+        emailCheck.setOpaque(false);
+        emailCheck.setHorizontalAlignment(SwingConstants.CENTER);
+        JCheckBox inAppCheck = new JCheckBox();
+        inAppCheck.setOpaque(false);
+        inAppCheck.setHorizontalAlignment(SwingConstants.CENTER);
+        emailNotificationChecks.put(type, emailCheck);
+        inAppNotificationChecks.put(type, inAppCheck);
+
+        c = new GridBagConstraints();
+        c.gridx = 1;
+        c.weightx = 0;
+        c.fill = GridBagConstraints.NONE;
+        c.anchor = GridBagConstraints.CENTER;
+        c.insets = new Insets(0, 4, 0, 10);
+        row.add(emailCheck, c);
+
+        c.gridx = 2;
+        c.insets = new Insets(0, 4, 0, 12);
+        row.add(inAppCheck, c);
+
+        return row;
     }
 
     private JPanel createMyReservationsPanel() {
@@ -1250,16 +1383,6 @@ public class AccountCenterPage extends JPanel {
         panel.add(subtitleLabel);
 
         return panel;
-    }
-
-    private JLabel createHeaderCell(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("SansSerif", Font.BOLD, 12));
-        label.setForeground(UITheme.TEXT_MEDIUM);
-        if (!"Notification Type".equals(text)) {
-            label.setHorizontalAlignment(SwingConstants.CENTER);
-        }
-        return label;
     }
 
     private JPanel createLabeledFieldCard(String label, JComponent component, boolean editable) {
@@ -2159,6 +2282,8 @@ public class AccountCenterPage extends JPanel {
             savedPaymentMethodService.deleteMethod(m.getId(), account.getEmail());
             paymentWorkspaceStatusLabel.setText("Removed saved card.");
             rebuildPaymentMethodsList();
+            notificationService.publishForCurrentAccount(NotificationType.PAYMENTS_AND_CARDS,
+                    "Removed saved card ending in " + m.getLastFour() + ".");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "Could not remove card: " + ex.getMessage(),
@@ -2249,6 +2374,8 @@ public class AccountCenterPage extends JPanel {
             toggleAddPaymentFormButton.setText("Add a payment method");
             rebuildPaymentMethodsList();
             refreshPaymentWorkspace();
+            notificationService.publishForCurrentAccount(NotificationType.PAYMENTS_AND_CARDS,
+                    "Saved payment method: " + brand + " ending in " + last4 + ".");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "Could not save payment method: " + ex.getMessage(),
@@ -2523,6 +2650,10 @@ public class AccountCenterPage extends JPanel {
                             "Stripe account linked locally for sandbox demos.\nStripe user id:\n" + acctId,
                             "Stripe Connect",
                             JOptionPane.INFORMATION_MESSAGE);
+                    notificationService.publish(NotificationType.PAYMENTS_AND_CARDS, email,
+                            "Stripe Connect linked on this device for sandbox Checkout (account id saved locally).");
+                    notificationService.publish(NotificationType.APP_UPDATES_AND_LEGAL, email,
+                            "Using Stripe Checkout is subject to Stripe’s user terms; hotel billing still shows in Billing.");
                 }
                 paymentWorkspaceStatusLabel.setText(" ");
                 refreshPaymentWorkspace();
@@ -2546,6 +2677,8 @@ public class AccountCenterPage extends JPanel {
         if (paymentWorkspaceStatusLabel != null) {
             paymentWorkspaceStatusLabel.setText("Disconnected Stripe sandbox link locally.");
         }
+        notificationService.publishForCurrentAccount(NotificationType.PAYMENTS_AND_CARDS,
+                "Stripe Connect was disconnected on this computer (linked account id cleared locally).");
         refreshPaymentWorkspace();
     }
 

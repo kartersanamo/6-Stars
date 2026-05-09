@@ -30,7 +30,11 @@ public class ShopService {
         return dao.getAllItems();
     }
 
-    public double checkout(String guestEmail, ShoppingCart cart) {
+    /**
+     * Persists the order, updates stock, clears the cart, and publishes guest-facing notifications (shop, order status,
+     * optional promos) using the real order id and totals.
+     */
+    public ShopOrder checkout(String guestEmail, ShoppingCart cart) {
         if (guestEmail == null || guestEmail.isBlank()) {
             throw new IllegalStateException("A guest must be logged in to complete checkout.");
         }
@@ -81,7 +85,35 @@ public class ShopService {
 
         shoppingCartDAO.clearCart(guestEmail);
         cart.clear();
-        return total;
+
+        int orderId = order.getId();
+        String money = String.format(java.util.Locale.US, "%.2f", total);
+        notificationService.publish(NotificationType.SHOP_PURCHASES, guestEmail,
+                "Order #" + orderId + " confirmed. Total $" + money + ".");
+        notificationService.publish(NotificationType.ORDER_STATUS, guestEmail,
+                "Order #" + orderId + " is being prepared for delivery to your room.");
+        notificationService.publish(NotificationType.IN_ROOM_DINING, guestEmail,
+                "In-room route: order #" + orderId + " (" + money + " total) — ring service for timing.");
+        if (total >= 50.0) {
+            notificationService.publish(NotificationType.SHOP_PROMOTIONS, guestEmail,
+                    "You unlocked a member-style offer on your next in-stay purchase (order total $" + money + ").");
+        }
+        if (orderHasSpecialAmenityKeywords(order)) {
+            notificationService.publish(NotificationType.SPECIAL_AMENITIES, guestEmail,
+                    "We noted celebration or specialty items in order #" + orderId + " — staff can assist with setup.");
+        }
+        return order;
+    }
+
+    private static boolean orderHasSpecialAmenityKeywords(ShopOrder order) {
+        for (ShopOrderItem line : order.getItems()) {
+            String n = line.getItemName() == null ? "" : line.getItemName().toLowerCase(java.util.Locale.ROOT);
+            if (n.contains("champagne") || n.contains("cake") || n.contains("anniversary") || n.contains("birthday")
+                    || n.contains("rose")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isGuestCurrentlyCheckedIn(String guestEmail) {

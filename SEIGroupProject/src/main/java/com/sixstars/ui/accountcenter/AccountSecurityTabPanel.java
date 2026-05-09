@@ -29,7 +29,6 @@ import javax.swing.event.DocumentListener;
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
-import com.sixstars.model.NotificationType;
 import com.sixstars.service.security.PasswordStrengthEvaluator;
 import com.sixstars.service.security.SignInAuditService;
 import com.sixstars.ui.UITheme;
@@ -204,7 +203,7 @@ public final class AccountSecurityTabPanel extends JPanel {
                 + "does not match the last sign-in — for example after reinstalling the app."));
         signInCard.add(Box.createRigidArea(new Dimension(0, 8)));
         signInCard.add(secChkLoginAlert);
-        signInCard.add(securityPrefHint("Uses your notification preferences for “Account activity” in the Notifications tab."));
+        signInCard.add(securityPrefHint("Uses “Sign-in & new device alerts” (in-app) on the Notifications tab when enabled there."));
         signInCard.add(Box.createRigidArea(new Dimension(0, 8)));
         signInCard.add(secChkReauth);
         signInCard.add(securityPrefHint("When enabled, deleting your account asks for your password again after email and code verification."));
@@ -544,7 +543,6 @@ public final class AccountSecurityTabPanel extends JPanel {
                 Main.headerBar.refreshInfo();
             }
             ctx.refreshFullAccountCenterUi();
-            ctx.notificationService().publishForCurrentAccount(NotificationType.ACCOUNT_ACTIVITY, "Your password was changed successfully.");
             JOptionPane.showMessageDialog(this,
                     "Your password was updated. You remain signed in on this device.",
                     "Change password", JOptionPane.INFORMATION_MESSAGE);

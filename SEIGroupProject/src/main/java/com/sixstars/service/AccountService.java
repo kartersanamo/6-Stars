@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 
 import com.sixstars.database.AccountDAO;
 import com.sixstars.model.Account;
+import com.sixstars.model.NotificationType;
 import com.sixstars.model.Role;
 
 public class AccountService {
@@ -208,6 +209,11 @@ public class AccountService {
                 performer.getProfileImagePath()
         );
         accountDAO.saveAccount(updated);
+        NotificationService notifications = NotificationService.getInstance();
+        notifications.publish(NotificationType.PASSWORD_AND_VERIFICATION, performer.getEmail(),
+                "Your password was changed successfully.");
+        notifications.publish(NotificationType.APP_UPDATES_AND_LEGAL, performer.getEmail(),
+                "Security reminder: if you did not change your password, reset it again and contact the hotel.");
     }
 
     public void sendVerificationCode(String email) {
@@ -279,6 +285,8 @@ public class AccountService {
         );
         accountDAO.saveAccount(updated);
         accountDAO.updateVerificationState(normalizedEmail, account.isEmailVerified(), null, null);
+        NotificationService.getInstance().publish(NotificationType.PASSWORD_AND_VERIFICATION, normalizedEmail,
+                "Your password was reset using the code sent to your email.");
     }
 
     private void issueCode(String email, boolean passwordReset) {
@@ -306,6 +314,14 @@ public class AccountService {
                 mailgunEmailSender.sendPasswordResetCode(normalizedEmail, code);
             } else {
                 mailgunEmailSender.sendVerificationCode(normalizedEmail, code);
+            }
+            NotificationService ns = NotificationService.getInstance();
+            if (passwordReset) {
+                ns.publish(NotificationType.PASSWORD_AND_VERIFICATION, normalizedEmail,
+                        "Password reset code sent to your inbox (valid 15 minutes).");
+            } else {
+                ns.publish(NotificationType.PASSWORD_AND_VERIFICATION, normalizedEmail,
+                        "Email verification code sent (valid 15 minutes).");
             }
         } catch (Exception e) {
             throw new RuntimeException((passwordReset ? "Failed to send password reset email: " : "Failed to send verification email: ") + e.getMessage(), e);
@@ -346,6 +362,10 @@ public class AccountService {
         }
 
         accountDAO.updateVerificationState(normalizedEmail, true, null, null);
+        NotificationService ns = NotificationService.getInstance();
+        ns.publish(NotificationType.ACCOUNT_ACTIVITY, normalizedEmail, "Email address verified on your account.");
+        ns.publish(NotificationType.PRIVACY_AND_POLICY, normalizedEmail,
+                "You can manage privacy-related notices under Account Center → Notifications.");
         return true;
     }
 
@@ -384,6 +404,8 @@ public class AccountService {
         }
 
         accountDAO.updateVerificationState(normalizedEmail, account.isEmailVerified(), null, null);
+        NotificationService.getInstance().publish(NotificationType.PASSWORD_AND_VERIFICATION, normalizedEmail,
+                "Account action verified with your emailed code.");
         return true;
     }
 
@@ -425,6 +447,8 @@ public class AccountService {
 
         try {
             mailgunEmailSender.sendVerificationCode(normalizedEmail, code);
+            NotificationService.getInstance().publish(NotificationType.PASSWORD_AND_VERIFICATION, normalizedEmail,
+                    "Account action verification code sent (valid 15 minutes).");
         } catch (Exception e) {
             throw new RuntimeException("Failed to send " + purpose.toLowerCase() + " email: " + e.getMessage(), e);
         }
