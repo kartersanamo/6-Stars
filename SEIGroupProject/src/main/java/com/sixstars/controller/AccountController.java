@@ -66,6 +66,19 @@ public class AccountController {
         return accountService.getAccountByEmail(email);
     }
 
+    public AccountService getAccountService() {
+        return accountService;
+    }
+
+    /** Verifies the current account's password (for re-authentication before sensitive actions). */
+    public boolean verifyCurrentPassword(String password) {
+        ensureCurrentAccount();
+        if (password == null) {
+            return false;
+        }
+        return accountService.authenticate(currentAccount.getEmail(), password) != null;
+    }
+
     public void sendAccountActionCode(String email) {
         accountService.sendAccountActionCode(email);
     }

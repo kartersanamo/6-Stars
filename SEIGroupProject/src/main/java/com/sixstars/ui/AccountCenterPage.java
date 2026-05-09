@@ -37,6 +37,7 @@ import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.basic.BasicButtonUI;
 
+import com.sixstars.app.AppSession;
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
@@ -57,6 +58,7 @@ import com.sixstars.service.stripe.StripeGuestPreferences;
 import com.sixstars.service.stripe.StripeHostedLocalServer;
 import com.sixstars.ui.accountcenter.AccountCenterContext;
 import com.sixstars.ui.accountcenter.AccountSecurityTabPanel;
+import com.sixstars.ui.accountcenter.SecurityPreferenceKeys;
 
 public class AccountCenterPage extends JPanel {
     private static final int AVATAR_SIZE = 120;
@@ -1639,19 +1641,32 @@ public class AccountCenterPage extends JPanel {
     }
 
     private void logout() {
-        if (Main.shopPage != null) {
-            Main.shopPage.persistCurrentCart();
-            Main.shopPage.clearTransientCart();
-        }
-        AccountController.currentAccount = null;
-        Main.headerBar.refreshInfo();
-        cardLayout.show(pages, "home");
+        AppSession.logout(pages, cardLayout);
     }
 
     private void deleteAccountWithVerification() {
         Account account = AccountController.currentAccount;
         if (account == null) {
             return;
+        }
+
+        if (SecurityPreferenceKeys.isReauthForSensitiveActions(preferencesRoot, account)) {
+            JPanel wrap = new JPanel(new BorderLayout(0, 8));
+            wrap.add(new JLabel("Enter your account password to continue with account deletion:"), BorderLayout.NORTH);
+            JPasswordField reauthPass = new JPasswordField(24);
+            wrap.add(reauthPass, BorderLayout.CENTER);
+            int choice = JOptionPane.showConfirmDialog(this, wrap, "Confirm password",
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            if (choice != JOptionPane.OK_OPTION) {
+                deleteStatusLabel.setText("Deletion cancelled.");
+                return;
+            }
+            if (!accountController.verifyCurrentPassword(new String(reauthPass.getPassword()))) {
+                deleteStatusLabel.setText("Password did not match.");
+                JOptionPane.showMessageDialog(this, "Password did not match your account.", "Verification Failed",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
         }
 
         String expectedEmail = account.getEmail();

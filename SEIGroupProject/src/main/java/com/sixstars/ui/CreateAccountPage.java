@@ -35,6 +35,7 @@ import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.Role;
 import com.sixstars.service.security.PasswordStrengthEvaluator;
+import com.sixstars.service.security.SignInAuditService;
 import com.sixstars.ui.components.PasswordStrengthHeaderPanel;
 
 public class CreateAccountPage extends JPanel {
@@ -434,6 +435,7 @@ public class CreateAccountPage extends JPanel {
                     }
 
                     AccountController.currentAccount = verifiedAccount;
+                    SignInAuditService.recordSuccessfulSignIn(verifiedAccount, accountController.getAccountService());
 
                     Main.headerBar.refreshInfo();
 

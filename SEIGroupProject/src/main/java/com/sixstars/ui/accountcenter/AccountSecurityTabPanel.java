@@ -6,6 +6,9 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.prefs.Preferences;
 
 import javax.swing.BorderFactory;
@@ -28,6 +31,7 @@ import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.NotificationType;
 import com.sixstars.service.security.PasswordStrengthEvaluator;
+import com.sixstars.service.security.SignInAuditService;
 import com.sixstars.ui.UITheme;
 import com.sixstars.ui.components.PasswordStrengthHeaderPanel;
 import com.sixstars.ui.components.PasswordStrengthUiFormatter;
@@ -37,11 +41,9 @@ import com.sixstars.ui.components.PasswordStrengthUiFormatter;
  */
 public final class AccountSecurityTabPanel extends JPanel {
 
-    private static final String SEC_PREF_NEW_DEVICE = "sec_alert_new_device_email";
-    private static final String SEC_PREF_DIGEST = "sec_monthly_security_digest";
-    private static final String SEC_PREF_LOGIN_ALERT = "sec_login_alerts_in_app";
-    private static final String SEC_PREF_REAUTH = "sec_require_reauth_sensitive";
     private static final Color BILLING_SECTION_BG = new Color(252, 250, 245);
+    private static final DateTimeFormatter SIGNIN_TIME = DateTimeFormatter.ofPattern("MMM d, yyyy · h:mm a")
+            .withZone(ZoneId.systemDefault());
 
     private final AccountCenterContext ctx;
 
@@ -59,11 +61,10 @@ public final class AccountSecurityTabPanel extends JPanel {
     private JLabel passwordConfirmMatchLabel;
     private JLabel securityAccountStatusLabel;
     private JCheckBox secChkNewDevice;
-    private JCheckBox secChkDigest;
     private JCheckBox secChkLoginAlert;
     private JCheckBox secChkReauth;
-    private JButton secBtnSignOutOthers;
     private JButton secBtnForgotPassword;
+    private JLabel thisDeviceSummaryLabel;
     private JPanel securityLoginHistoryInner;
     private boolean loadingSecurityPrefs;
 
@@ -189,55 +190,52 @@ public final class AccountSecurityTabPanel extends JPanel {
         JPanel signInCard = AccountCenterSwingFactory.createSecurityShellCard(BILLING_SECTION_BG, new Color(231, 223, 204));
         signInCard.add(AccountCenterSwingFactory.createSectionTitle("Sign-in & alerts", "Preferences stored on this computer for this account."));
         signInCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        secChkNewDevice = new JCheckBox("Email me when a new device signs in");
-        secChkDigest = new JCheckBox("Monthly security summary email");
+        secChkNewDevice = new JCheckBox("Email me when sign-in looks different on this computer");
         secChkLoginAlert = new JCheckBox("In-app alerts for password and sign-in changes");
         secChkReauth = new JCheckBox("Require password again for sensitive actions");
-        for (JCheckBox c : new JCheckBox[]{secChkNewDevice, secChkDigest, secChkLoginAlert, secChkReauth}) {
+        for (JCheckBox c : new JCheckBox[]{secChkNewDevice, secChkLoginAlert, secChkReauth}) {
             c.setOpaque(false);
             c.setFont(new Font("SansSerif", Font.PLAIN, 14));
             c.setForeground(UITheme.TEXT_DARK);
             c.setAlignmentX(Component.LEFT_ALIGNMENT);
         }
         signInCard.add(secChkNewDevice);
-        signInCard.add(securityPrefHint("Recommended — one email when we detect an unfamiliar browser."));
-        signInCard.add(Box.createRigidArea(new Dimension(0, 8)));
-        signInCard.add(secChkDigest);
-        signInCard.add(securityPrefHint("Lightweight tips; you can turn this off anytime."));
+        signInCard.add(securityPrefHint("Sends one email (when Mailgun is configured) if this app’s saved device profile "
+                + "does not match the last sign-in — for example after reinstalling the app."));
         signInCard.add(Box.createRigidArea(new Dimension(0, 8)));
         signInCard.add(secChkLoginAlert);
-        signInCard.add(securityPrefHint("Uses the same in-app notification system as reservations."));
+        signInCard.add(securityPrefHint("Uses your notification preferences for “Account activity” in the Notifications tab."));
         signInCard.add(Box.createRigidArea(new Dimension(0, 8)));
         signInCard.add(secChkReauth);
-        signInCard.add(securityPrefHint("Adds friction before destructive steps like account deletion."));
+        signInCard.add(securityPrefHint("When enabled, deleting your account asks for your password again after email and code verification."));
         mainPanel.add(signInCard);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
 
         JPanel sessionCard = AccountCenterSwingFactory.createSecurityShellCard(BILLING_SECTION_BG, new Color(231, 223, 204));
-        sessionCard.add(AccountCenterSwingFactory.createSectionTitle("Sessions", "See where you are signed in and manage other sessions."));
+        sessionCard.add(AccountCenterSwingFactory.createSectionTitle("This app",
+                "This desktop client keeps sign-in history on this computer only."));
         sessionCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        JLabel thisDevice = new JLabel("<html><div style=\"width:680px;\"><b>This device</b> · 6 Stars Hotel desktop app<br/>"
-                + "<span style=\"color:#2d7a4a;font-weight:bold;\">Active now</span> · Local session on this machine</div></html>");
+        JLabel thisDevice = new JLabel("<html><div style=\"width:680px;\"><b>6 Stars Hotel desktop app</b><br/>"
+                + "Your session exists only in this running application. There are no separate web or mobile sessions "
+                + "to revoke from here.</div></html>");
         thisDevice.setFont(new Font("SansSerif", Font.PLAIN, 14));
         thisDevice.setForeground(UITheme.TEXT_DARK);
         thisDevice.setAlignmentX(Component.LEFT_ALIGNMENT);
         sessionCard.add(thisDevice);
-        sessionCard.add(Box.createRigidArea(new Dimension(0, 14)));
-        secBtnSignOutOthers = new JButton("Sign out other sessions");
-        AccountCenterSwingFactory.styleButton(secBtnSignOutOthers, false);
-        secBtnSignOutOthers.setAlignmentX(Component.LEFT_ALIGNMENT);
-        secBtnSignOutOthers.setMaximumSize(new Dimension(260, 40));
-        sessionCard.add(secBtnSignOutOthers);
-        sessionCard.add(Box.createRigidArea(new Dimension(0, 8)));
-        sessionCard.add(securityPrefHint("In a full web deployment this would revoke refresh tokens on other browsers."));
+        sessionCard.add(Box.createRigidArea(new Dimension(0, 10)));
+        thisDeviceSummaryLabel = new JLabel(" ");
+        thisDeviceSummaryLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        thisDeviceSummaryLabel.setForeground(UITheme.TEXT_MEDIUM);
+        thisDeviceSummaryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        sessionCard.add(thisDeviceSummaryLabel);
         mainPanel.add(sessionCard);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
 
         JPanel recoveryCard = AccountCenterSwingFactory.createSecurityShellCard(BILLING_SECTION_BG, new Color(231, 223, 204));
         recoveryCard.add(AccountCenterSwingFactory.createSectionTitle("Account recovery", "If you cannot remember your password, use email verification."));
         recoveryCard.add(Box.createRigidArea(new Dimension(0, 12)));
-        JLabel recoveryBlurb = new JLabel("<html><div style=\"width:680px;\">We will send a one-time code to your email when "
-                + "Mailgun is configured in <code>.env</code>. You can still open the reset screen to practice the flow.</div></html>");
+        JLabel recoveryBlurb = new JLabel("<html><div style=\"width:680px;\">If Mailgun is configured in your environment, "
+                + "we email a one-time code. Use the button below to open the reset flow for your signed-in email.</div></html>");
         recoveryBlurb.setFont(new Font("SansSerif", Font.PLAIN, 13));
         recoveryBlurb.setForeground(UITheme.TEXT_MEDIUM);
         recoveryBlurb.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -253,7 +251,7 @@ public final class AccountSecurityTabPanel extends JPanel {
 
         JPanel activityCard = AccountCenterSwingFactory.createSecurityShellCard(BILLING_SECTION_BG, new Color(231, 223, 204));
         activityCard.add(AccountCenterSwingFactory.createSectionTitle("Recent sign-in activity",
-                "Illustrative history for this demo — timestamps are stable for your account."));
+                "Recorded on this computer when you successfully sign in."));
         activityCard.add(Box.createRigidArea(new Dimension(0, 12)));
         securityLoginHistoryInner = new JPanel();
         securityLoginHistoryInner.setLayout(new BoxLayout(securityLoginHistoryInner, BoxLayout.Y_AXIS));
@@ -297,10 +295,8 @@ public final class AccountSecurityTabPanel extends JPanel {
         showPasswordsCheck.addActionListener(e -> togglePasswordVisibility(showPasswordsCheck.isSelected()));
         Runnable saveSec = this::saveSecurityPreferences;
         secChkNewDevice.addActionListener(e -> saveSec.run());
-        secChkDigest.addActionListener(e -> saveSec.run());
         secChkLoginAlert.addActionListener(e -> saveSec.run());
         secChkReauth.addActionListener(e -> saveSec.run());
-        secBtnSignOutOthers.addActionListener(e -> handleSignOutOtherSessions());
         secBtnForgotPassword.addActionListener(e -> openForgotPasswordFromSecurity());
     }
 
@@ -324,11 +320,12 @@ public final class AccountSecurityTabPanel extends JPanel {
         if (account == null) {
             securityAccountStatusLabel.setText(" ");
             secChkNewDevice.setEnabled(false);
-            secChkDigest.setEnabled(false);
             secChkLoginAlert.setEnabled(false);
             secChkReauth.setEnabled(false);
-            secBtnSignOutOthers.setEnabled(false);
             secBtnForgotPassword.setEnabled(false);
+            if (thisDeviceSummaryLabel != null) {
+                thisDeviceSummaryLabel.setText(" ");
+            }
             securityLoginHistoryInner.removeAll();
             securityLoginHistoryInner.revalidate();
             securityLoginHistoryInner.repaint();
@@ -348,13 +345,16 @@ public final class AccountSecurityTabPanel extends JPanel {
 
         loadSecurityPreferences(account);
         secChkNewDevice.setEnabled(true);
-        secChkDigest.setEnabled(true);
         secChkLoginAlert.setEnabled(true);
         secChkReauth.setEnabled(true);
-        secBtnSignOutOthers.setEnabled(true);
         secBtnForgotPassword.setEnabled(true);
 
-        rebuildSecurityLoginHistory(account.getEmail());
+        if (thisDeviceSummaryLabel != null) {
+            thisDeviceSummaryLabel.setText("<html><div style=\"width:680px;\">"
+                    + PasswordStrengthUiFormatter.escapeHtmlLite(SignInAuditService.currentSessionSummary(account))
+                    + "</div></html>");
+        }
+        refreshSignInActivityList(account);
         refreshPasswordStrengthMeter();
     }
 
@@ -376,10 +376,9 @@ public final class AccountSecurityTabPanel extends JPanel {
         loadingSecurityPrefs = true;
         try {
             Preferences p = ctx.preferencesFor(account);
-            secChkNewDevice.setSelected(p.getBoolean(SEC_PREF_NEW_DEVICE, true));
-            secChkDigest.setSelected(p.getBoolean(SEC_PREF_DIGEST, false));
-            secChkLoginAlert.setSelected(p.getBoolean(SEC_PREF_LOGIN_ALERT, true));
-            secChkReauth.setSelected(p.getBoolean(SEC_PREF_REAUTH, true));
+            secChkNewDevice.setSelected(p.getBoolean(SecurityPreferenceKeys.NEW_DEVICE_EMAIL, true));
+            secChkLoginAlert.setSelected(p.getBoolean(SecurityPreferenceKeys.LOGIN_ALERT_IN_APP, true));
+            secChkReauth.setSelected(p.getBoolean(SecurityPreferenceKeys.REAUTH_SENSITIVE, true));
         } finally {
             loadingSecurityPrefs = false;
         }
@@ -394,10 +393,9 @@ public final class AccountSecurityTabPanel extends JPanel {
             return;
         }
         Preferences p = ctx.preferencesFor(account);
-        p.putBoolean(SEC_PREF_NEW_DEVICE, secChkNewDevice.isSelected());
-        p.putBoolean(SEC_PREF_DIGEST, secChkDigest.isSelected());
-        p.putBoolean(SEC_PREF_LOGIN_ALERT, secChkLoginAlert.isSelected());
-        p.putBoolean(SEC_PREF_REAUTH, secChkReauth.isSelected());
+        p.putBoolean(SecurityPreferenceKeys.NEW_DEVICE_EMAIL, secChkNewDevice.isSelected());
+        p.putBoolean(SecurityPreferenceKeys.LOGIN_ALERT_IN_APP, secChkLoginAlert.isSelected());
+        p.putBoolean(SecurityPreferenceKeys.REAUTH_SENSITIVE, secChkReauth.isSelected());
     }
 
     private void refreshPasswordStrengthMeter() {
@@ -433,33 +431,40 @@ public final class AccountSecurityTabPanel extends JPanel {
         }
     }
 
-    private void rebuildSecurityLoginHistory(String email) {
+    private void refreshSignInActivityList(Account account) {
         securityLoginHistoryInner.removeAll();
-        int seed = email == null ? 0 : Math.abs(email.hashCode());
-        String[] cities = {"San Francisco, US", "Denver, US", "Toronto, CA", "London, UK", "Austin, US"};
-        String[] devices = {"Desktop app (this device)", "Chrome on Windows", "Safari on macOS", "Mobile Safari", "Firefox on Linux"};
-        String[] whens = {"Just now", "Yesterday · 9:14 PM", "3 days ago · 7:02 AM", "11 days ago · 2:41 PM", "27 days ago · 6:18 AM"};
-        for (int i = 0; i < 5; i++) {
-            String line = devices[i] + " · " + cities[(seed + i) % cities.length] + " · " + whens[i];
-            securityLoginHistoryInner.add(buildSecurityHistoryRow(line, i == 0));
-            securityLoginHistoryInner.add(Box.createRigidArea(new Dimension(0, 6)));
+        List<SignInAuditService.SignInEntry> entries = SignInAuditService.readRecentHistory(account, 25);
+        if (entries.isEmpty()) {
+            JLabel empty = new JLabel("<html><div style=\"width:640px;color:#666;font-size:13px;\">"
+                    + "No sign-ins recorded yet. Each successful login from this app is listed here.</div></html>");
+            empty.setAlignmentX(Component.LEFT_ALIGNMENT);
+            securityLoginHistoryInner.add(empty);
+        } else {
+            for (int i = 0; i < entries.size(); i++) {
+                SignInAuditService.SignInEntry e = entries.get(i);
+                securityLoginHistoryInner.add(buildSignInHistoryRow(e, i == 0));
+                securityLoginHistoryInner.add(Box.createRigidArea(new Dimension(0, 6)));
+            }
         }
         securityLoginHistoryInner.revalidate();
         securityLoginHistoryInner.repaint();
     }
 
-    private JPanel buildSecurityHistoryRow(String text, boolean current) {
+    private JPanel buildSignInHistoryRow(SignInAuditService.SignInEntry entry, boolean mostRecent) {
+        String when = SIGNIN_TIME.format(entry.when());
+        String line = when + " — " + entry.detailLine();
         JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(true);
-        row.setBackground(current ? new Color(236, 248, 240) : Color.WHITE);
+        row.setBackground(mostRecent ? new Color(236, 248, 240) : Color.WHITE);
         row.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(new Color(220, 215, 205), 1, true),
                 new EmptyBorder(10, 12, 10, 12)
         ));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
-        JLabel l = new JLabel("<html><div style=\"font-size:13px;\">" + PasswordStrengthUiFormatter.escapeHtmlLite(text) + "</div></html>");
-        if (current) {
-            JLabel pill = new JLabel("Current");
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
+        JLabel l = new JLabel("<html><div style=\"font-size:13px;\">"
+                + PasswordStrengthUiFormatter.escapeHtmlLite(line) + "</div></html>");
+        if (mostRecent) {
+            JLabel pill = new JLabel("Latest");
             pill.setFont(new Font("SansSerif", Font.BOLD, 11));
             pill.setForeground(new Color(30, 110, 65));
             pill.setOpaque(true);
@@ -482,15 +487,6 @@ public final class AccountSecurityTabPanel extends JPanel {
             Main.passwordResetPage.openForEmail(account.getEmail());
         }
         ctx.applicationCardLayout().show(ctx.applicationPages(), "forgot password");
-    }
-
-    private void handleSignOutOtherSessions() {
-        JOptionPane.showMessageDialog(this,
-                "Other sessions would be signed out from browsers and devices you used before.\n\n"
-                        + "This desktop demo only runs a single local session, so there is nothing else to revoke — "
-                        + "the control is here to mirror a real “sign out everywhere” safety feature.",
-                "Sign out other sessions",
-                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void togglePasswordVisibility(boolean visible) {

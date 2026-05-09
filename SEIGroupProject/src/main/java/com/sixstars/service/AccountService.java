@@ -126,6 +126,19 @@ public class AccountService {
         return null;
     }
 
+    /** Best-effort security email; no-op when Mailgun is not configured or send fails. */
+    public void sendSecurityNoticeEmailIfConfigured(String email, String subject, String htmlBody) {
+        if (mailgunEmailSender == null || email == null || email.isBlank() || subject == null || htmlBody == null) {
+            return;
+        }
+        String to = email.trim().toLowerCase();
+        try {
+            mailgunEmailSender.sendHtmlEmail(to, subject, htmlBody);
+        } catch (Exception ignored) {
+            // Do not block sign-in if outbound mail fails
+        }
+    }
+
     public List<Account> getAllAccounts() {
         return accountDAO.getAllAccounts();
     }

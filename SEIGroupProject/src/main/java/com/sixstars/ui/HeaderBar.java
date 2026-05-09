@@ -3,6 +3,7 @@ package com.sixstars.ui;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -28,12 +30,14 @@ import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
+import com.sixstars.app.AppSession;
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
@@ -203,22 +207,30 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
         });
     }
 
+    private static final int PROFILE_POPUP_WIDTH = 300;
+
     private void showAccountPopupMenu() {
         accountPopupMenu.removeAll();
-        accountPopupMenu.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1));
+        Color popupBg = new Color(255, 255, 255);
+        accountPopupMenu.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(218, 210, 198), 1),
+                BorderFactory.createEmptyBorder(0, 0, 0, 0)));
 
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        content.setBackground(UITheme.CARD_BACKGROUND);
-        content.setBorder(new EmptyBorder(8, 8, 8, 8));
+        content.setBackground(popupBg);
+        content.setBorder(new EmptyBorder(12, 14, 12, 14));
 
-        JButton viewAccountButton = new JButton("View Account");
-        viewAccountButton.setHorizontalAlignment(SwingConstants.LEFT);
-        viewAccountButton.setFont(new Font("SansSerif", Font.BOLD, 13));
-        viewAccountButton.setBackground(UITheme.SECONDARY_BUTTON);
-        viewAccountButton.setFocusPainted(false);
-        viewAccountButton.setBorderPainted(false);
-        viewAccountButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        Account current = AccountController.currentAccount;
+
+        JLabel menuTitle = new JLabel("Account");
+        menuTitle.setFont(new Font("SansSerif", Font.BOLD, 11));
+        menuTitle.setForeground(UITheme.TEXT_MEDIUM);
+        menuTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        content.add(menuTitle);
+        content.add(Box.createRigidArea(new Dimension(0, 6)));
+
+        JButton viewAccountButton = profileMenuRowButton("View account");
         viewAccountButton.addActionListener(_ -> {
             if (Main.accountCenterPage != null) {
                 Main.accountCenterPage.refreshInfo();
@@ -227,18 +239,11 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
             accountPopupMenu.setVisible(false);
         });
         content.add(viewAccountButton);
-        content.add(new JLabel(" "));
 
-        Account current = AccountController.currentAccount;
-        // Add Dashboard for clerk and admin
         if (current != null && (current.getRole() == Role.CLERK || current.getRole() == Role.ADMIN)) {
-            JButton dashboardButton = new JButton("Dashboard");
-            dashboardButton.setHorizontalAlignment(SwingConstants.LEFT);
-            dashboardButton.setFont(new Font("SansSerif", Font.BOLD, 13));
-            dashboardButton.setBackground(UITheme.SECONDARY_BUTTON);
-            dashboardButton.setFocusPainted(false);
-            dashboardButton.setBorderPainted(false);
-            dashboardButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            content.add(Box.createRigidArea(new Dimension(0, 4)));
+            JButton dashboardButton = profileMenuRowButton(
+                    current.getRole() == Role.ADMIN ? "Admin dashboard" : "Staff dashboard");
             dashboardButton.addActionListener(_ -> {
                 if (current.getRole() == Role.CLERK) {
                     cardLayout.show(pages, "clerk page");
@@ -248,37 +253,43 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
                 accountPopupMenu.setVisible(false);
             });
             content.add(dashboardButton);
-            content.add(new JLabel(" "));
         }
-        content.add(new JLabel(" "));
 
-        JPanel titleRow = new JPanel(new BorderLayout());
-        titleRow.setOpaque(false);
+        content.add(Box.createRigidArea(new Dimension(0, 10)));
+        content.add(fullWidthSeparator());
+        content.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        JPanel notifHeader = new JPanel(new BorderLayout(8, 0));
+        notifHeader.setOpaque(false);
+        notifHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
+        notifHeader.setMaximumSize(new Dimension(PROFILE_POPUP_WIDTH, 24));
         JLabel title = new JLabel("Notifications");
-        title.setFont(new Font("SansSerif", Font.BOLD, 12));
+        title.setFont(new Font("SansSerif", Font.BOLD, 13));
         title.setForeground(UITheme.TEXT_DARK);
-        JButton clearAll = new JButton("clear all");
-        clearAll.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        JButton clearAll = new JButton("Clear all");
+        clearAll.setFont(new Font("SansSerif", Font.PLAIN, 12));
         clearAll.setBorderPainted(false);
         clearAll.setContentAreaFilled(false);
-        clearAll.setForeground(UITheme.TEXT_MEDIUM);
+        clearAll.setForeground(new Color(140, 104, 47));
         clearAll.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        clearAll.setFocusPainted(false);
         clearAll.addActionListener(_ -> {
             if (current != null) {
                 notificationService.clearAll(current.getEmail());
             }
             accountPopupMenu.setVisible(false);
         });
-        titleRow.add(title, BorderLayout.WEST);
-        titleRow.add(clearAll, BorderLayout.EAST);
-        content.add(titleRow);
-        content.add(new JLabel(" "));
+        notifHeader.add(title, BorderLayout.WEST);
+        notifHeader.add(clearAll, BorderLayout.EAST);
+        content.add(notifHeader);
+        content.add(Box.createRigidArea(new Dimension(0, 8)));
 
         List<AppNotification> notifications = current == null ? List.of() : notificationService.getNotifications(current.getEmail());
         if (notifications.isEmpty()) {
-            JLabel empty = new JLabel("No notifications");
-            empty.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            JLabel empty = new JLabel("No notifications yet.");
+            empty.setFont(new Font("SansSerif", Font.PLAIN, 13));
             empty.setForeground(UITheme.TEXT_MEDIUM);
+            empty.setAlignmentX(Component.LEFT_ALIGNMENT);
             content.add(empty);
         } else {
             JPanel listPanel = new JPanel();
@@ -289,21 +300,26 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
                 AppNotification notification = notifications.get(i);
                 JPanel row = new JPanel(new BorderLayout(8, 0));
                 row.setOpaque(true);
-                row.setBackground(new Color(250, 248, 242));
-                row.setBorder(new EmptyBorder(6, 6, 6, 6));
+                row.setBackground(new Color(252, 250, 245));
+                row.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(232, 226, 214), 1),
+                        new EmptyBorder(8, 10, 8, 10)));
+                row.setAlignmentX(Component.LEFT_ALIGNMENT);
+                row.setMaximumSize(new Dimension(PROFILE_POPUP_WIDTH, 120));
 
                 String time = notification.getCreatedAt().atZone(ZoneId.systemDefault()).format(TIME_FORMAT);
-                JLabel text = new JLabel("<html><b>" + notification.getType().getDisplayName() + "</b><br/>"
-                        + notification.getMessage() + "<br/><span style='color:#777777;'>" + time + "</span></html>");
-                text.setFont(new Font("SansSerif", Font.PLAIN, 11));
+                JLabel text = new JLabel("<html><div style=\"width:220px\"><b>" + notification.getType().getDisplayName() + "</b><br/>"
+                        + notification.getMessage() + "<br/><span style='color:#888888;'>" + time + "</span></div></html>");
+                text.setFont(new Font("SansSerif", Font.PLAIN, 12));
                 text.setForeground(UITheme.TEXT_DARK);
 
-                JButton clearOne = new JButton("x");
-                clearOne.setFont(new Font("SansSerif", Font.BOLD, 11));
+                JButton clearOne = new JButton("×");
+                clearOne.setFont(new Font("SansSerif", Font.BOLD, 14));
                 clearOne.setBorderPainted(false);
                 clearOne.setContentAreaFilled(false);
                 clearOne.setForeground(UITheme.TEXT_MEDIUM);
                 clearOne.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                clearOne.setFocusPainted(false);
                 clearOne.addActionListener(_ -> {
                     if (current != null) {
                         notificationService.clearNotification(current.getEmail(), notification.getId());
@@ -314,17 +330,69 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
                 row.add(text, BorderLayout.CENTER);
                 row.add(clearOne, BorderLayout.EAST);
                 listPanel.add(row);
-                listPanel.add(new JLabel(" "));
+                if (i < showCount - 1) {
+                    listPanel.add(Box.createRigidArea(new Dimension(0, 6)));
+                }
             }
             JScrollPane scroll = new JScrollPane(listPanel);
-            scroll.setBorder(null);
-            scroll.setPreferredSize(new Dimension(300, 220));
+            scroll.setBorder(BorderFactory.createLineBorder(new Color(232, 226, 214), 1));
+            scroll.setPreferredSize(new Dimension(PROFILE_POPUP_WIDTH, Math.min(220, 56 + showCount * 72)));
+            scroll.getViewport().setBackground(popupBg);
+            scroll.setAlignmentX(Component.LEFT_ALIGNMENT);
             scroll.getVerticalScrollBar().setUnitIncrement(16);
             content.add(scroll);
         }
 
+        content.add(Box.createRigidArea(new Dimension(0, 12)));
+        content.add(fullWidthSeparator());
+        content.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        JButton logOutButton = new JButton("Log out");
+        logOutButton.setFont(new Font("SansSerif", Font.BOLD, 13));
+        logOutButton.setForeground(Color.WHITE);
+        logOutButton.setBackground(new Color(178, 48, 48));
+        logOutButton.setOpaque(true);
+        logOutButton.setBorderPainted(false);
+        logOutButton.setFocusPainted(false);
+        logOutButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        logOutButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        logOutButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        logOutButton.setPreferredSize(new Dimension(PROFILE_POPUP_WIDTH - 28, 40));
+        logOutButton.addActionListener(_ -> {
+            accountPopupMenu.setVisible(false);
+            AppSession.logout(pages, cardLayout);
+        });
+        content.add(logOutButton);
+
         accountPopupMenu.add(content);
-        accountPopupMenu.show(profileButton, -260, 44);
+        accountPopupMenu.pack();
+        int x = Math.min(0, profileButton.getWidth() - accountPopupMenu.getPreferredSize().width);
+        accountPopupMenu.show(profileButton, x, profileButton.getHeight() + 4);
+    }
+
+    private static JSeparator fullWidthSeparator() {
+        JSeparator sep = new JSeparator(JSeparator.HORIZONTAL);
+        sep.setForeground(new Color(230, 224, 212));
+        sep.setMaximumSize(new Dimension(PROFILE_POPUP_WIDTH, 10));
+        sep.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return sep;
+    }
+
+    private static JButton profileMenuRowButton(String label) {
+        JButton b = new JButton(label);
+        b.setHorizontalAlignment(SwingConstants.LEFT);
+        b.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        b.setForeground(UITheme.TEXT_DARK);
+        b.setBackground(new Color(248, 245, 238));
+        b.setOpaque(true);
+        b.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(228, 220, 206), 1),
+                new EmptyBorder(8, 12, 8, 12)));
+        b.setFocusPainted(false);
+        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        b.setAlignmentX(Component.LEFT_ALIGNMENT);
+        b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        return b;
     }
 
     private void updateBadge(String email) {

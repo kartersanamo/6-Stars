@@ -48,6 +48,11 @@ public class MailgunEmailSender {
         sendEmail(toEmail, "Reset your 6 Stars Hotel password", buildPasswordResetHtml(code));
     }
 
+    /** Generic HTML email (e.g. security notices). */
+    public void sendHtmlEmail(String toEmail, String subject, String html) throws IOException, InterruptedException {
+        sendEmail(toEmail, subject, html);
+    }
+
     private void sendEmail(String toEmail, String subject, String html) throws IOException, InterruptedException {
         String form = formEncode(
                 "from", fromEmail,
