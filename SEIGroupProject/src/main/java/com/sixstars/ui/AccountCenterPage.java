@@ -1454,15 +1454,32 @@ public class AccountCenterPage extends JPanel {
     }
 
     private void stylePaymentQuickAction(JButton button) {
+        button.setUI(new BasicButtonUI());
         button.setFont(new Font("SansSerif", Font.BOLD, 14));
-        button.setBackground(UITheme.ACCENT_GOLD);
-        button.setForeground(Color.WHITE);
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
         button.setFocusPainted(false);
-        button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(200, 42));
-        button.setMinimumSize(new Dimension(160, 42));
-        button.setMaximumSize(new Dimension(280, 42));
+        button.setPreferredSize(new Dimension(200, 44));
+        button.setMinimumSize(new Dimension(160, 44));
+        button.setMaximumSize(new Dimension(300, 44));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(88, 68, 36), 1, true),
+                new EmptyBorder(10, 16, 10, 16)));
+        button.setBorderPainted(true);
+        applyPaymentQuickButtonColors(button, button.isEnabled());
+        button.addPropertyChangeListener("enabled", e ->
+                applyPaymentQuickButtonColors(button, (Boolean) e.getNewValue()));
+    }
+
+    private static void applyPaymentQuickButtonColors(JButton button, boolean enabled) {
+        if (enabled) {
+            button.setBackground(UITheme.ACCENT_GOLD);
+            button.setForeground(Color.BLACK);
+        } else {
+            button.setBackground(new Color(218, 212, 200));
+            button.setForeground(new Color(105, 98, 88));
+        }
     }
 
     /** Opens the top-level Guest Billing screen (same as header navigation), then runs an action on the EDT. */

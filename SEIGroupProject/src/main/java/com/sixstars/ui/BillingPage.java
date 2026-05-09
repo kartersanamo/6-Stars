@@ -22,6 +22,7 @@ import com.stripe.exception.StripeException;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.plaf.basic.BasicButtonUI;
 import java.awt.*;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -144,7 +145,7 @@ public class BillingPage extends JPanel {
                 new EmptyBorder(18, 18, 18, 18)
         ));
         totalsCard.setAlignmentX(Component.LEFT_ALIGNMENT);
-        totalsCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 260));
+        totalsCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 360));
 
         reservationTotalLabel = createTotalLabel("");
         shopTotalLabel = createTotalLabel("");
@@ -163,6 +164,18 @@ public class BillingPage extends JPanel {
         totalsCard.add(paymentsAppliedLabel);
         totalsCard.add(Box.createRigidArea(new Dimension(0, 6)));
         totalsCard.add(amountDueLabel);
+        totalsCard.add(Box.createRigidArea(new Dimension(0, 14)));
+        JLabel totalsPayHint = new JLabel("Saved cards, Stripe Connect, and quick pay live in Account Center.");
+        totalsPayHint.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        totalsPayHint.setForeground(UITheme.TEXT_MEDIUM);
+        totalsPayHint.setAlignmentX(Component.LEFT_ALIGNMENT);
+        totalsCard.add(totalsPayHint);
+        totalsCard.add(Box.createRigidArea(new Dimension(0, 8)));
+        JButton btnOpenPaymentFromTotals = new JButton("Open Account Center → Payment");
+        styleTotalsPaymentLinkButton(btnOpenPaymentFromTotals);
+        btnOpenPaymentFromTotals.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnOpenPaymentFromTotals.addActionListener(e -> navigateToAccountCenterPayment(false));
+        totalsCard.add(btnOpenPaymentFromTotals);
 
         body.add(totalsCard);
         body.add(Box.createRigidArea(new Dimension(0, 22)));
@@ -375,23 +388,63 @@ public class BillingPage extends JPanel {
     }
 
     private void styleSecondaryButton(JButton button) {
+        button.setUI(new BasicButtonUI());
         button.setPreferredSize(new Dimension(160, 40));
         button.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
         button.setBackground(UITheme.SECONDARY_BUTTON);
         button.setForeground(UITheme.TEXT_DARK);
         button.setFocusPainted(false);
-        button.setBorderPainted(false);
+        button.setBorderPainted(true);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(190, 184, 172), 1, true),
+                new EmptyBorder(8, 14, 8, 14)));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 
     private void stylePrimaryGoldButton(JButton button) {
-        button.setPreferredSize(new Dimension(220, 42));
+        button.setUI(new BasicButtonUI());
+        button.setPreferredSize(new Dimension(220, 44));
         button.setFont(new Font("SansSerif", Font.BOLD, 14));
-        button.setBackground(UITheme.ACCENT_GOLD);
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(88, 68, 36), 1, true),
+                new EmptyBorder(10, 16, 10, 16)));
+        button.setBorderPainted(true);
+        applyPrimaryGoldButtonColors(button, button.isEnabled());
+        button.addPropertyChangeListener("enabled", e ->
+                applyPrimaryGoldButtonColors(button, (Boolean) e.getNewValue()));
+    }
+
+    private static void applyPrimaryGoldButtonColors(JButton button, boolean enabled) {
+        if (enabled) {
+            button.setBackground(UITheme.ACCENT_GOLD);
+            button.setForeground(Color.BLACK);
+        } else {
+            button.setBackground(new Color(218, 212, 200));
+            button.setForeground(new Color(105, 98, 88));
+        }
+    }
+
+    /** Prominent link-style control under the billing totals (navigates to Account Center Payment). */
+    private static void styleTotalsPaymentLinkButton(JButton button) {
+        button.setUI(new BasicButtonUI());
+        button.setFont(new Font("SansSerif", Font.BOLD, 14));
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBackground(new Color(44, 108, 72));
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
-        button.setBorderPainted(false);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(28, 78, 52), 1, true),
+                new EmptyBorder(10, 18, 10, 18)));
+        button.setBorderPainted(true);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setAlignmentX(Component.LEFT_ALIGNMENT);
     }
 
     public void refreshForEmail(String email) {

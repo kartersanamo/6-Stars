@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.stripe.Stripe;
@@ -21,6 +22,10 @@ public final class StripeCheckoutService {
 
     public static final int MIN_CHARGE_US_CENTS = 50;
 
+    /** Stripe rejects {@code customer_email} unless it looks like a real mailbox (RFC-style). */
+    private static final Pattern STRIPE_CUSTOMER_EMAIL =
+            Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$");
+
     private final BillingService billingService = new BillingService();
 
     public StripeCheckoutService() {
@@ -31,6 +36,10 @@ public final class StripeCheckoutService {
     public SessionCreateResult createCheckoutSessionPayFullGuestBill(String guestEmail,
             String successUrlMustIncludeSessionMacro, String cancelUrl) throws StripeException {
         configureKeyIfAbsent();
+        String stripeEmail = normalizedStripeCustomerEmail(guestEmail);
+        if (stripeEmail == null) {
+            return stripeEmailInvalidResult();
+        }
 
         List<Reservation> reservations = billingService.getReservationCharges(guestEmail);
         List<ShopOrder> shopOrders = billingService.getShopPurchases(guestEmail);
@@ -90,14 +99,14 @@ public final class StripeCheckoutService {
                 .setBillingAddressCollection(SessionCreateParams.BillingAddressCollection.REQUIRED)
                 .setSuccessUrl(successUrlMustIncludeSessionMacro)
                 .setCancelUrl(cancelUrl)
-                .setCustomerEmail(guestEmail.trim().toLowerCase(Locale.ROOT))
+                .setCustomerEmail(stripeEmail)
                 .setAllowPromotionCodes(Boolean.TRUE);
 
         appendCustomer(builder, guestEmail);
 
         SessionCreateParams params = builder
                 .addAllLineItem(lineItems)
-                .putMetadata("guest_email", guestEmail.trim().toLowerCase(Locale.ROOT))
+                .putMetadata("guest_email", stripeEmail)
                 .putMetadata("estimated_total_usd_service", bdFromService.toPlainString())
                 .putMetadata("estimated_total_usd_stripe_parts", bdFromStripe.toPlainString())
                 .build();
@@ -125,7 +134,11 @@ public final class StripeCheckoutService {
     public SessionCreateResult createCheckoutSessionPayAmountDue(String guestEmail, double amountDueUsd,
             String successUrlMustIncludeSessionMacro, String cancelUrl) throws StripeException {
         configureKeyIfAbsent();
-        String normalizedEmail = guestEmail.trim().toLowerCase(Locale.ROOT);
+        String stripeEmail = normalizedStripeCustomerEmail(guestEmail);
+        if (stripeEmail == null) {
+            return stripeEmailInvalidResult();
+        }
+        String normalizedEmail = stripeEmail;
         BigDecimal dueBd = BigDecimal.valueOf(amountDueUsd).setScale(2, RoundingMode.HALF_UP);
         long cents = dueBd.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact();
         if (cents <= 0) {
@@ -161,6 +174,10 @@ public final class StripeCheckoutService {
     public SessionCreateResult createCheckoutSessionAttachPaymentMethodSetup(String guestEmail,
             String successUrlMustIncludeSessionMacro, String cancelUrl) throws StripeException {
         configureKeyIfAbsent();
+        String stripeEmail = normalizedStripeCustomerEmail(guestEmail);
+        if (stripeEmail == null) {
+            return stripeEmailInvalidResult();
+        }
 
         SessionCreateParams.Builder builder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.SETUP)
@@ -170,12 +187,34 @@ public final class StripeCheckoutService {
 
         SessionCreateParams params = appendCustomer(builder, guestEmail)
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
-                .setCustomerEmail(guestEmail.trim().toLowerCase(Locale.ROOT))
-                .putMetadata("guest_email", guestEmail.trim().toLowerCase(Locale.ROOT))
+                .setCustomerEmail(stripeEmail)
+                .putMetadata("guest_email", stripeEmail)
                 .build();
 
         Session session = Session.create(params);
         return SessionCreateResult.ok(session.getUrl(), session.getId(), 0);
+    }
+
+    /**
+     * @return email safe for Stripe {@code customer_email} (trimmed, lowercased), or {@code null} if the value is
+     *         not a plausible mailbox (avoids Stripe {@code email_invalid} for logins like {@code guest} with no domain).
+     */
+    private static String normalizedStripeCustomerEmail(String guestEmail) {
+        if (guestEmail == null) {
+            return null;
+        }
+        String n = guestEmail.trim().toLowerCase(Locale.ROOT);
+        if (n.isEmpty() || !STRIPE_CUSTOMER_EMAIL.matcher(n).matches()) {
+            return null;
+        }
+        return n;
+    }
+
+    private static SessionCreateResult stripeEmailInvalidResult() {
+        return SessionCreateResult.fail(
+                "Stripe checkout requires a valid email address (for example you@example.com). "
+                        + "The email stored for this login is not accepted by Stripe — use an account whose email includes @, "
+                        + "or ask your team to update it in the database.");
     }
 
     private static SessionCreateParams.Builder appendCustomer(SessionCreateParams.Builder builder, String guestEmail) {
