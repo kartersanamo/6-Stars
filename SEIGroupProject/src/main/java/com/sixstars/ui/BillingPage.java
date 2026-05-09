@@ -691,6 +691,7 @@ public class BillingPage extends JPanel {
             refreshForEmail(email);
             if (Main.accountCenterPage != null) {
                 Main.accountCenterPage.refreshPaymentWorkspace();
+                Main.accountCenterPage.refreshBillingContent();
             }
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this,
@@ -993,6 +994,7 @@ public class BillingPage extends JPanel {
         refresh();
         if (Main.accountCenterPage != null) {
             Main.accountCenterPage.refreshPaymentWorkspace();
+            Main.accountCenterPage.refreshBillingContent();
         }
     }
 

@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Comparator;
 import java.util.prefs.Preferences;
+import java.time.format.DateTimeFormatter;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -46,6 +47,7 @@ import com.sixstars.app.AppSession;
 import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
+import com.sixstars.model.GuestPaymentRecord;
 import com.sixstars.model.NotificationType;
 import com.sixstars.model.Role;
 import com.sixstars.model.Reservation;
@@ -80,6 +82,8 @@ public class AccountCenterPage extends JPanel {
     private static final Color BILLING_SECTION_BG = new Color(252, 250, 245);
     private static final Color BILLING_ACCENT = new Color(176, 132, 38);
     private static final Color BILLING_POSITIVE = new Color(44, 122, 72);
+    private static final DateTimeFormatter BILLING_RECEIPT_TIME =
+            DateTimeFormatter.ofPattern("MMMM d, yyyy 'at' h:mm a", Locale.US);
 
     /** Category band order on the Notifications settings tab (must match {@link com.sixstars.model.NotificationType#getCategory()}). */
     private static final List<String> NOTIFICATION_UI_CATEGORY_ORDER = List.of(
@@ -174,6 +178,7 @@ public class AccountCenterPage extends JPanel {
     private JLabel reservationTotalLabel;
     private JLabel shopTotalLabel;
     private JLabel grandTotalLabel;
+    private JPanel billingInvoicesInner;
 
     private final JTextField deleteEmailField = new JTextField();
     private final JTextField deleteCodeField = new JTextField();
@@ -920,6 +925,16 @@ public class AccountCenterPage extends JPanel {
         totalsCard.add(Box.createRigidArea(new Dimension(0, 12)));
         totalsCard.add(grandTotalLabel);
         mainPanel.add(totalsCard);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 18)));
+
+        JPanel invoicesSection = createBillingSectionCard("Previous invoices & receipts",
+                "Payments recorded in this app (Stripe Checkout and saved card). Open a receipt for full details.");
+        billingInvoicesInner = new JPanel();
+        billingInvoicesInner.setLayout(new BoxLayout(billingInvoicesInner, BoxLayout.Y_AXIS));
+        billingInvoicesInner.setOpaque(false);
+        billingInvoicesInner.setAlignmentX(Component.LEFT_ALIGNMENT);
+        invoicesSection.add(billingInvoicesInner);
+        mainPanel.add(invoicesSection);
 
         return mainPanel;
     }
@@ -1024,25 +1039,17 @@ public class AccountCenterPage extends JPanel {
                 new EmptyBorder(16, 18, 18, 18)
         ));
         quickPayCard.add(createSectionTitle("Pay your balance",
-                "Jump to guest billing to pay with Stripe or a saved card."));
+                "Pay immediately with Stripe or your saved card — no separate billing screen."));
         quickPayCard.add(Box.createRigidArea(new Dimension(0, 12)));
         JPanel quickPayRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         quickPayRow.setOpaque(false);
         quickPayRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         paymentQuickStripeButton = new JButton("Pay with Stripe");
         stylePaymentQuickAction(paymentQuickStripeButton);
-        paymentQuickStripeButton.addActionListener(_ -> openMainGuestBillingThen(() -> {
-            if (Main.billingPage != null) {
-                Main.billingPage.triggerPayWithStripe();
-            }
-        }));
+        paymentQuickStripeButton.addActionListener(_ -> runQuickPayWithStripe());
         paymentQuickCardButton = new JButton("Pay with card");
         stylePaymentQuickAction(paymentQuickCardButton);
-        paymentQuickCardButton.addActionListener(_ -> openMainGuestBillingThen(() -> {
-            if (Main.billingPage != null) {
-                Main.billingPage.triggerPayWithCard();
-            }
-        }));
+        paymentQuickCardButton.addActionListener(_ -> runQuickPayWithCard());
         quickPayRow.add(paymentQuickStripeButton);
         quickPayRow.add(paymentQuickCardButton);
         quickPayCard.add(quickPayRow);
@@ -1482,22 +1489,22 @@ public class AccountCenterPage extends JPanel {
         }
     }
 
-    /** Opens the top-level Guest Billing screen (same as header navigation), then runs an action on the EDT. */
-    private void openMainGuestBillingThen(Runnable afterRefresh) {
-        Account me = AccountController.currentAccount;
-        if (me == null) {
+    /** Refreshes ledger-backed {@link BillingPage} state, then starts Stripe Checkout (same behavior as Guest Billing). */
+    private void runQuickPayWithStripe() {
+        if (AccountController.currentAccount == null || Main.billingPage == null) {
             return;
         }
-        cardLayout.show(pages, "billing page");
-        if (Main.headerBar != null) {
-            Main.headerBar.refreshInfo();
+        Main.billingPage.refresh();
+        Main.billingPage.triggerPayWithStripe();
+    }
+
+    /** Refreshes {@link BillingPage} saved-card combo, then runs the saved-card payment flow. */
+    private void runQuickPayWithCard() {
+        if (AccountController.currentAccount == null || Main.billingPage == null) {
+            return;
         }
-        if (Main.billingPage != null) {
-            Main.billingPage.refresh();
-        }
-        if (afterRefresh != null) {
-            SwingUtilities.invokeLater(afterRefresh);
-        }
+        Main.billingPage.refresh();
+        Main.billingPage.triggerPayWithCard();
     }
 
     private JButton styleButton(JButton button, boolean primary) {
@@ -1596,13 +1603,14 @@ public class AccountCenterPage extends JPanel {
     }
 
     /**
-     * @param expandAddPaymentForm when true, opens the collapsible “add card” form (e.g. from Billing “Add a card”).
+     * @param expandAddPaymentForm when true, opens the collapsible “add card” form (e.g. from Guest Billing “Add a card”).
      */
     public void navigateToPaymentTab(boolean expandAddPaymentForm) {
         SwingUtilities.invokeLater(() -> {
             selectNavButton(paymentButton);
             contentLayout.show(contentArea, "payment");
             refreshPaymentWorkspace();
+            refreshBillingContent();
             if (expandAddPaymentForm && addPaymentFormOuter != null && toggleAddPaymentFormButton != null) {
                 addPaymentFormOuter.setVisible(true);
                 toggleAddPaymentFormButton.setText("Hide payment form");
@@ -1657,6 +1665,7 @@ public class AccountCenterPage extends JPanel {
             paymentQuickCardButton.setEnabled(false);
         }
         rebuildPaymentMethodsList();
+        refreshBillingContent();
     }
 
     private void loadNotificationPreferences(Account account) {
@@ -2113,6 +2122,7 @@ public class AccountCenterPage extends JPanel {
             reservationTotalLabel.setText("Reservation Total  $0.00");
             shopTotalLabel.setText("Shop Purchases  $0.00");
             grandTotalLabel.setText("Grand Total  $0.00");
+            rebuildBillingInvoiceHistory(null);
             reservationsContainer.revalidate();
             reservationsContainer.repaint();
             shopContainer.revalidate();
@@ -2150,10 +2160,91 @@ public class AccountCenterPage extends JPanel {
         shopTotalLabel.setText(String.format("Shop Purchases  $%,.2f", shopTotal));
         grandTotalLabel.setText(String.format("Grand Total  $%,.2f", grandTotal));
 
+        rebuildBillingInvoiceHistory(email);
+
         reservationsContainer.revalidate();
         reservationsContainer.repaint();
         shopContainer.revalidate();
         shopContainer.repaint();
+    }
+
+    private void rebuildBillingInvoiceHistory(String email) {
+        if (billingInvoicesInner == null) {
+            return;
+        }
+        billingInvoicesInner.removeAll();
+        if (email == null || email.isBlank()) {
+            billingInvoicesInner.add(billingHistoryHint("Sign in to see payment history."));
+        } else {
+            List<GuestPaymentRecord> rows = guestLedgerService.listPayments(email);
+            if (rows.isEmpty()) {
+                billingInvoicesInner.add(billingHistoryHint("No payments recorded yet."));
+            } else {
+                for (GuestPaymentRecord r : rows) {
+                    billingInvoicesInner.add(buildBillingInvoiceRow(r));
+                    billingInvoicesInner.add(Box.createRigidArea(new Dimension(0, 8)));
+                }
+            }
+        }
+        billingInvoicesInner.revalidate();
+        billingInvoicesInner.repaint();
+    }
+
+    private JLabel billingHistoryHint(String text) {
+        JLabel l = new JLabel(text);
+        l.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        l.setForeground(UITheme.TEXT_MEDIUM);
+        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return l;
+    }
+
+    private JPanel buildBillingInvoiceRow(GuestPaymentRecord r) {
+        JPanel row = new JPanel(new BorderLayout(12, 0));
+        row.setOpaque(true);
+        row.setBackground(Color.WHITE);
+        row.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(230, 230, 238), 1, true),
+                new EmptyBorder(10, 12, 10, 12)
+        ));
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
+
+        String when = r.getCreatedAt().format(BILLING_RECEIPT_TIME);
+        JLabel left = new JLabel("<html><div style=\"font-size:13px;\"><b>$" + String.format(Locale.US, "%.2f", r.getAmount())
+                + "</b> &nbsp;·&nbsp; " + escapeBillingHtml(r.getKind().getDisplay()) + "<br/><span style=\"color:#666;\">"
+                + escapeBillingHtml(r.getMethodSummary()) + " · " + escapeBillingHtml(when) + "</span></div></html>");
+        JButton receipt = new JButton("Receipt");
+        receipt.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        receipt.setBackground(UITheme.SECONDARY_BUTTON);
+        receipt.setForeground(UITheme.TEXT_DARK);
+        receipt.setFocusPainted(false);
+        receipt.setOpaque(true);
+        receipt.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(190, 184, 172), 1, true),
+                new EmptyBorder(6, 10, 6, 10)));
+        receipt.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        receipt.setPreferredSize(new Dimension(100, 34));
+        receipt.addActionListener(_ -> showBillingInvoiceReceiptDialog(r));
+
+        row.add(left, BorderLayout.CENTER);
+        row.add(receipt, BorderLayout.EAST);
+        return row;
+    }
+
+    private static String escapeBillingHtml(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        return raw.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    private void showBillingInvoiceReceiptDialog(GuestPaymentRecord r) {
+        String body = "Receipt #" + r.getId() + "\n"
+                + r.getCreatedAt().format(BILLING_RECEIPT_TIME) + "\n\n"
+                + "Amount: $" + String.format(Locale.US, "%.2f", r.getAmount()) + "\n"
+                + "Type: " + r.getKind().getDisplay() + "\n"
+                + "Method: " + r.getMethodSummary();
+        JOptionPane.showMessageDialog(this, body, "Payment receipt", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void refreshPaymentWorkspace() {
@@ -2525,36 +2616,6 @@ public class AccountCenterPage extends JPanel {
         }
     }
 
-    /**
-     * @param confirmContinue if true, OK opens Stripe flow; Cancel aborts. If false, read-only message dialog.
-     * @return {@code true} if user chose OK (or info-only mode), {@code false} if canceled when {@code confirmContinue}
-     */
-    private boolean showStripeOAuthSetupInDialog(boolean confirmContinue) {
-        String text = StripeConfig.formatStripeConnectOAuthSetupText();
-        JTextArea area = new JTextArea(text);
-        area.setEditable(false);
-        area.setOpaque(false);
-        area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-        area.setRows(18);
-        area.setColumns(68);
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
-        JScrollPane scroll = new JScrollPane(area);
-        scroll.setPreferredSize(new Dimension(580, 280));
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
-        if (confirmContinue) {
-            int r = JOptionPane.showConfirmDialog(this, scroll,
-                    "Stripe Connect — verify, then continue",
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE);
-            return r == JOptionPane.OK_OPTION;
-        }
-        JOptionPane.showMessageDialog(this, scroll,
-                "Stripe Connect — setup details",
-                JOptionPane.INFORMATION_MESSAGE);
-        return true;
-    }
-
     private static String shortenId(String id) {
         if (id == null || id.isBlank()) {
             return "<span style=\"color:#a36b6b;\">none yet</span>";
@@ -2590,16 +2651,11 @@ public class AccountCenterPage extends JPanel {
             return;
         }
 
-        if (!showStripeOAuthSetupInDialog(true)) {
-            paymentWorkspaceStatusLabel.setText("Stripe Connect canceled.");
-            return;
-        }
-
         try {
             StripeConfig.logOAuthRedirectForStripeConnect();
             paymentWorkspaceStatusLabel.setText("Opening Stripe… listening on "
                     + StripeConfig.oauthListenHost() + ":" + StripeConfig.oauthListenPort()
-                    + " (details were in the dialog; View OAuth setup repeats them).");
+                    + ". Keep this app open until you finish in the browser.");
 
             StripeHostedLocalServer.OAuthListening oauth = StripeHostedLocalServer.bindOAuth(
                     code -> SwingUtilities.invokeLater(() -> exchangeStripeOAuthAndPersist(acc.getEmail(), code)));

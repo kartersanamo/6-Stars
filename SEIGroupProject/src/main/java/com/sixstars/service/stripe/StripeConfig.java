@@ -51,7 +51,7 @@ public final class StripeConfig {
     }
 
     /**
-     * Human-readable OAuth setup reference (same text is shown in-app and may be printed to stdout).
+     * Human-readable OAuth setup reference (printed to stdout when starting Connect from Account Center).
      */
     public static String formatStripeConnectOAuthSetupText() {
         ResolvedOAuth r = resolvedOAuth();
@@ -88,7 +88,7 @@ public final class StripeConfig {
                 """;
     }
 
-    /** Prints the same text as {@link #formatStripeConnectOAuthSetupText()} (IDE / terminal runs). */
+    /** Prints {@link #formatStripeConnectOAuthSetupText()} (console reference while OAuth runs). */
     public static void logOAuthRedirectForStripeConnect() {
         System.out.println(formatStripeConnectOAuthSetupText());
     }
