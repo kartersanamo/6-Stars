@@ -63,6 +63,7 @@ import com.sixstars.service.stripe.StripeConfig;
 import com.sixstars.service.stripe.StripeConnectOAuthTokenClient;
 import com.sixstars.service.stripe.StripeGuestPreferences;
 import com.sixstars.service.stripe.StripeHostedLocalServer;
+import com.sixstars.service.pdf.GuestPaymentReceiptPdf;
 import com.sixstars.ui.accountcenter.AccountCenterContext;
 import com.sixstars.ui.accountcenter.AccountSecurityTabPanel;
 import com.sixstars.ui.accountcenter.SecurityPreferenceKeys;
@@ -2239,12 +2240,7 @@ public class AccountCenterPage extends JPanel {
     }
 
     private void showBillingInvoiceReceiptDialog(GuestPaymentRecord r) {
-        String body = "Receipt #" + r.getId() + "\n"
-                + r.getCreatedAt().format(BILLING_RECEIPT_TIME) + "\n\n"
-                + "Amount: $" + String.format(Locale.US, "%.2f", r.getAmount()) + "\n"
-                + "Type: " + r.getKind().getDisplay() + "\n"
-                + "Method: " + r.getMethodSummary();
-        JOptionPane.showMessageDialog(this, body, "Payment receipt", JOptionPane.INFORMATION_MESSAGE);
+        GuestPaymentReceiptPdf.openReceiptInBrowser(this, r);
     }
 
     public void refreshPaymentWorkspace() {

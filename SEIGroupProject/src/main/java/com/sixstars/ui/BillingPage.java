@@ -17,6 +17,7 @@ import com.sixstars.service.stripe.StripeCheckoutSessionReader;
 import com.sixstars.service.stripe.StripeConfig;
 import com.sixstars.service.stripe.StripeGuestPreferences;
 import com.sixstars.service.stripe.StripeHostedLocalServer;
+import com.sixstars.service.pdf.GuestPaymentReceiptPdf;
 import com.stripe.exception.StripeException;
 
 import javax.swing.*;
@@ -631,12 +632,7 @@ public class BillingPage extends JPanel {
     }
 
     private void showPaymentReceipt(GuestPaymentRecord r) {
-        String body = "Receipt #" + r.getId() + "\n"
-                + r.getCreatedAt().format(RECEIPT_TIME) + "\n\n"
-                + "Amount: $" + String.format(Locale.US, "%.2f", r.getAmount()) + "\n"
-                + "Type: " + r.getKind().getDisplay() + "\n"
-                + "Method: " + r.getMethodSummary();
-        JOptionPane.showMessageDialog(this, body, "Payment receipt", JOptionPane.INFORMATION_MESSAGE);
+        GuestPaymentReceiptPdf.openReceiptInBrowser(this, r);
     }
 
     private void navigateToAccountCenterPayment(boolean expandAddCardForm) {
