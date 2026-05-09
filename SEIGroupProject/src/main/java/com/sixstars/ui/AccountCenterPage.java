@@ -46,6 +46,14 @@ import com.sixstars.model.ShopOrder;
 import com.sixstars.model.ShopOrderItem;
 import com.sixstars.service.NotificationService;
 import com.sixstars.service.BillingService;
+import com.sixstars.service.stripe.PaymentBillingValidator;
+import com.sixstars.service.stripe.StripeCheckoutService;
+import com.sixstars.service.stripe.StripeCheckoutSessionReader;
+import com.sixstars.service.stripe.StripeConfig;
+import com.sixstars.service.stripe.StripeConnectOAuthTokenClient;
+import com.sixstars.service.stripe.StripeGuestPreferences;
+import com.sixstars.service.stripe.StripeHostedLocalServer;
+import com.stripe.exception.StripeException;
 
 public class AccountCenterPage extends JPanel {
     private static final int AVATAR_SIZE = 120;
@@ -68,6 +76,7 @@ public class AccountCenterPage extends JPanel {
     private final AccountController accountController;
     private final Preferences preferencesRoot = Preferences.userNodeForPackage(AccountCenterPage.class);
     private final BillingService billingService = new BillingService();
+    private final StripeCheckoutService stripeCheckoutService = new StripeCheckoutService();
 
     // Sidebar navigation buttons
     private JButton accountInfoButton;
@@ -75,7 +84,28 @@ public class AccountCenterPage extends JPanel {
     private JButton notificationsButton;
     private JButton myReservationsButton;
     private JButton billingButton;
-    private JButton purchasesButton;
+    private JButton paymentButton;
+
+    private JPanel stripeConnectBannerOuter;
+    private JLabel stripeBannerStatusLarge;
+    private JLabel stripeBannerDetailSmall;
+    private JButton stripeConnectAuthorizeButton;
+    private JButton stripeConnectDisconnectButton;
+    private JLabel stripeIdsSummaryLabel;
+
+    private JTextField payFullNameField;
+    private JTextField payAddressLine1Field;
+    private JTextField payAddressLine2Field;
+    private JTextField payCityField;
+    private JTextField payStateField;
+    private JTextField payZipField;
+    private JTextField payPhoneField;
+    private JPasswordField payCardNumberField;
+    private JTextField payCardExpiryField;
+    private JPasswordField payCardCvvField;
+    private JButton paySaveBillingButton;
+    private JButton payAddCardStripeButton;
+    private JLabel paymentWorkspaceStatusLabel;
     private JButton dangerZoneButton;
 
     // Content panels for each section
@@ -148,7 +178,7 @@ public class AccountCenterPage extends JPanel {
         contentArea.add(wrapInScrollPane(createNotificationsPanel()), "notifications");
         contentArea.add(wrapInScrollPane(createMyReservationsPanel()), "my-reservations");
         contentArea.add(wrapInScrollPane(createBillingPanel()), "billing");
-        contentArea.add(wrapInScrollPane(createPurchasesPanel()), "purchases");
+        contentArea.add(wrapInScrollPane(createPaymentPanel()), "payment");
         contentArea.add(wrapInScrollPane(createDangerZonePanel()), "danger-zone");
 
         // Create sidebar (now contentLayout is ready)
@@ -221,7 +251,7 @@ public class AccountCenterPage extends JPanel {
         notificationsButton = createNavButton("Notifications", "notifications");
         myReservationsButton = createNavButton("My Reservations", "my-reservations");
         billingButton = createNavButton("Billing", "billing");
-        purchasesButton = createNavButton("Purchases", "purchases");
+        paymentButton = createNavButton("Payment", "payment");
         dangerZoneButton = createNavButton("Danger Zone", "danger-zone");
 
         JPanel navPanel = new JPanel();
@@ -242,7 +272,7 @@ public class AccountCenterPage extends JPanel {
         navPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         navPanel.add(createSidebarSectionLabel("Hotel Services"));
         navPanel.add(createNavButtonRow(billingButton));
-        navPanel.add(createNavButtonRow(purchasesButton));
+        navPanel.add(createNavButtonRow(paymentButton));
         JPanel navWrapper = new JPanel(new BorderLayout());
         navWrapper.setOpaque(false);
         navWrapper.setBorder(new EmptyBorder(0, 0, 0, 0));
@@ -335,6 +365,8 @@ public class AccountCenterPage extends JPanel {
                 refreshBillingContent();
             } else if ("my-reservations".equals(contentKey)) {
                 refreshMyReservationsContent();
+            } else if ("payment".equals(contentKey)) {
+                refreshPaymentWorkspace();
             }
             contentLayout.show(contentArea, contentKey);
         });
@@ -373,8 +405,8 @@ public class AccountCenterPage extends JPanel {
         myReservationsButton.setForeground(UITheme.TEXT_DARK);
         billingButton.setBackground(SIDEBAR_PANEL);
         billingButton.setForeground(UITheme.TEXT_DARK);
-        purchasesButton.setBackground(SIDEBAR_PANEL);
-        purchasesButton.setForeground(UITheme.TEXT_DARK);
+        paymentButton.setBackground(SIDEBAR_PANEL);
+        paymentButton.setForeground(UITheme.TEXT_DARK);
         dangerZoneButton.setBackground(SIDEBAR_PANEL);
         dangerZoneButton.setForeground(UITheme.TEXT_DARK);
 
@@ -811,46 +843,233 @@ public class AccountCenterPage extends JPanel {
         return card;
     }
 
-    private JPanel createPurchasesPanel() {
+    private JPanel createPaymentPanel() {
         JPanel mainPanel = createContentPanel();
 
-        JLabel title = new JLabel("Purchases & Shop");
+        JLabel title = new JLabel("Payment & Stripe");
         title.setFont(new Font("Serif", Font.BOLD, 26));
         title.setForeground(UITheme.TEXT_DARK);
 
-        JLabel subtitle = new JLabel("View your shop purchases and browse the store.");
+        JLabel subtitle = new JLabel("Securely manage billing details, Stripe account linking, and stored payment methods.");
         subtitle.setFont(UITheme.SUBTITLE_FONT);
         subtitle.setForeground(UITheme.TEXT_MEDIUM);
 
         mainPanel.add(title);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 4)));
         mainPanel.add(subtitle);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 24)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        JPanel purchasesCard = createCardPanel();
-        purchasesCard.add(createSectionTitle("Your Shop Activity", "Browse and manage your shop purchases"));
-        purchasesCard.add(Box.createRigidArea(new Dimension(0, 16)));
+        stripeConnectBannerOuter = new JPanel(new BorderLayout(12, 8));
+        stripeConnectBannerOuter.setOpaque(true);
+        stripeConnectBannerOuter.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(214, 160, 160), 1, true),
+                new EmptyBorder(16, 18, 16, 18)
+        ));
+        stripeConnectBannerOuter.setBackground(new Color(255, 235, 235));
+        stripeConnectBannerOuter.setAlignmentX(Component.LEFT_ALIGNMENT);
+        stripeConnectBannerOuter.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
 
-        JLabel purchasesInfo = new JLabel("Visit the shop to browse our latest items and review your past purchases.");
-        purchasesInfo.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        purchasesInfo.setForeground(UITheme.TEXT_MEDIUM);
-        purchasesCard.add(purchasesInfo);
+        JPanel bannerText = new JPanel();
+        bannerText.setLayout(new BoxLayout(bannerText, BoxLayout.Y_AXIS));
+        bannerText.setOpaque(false);
+        stripeBannerStatusLarge = new JLabel("Not connected");
+        stripeBannerStatusLarge.setFont(new Font("SansSerif", Font.BOLD, 18));
+        stripeBannerStatusLarge.setForeground(new Color(160, 40, 40));
+        stripeBannerDetailSmall = new JLabel(" ");
+        stripeBannerDetailSmall.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        stripeBannerDetailSmall.setForeground(UITheme.TEXT_MEDIUM);
+        stripeBannerDetailSmall.setText("<html>Connect Stripe (sandbox) so we can streamline checkout flows. Redirect URI:"
+                + " <span style=\"font-family:monospace;\">" + StripeConfig.OAUTH_FULL_URL + "</span></html>");
+        stripeIdsSummaryLabel = new JLabel(" ");
+        stripeIdsSummaryLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        stripeIdsSummaryLabel.setForeground(UITheme.TEXT_MEDIUM);
 
-        purchasesCard.add(Box.createRigidArea(new Dimension(0, 16)));
+        JPanel bannerButtons = new JPanel();
+        bannerButtons.setLayout(new BoxLayout(bannerButtons, BoxLayout.Y_AXIS));
+        bannerButtons.setOpaque(false);
+        stripeConnectAuthorizeButton = new JButton("Connect your Stripe account");
+        styleButton(stripeConnectAuthorizeButton, true);
+        stripeConnectAuthorizeButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        stripeConnectAuthorizeButton.addActionListener(_ -> beginStripeOAuthFromAccountCenter());
+        stripeConnectDisconnectButton = new JButton("Disconnect");
+        styleButton(stripeConnectDisconnectButton, false);
+        stripeConnectDisconnectButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        stripeConnectDisconnectButton.addActionListener(_ -> disconnectStripeSandboxLink());
+        bannerButtons.add(stripeConnectAuthorizeButton);
+        bannerButtons.add(Box.createRigidArea(new Dimension(0, 8)));
+        bannerButtons.add(stripeConnectDisconnectButton);
 
-        JButton viewShopButton = new JButton("Open Shop");
-        viewShopButton.addActionListener(_ -> {
+        bannerText.add(stripeBannerStatusLarge);
+        bannerText.add(Box.createRigidArea(new Dimension(0, 6)));
+        bannerText.add(stripeBannerDetailSmall);
+        bannerText.add(Box.createRigidArea(new Dimension(0, 10)));
+        bannerText.add(stripeIdsSummaryLabel);
+
+        stripeConnectBannerOuter.add(bannerText, BorderLayout.CENTER);
+        stripeConnectBannerOuter.add(bannerButtons, BorderLayout.EAST);
+
+        mainPanel.add(stripeConnectBannerOuter);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 22)));
+
+        JPanel billingCard = createCardPanel();
+        billingCard.add(createSectionTitle("Billing & card practice form",
+                "Validate addresses and card-shaped fields locally — card PAN is typed only during Stripe's hosted Checkout."));
+        billingCard.add(Box.createRigidArea(new Dimension(0, 14)));
+
+        payFullNameField = new JTextField();
+        payAddressLine1Field = new JTextField();
+        payAddressLine2Field = new JTextField();
+        payCityField = new JTextField();
+        payStateField = new JTextField();
+        payZipField = new JTextField();
+        payPhoneField = new JTextField();
+        payCardNumberField = new JPasswordField();
+        payCardExpiryField = new JTextField();
+        payCardCvvField = new JPasswordField();
+
+        billingCard.add(makeLabeledStripeFieldRow("Full name", payFullNameField));
+        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
+        billingCard.add(makeLabeledStripeFieldRow("Billing address line 1", payAddressLine1Field));
+        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
+        billingCard.add(makeLabeledStripeFieldRow("Address line 2 (optional)", payAddressLine2Field));
+        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        JPanel cityStateZip = new JPanel(new GridLayout(1, 3, 14, 0));
+        cityStateZip.setOpaque(false);
+        JPanel cityWrap = labeledStripeMini("City", payCityField);
+        JPanel stateWrap = labeledStripeMini("State (2-letter)", payStateField);
+        JPanel zipWrap = labeledStripeMini("ZIP code", payZipField);
+        cityStateZip.add(cityWrap);
+        cityStateZip.add(stateWrap);
+        cityStateZip.add(zipWrap);
+        cityStateZip.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cityStateZip.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+        billingCard.add(cityStateZip);
+
+        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
+        billingCard.add(makeLabeledStripeFieldRow("Phone (optional)", payPhoneField));
+        billingCard.add(Box.createRigidArea(new Dimension(0, 14)));
+        JLabel cardHint = new JLabel("<html>Use any Stripe test PAN (for example <code>4242 4242 4242 4242</code>) here for dry-run verification. Actual card vaulting occurs on Stripe's page.</html>");
+        cardHint.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        cardHint.setForeground(UITheme.TEXT_MEDIUM);
+        billingCard.add(cardHint);
+        billingCard.add(Box.createRigidArea(new Dimension(0, 12)));
+        billingCard.add(makeLabeledStripeFieldPassword("Practice card number", payCardNumberField));
+        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
+        JPanel expCvvRow = new JPanel(new GridLayout(1, 2, 14, 0));
+        expCvvRow.setOpaque(false);
+        expCvvRow.add(labeledStripeMini("Expiry MM/YY", payCardExpiryField));
+        expCvvRow.add(makeLabeledStripeFieldPasswordMini("Practice CVV", payCardCvvField));
+        expCvvRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        expCvvRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+        billingCard.add(expCvvRow);
+        billingCard.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        paySaveBillingButton = new JButton("Save billing profile on this computer");
+        styleButton(paySaveBillingButton, false);
+        paySaveBillingButton.addActionListener(_ -> saveStripeBillingSnapshot());
+        payAddCardStripeButton = new JButton("Open Stripe sandbox to vault a card");
+        styleButton(payAddCardStripeButton, true);
+        payAddCardStripeButton.addActionListener(_ -> startStripeHostedSavedCardCapture());
+
+        JPanel payActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        payActions.setOpaque(false);
+        payActions.setAlignmentX(Component.LEFT_ALIGNMENT);
+        payActions.add(paySaveBillingButton);
+        payActions.add(payAddCardStripeButton);
+        billingCard.add(payActions);
+        billingCard.add(Box.createRigidArea(new Dimension(0, 10)));
+        paymentWorkspaceStatusLabel = new JLabel(" ");
+        paymentWorkspaceStatusLabel.setFont(new Font("SansSerif", Font.ITALIC, 12));
+        paymentWorkspaceStatusLabel.setForeground(UITheme.TEXT_MEDIUM);
+        billingCard.add(paymentWorkspaceStatusLabel);
+
+        mainPanel.add(billingCard);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 18)));
+
+        JPanel shopPeek = createCardPanel();
+        shopPeek.add(createSectionTitle("Need something delivered?", "You can still browse the boutique from the toolbar."));
+        shopPeek.add(Box.createRigidArea(new Dimension(0, 12)));
+        JButton viewShopQuick = new JButton("Open Shop");
+        viewShopQuick.addActionListener(_ -> {
             if (Main.shopPage != null) {
                 Main.shopPage.refreshPage();
             }
             cardLayout.show(pages, "shop");
         });
-        styleButton(viewShopButton, true);
-        purchasesCard.add(viewShopButton);
-
-        mainPanel.add(purchasesCard);
+        styleButton(viewShopQuick, false);
+        shopPeek.add(viewShopQuick);
+        mainPanel.add(shopPeek);
 
         return mainPanel;
+    }
+
+    private JPanel makeLabeledStripeFieldRow(String label, JTextField field) {
+        JPanel row = new JPanel();
+        row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
+        row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 66));
+        JLabel l = new JLabel(label);
+        l.setFont(new Font("SansSerif", Font.BOLD, 12));
+        l.setForeground(UITheme.TEXT_DARK);
+        styleTextField(field);
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        row.add(l);
+        row.add(Box.createRigidArea(new Dimension(0, 4)));
+        row.add(field);
+        return row;
+    }
+
+    private JPanel makeLabeledStripeFieldPassword(String label, JPasswordField field) {
+        JPanel row = new JPanel();
+        row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
+        row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 66));
+        JLabel l = new JLabel(label);
+        l.setFont(new Font("SansSerif", Font.BOLD, 12));
+        l.setForeground(UITheme.TEXT_DARK);
+        stylePasswordField(field);
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        row.add(l);
+        row.add(Box.createRigidArea(new Dimension(0, 4)));
+        row.add(field);
+        return row;
+    }
+
+    private JPanel labeledStripeMini(String hint, JTextField field) {
+        JPanel box = new JPanel();
+        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
+        box.setOpaque(false);
+        JLabel l = new JLabel(hint);
+        l.setFont(new Font("SansSerif", Font.BOLD, 11));
+        l.setForeground(UITheme.TEXT_MEDIUM);
+        styleTextField(field);
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        box.add(l);
+        box.add(Box.createRigidArea(new Dimension(0, 4)));
+        box.add(field);
+        return box;
+    }
+
+    private JPanel makeLabeledStripeFieldPasswordMini(String hint, JPasswordField field) {
+        JPanel box = new JPanel();
+        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
+        box.setOpaque(false);
+        JLabel l = new JLabel(hint);
+        l.setFont(new Font("SansSerif", Font.BOLD, 11));
+        l.setForeground(UITheme.TEXT_MEDIUM);
+        stylePasswordField(field);
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        box.add(l);
+        box.add(Box.createRigidArea(new Dimension(0, 4)));
+        box.add(field);
+        return box;
     }
 
     private JPanel createDangerZonePanel() {
@@ -1185,6 +1404,7 @@ public class AccountCenterPage extends JPanel {
         loadNotificationPreferences(account);
         refreshMyReservationsContent();
         refreshBillingContent();
+        refreshPaymentWorkspace();
 
         revalidate();
         repaint();
@@ -1202,6 +1422,20 @@ public class AccountCenterPage extends JPanel {
         clearPasswordFields();
         showPasswordsCheck.setSelected(false);
         togglePasswordVisibility(false);
+
+        paymentWorkspaceStatusLabel.setText(" ");
+        if (payFullNameField != null) {
+            payFullNameField.setText("");
+            payAddressLine1Field.setText("");
+            payAddressLine2Field.setText("");
+            payCityField.setText("");
+            payStateField.setText("");
+            payZipField.setText("");
+            payPhoneField.setText("");
+            payCardNumberField.setText("");
+            payCardExpiryField.setText("");
+            payCardCvvField.setText("");
+        }
     }
 
     private void loadNotificationPreferences(Account account) {
@@ -1715,6 +1949,358 @@ public class AccountCenterPage extends JPanel {
         reservationsContainer.repaint();
         shopContainer.revalidate();
         shopContainer.repaint();
+    }
+
+    public void refreshPaymentWorkspace() {
+        if (payFullNameField == null) {
+            return;
+        }
+        Account account = AccountController.currentAccount;
+        if (account == null) {
+            paymentWorkspaceStatusLabel.setText("");
+            payCardNumberField.setText("");
+            payCardCvvField.setText("");
+            return;
+        }
+        StripeGuestPreferences.BillingProfileSnapshot snap = StripeGuestPreferences.loadBillingProfile(account.getEmail());
+        payFullNameField.setText(snap.nameOnCard());
+        payAddressLine1Field.setText(snap.line1());
+        payAddressLine2Field.setText(snap.line2());
+        payCityField.setText(snap.city());
+        payStateField.setText(snap.state());
+        payZipField.setText(snap.zip());
+        payPhoneField.setText(snap.phone());
+        payCardNumberField.setText("");
+        payCardExpiryField.setText("");
+        payCardCvvField.setText("");
+        updateStripeConnectBannerUi(account.getEmail());
+    }
+
+    private void updateStripeConnectBannerUi(String email) {
+        if (stripeConnectBannerOuter == null) {
+            return;
+        }
+
+        boolean hasSecret = StripeConfig.hasSecretKey();
+        boolean hasClient = StripeConfig.hasConnectClientId();
+        boolean connected = StripeGuestPreferences.isStripeAccountConnected(email);
+
+        if (!hasSecret || !hasClient) {
+            stripeConnectBannerOuter.setBackground(new Color(255, 246, 217));
+            stripeConnectBannerOuter.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(234, 207, 146), 1, true),
+                    new EmptyBorder(16, 18, 16, 18)
+            ));
+            stripeBannerStatusLarge.setForeground(new Color(150, 114, 42));
+            if (!hasSecret && !hasClient) {
+                stripeBannerStatusLarge.setText("Stripe not configured (.env)");
+            } else if (!hasSecret) {
+                stripeBannerStatusLarge.setText("Missing STRIPE_SECRET_KEY");
+            } else {
+                stripeBannerStatusLarge.setText("Missing STRIPE_CONNECT_CLIENT_ID");
+            }
+            stripeBannerDetailSmall.setText("<html>Set both keys plus register redirect <span style=\"font-family:monospace;\">"
+                    + StripeConfig.OAUTH_FULL_URL + "</span> and Checkout ports "
+                    + StripeConfig.CHECKOUT_HTTP_PORT + " / " + StripeConfig.OAUTH_HTTP_PORT + ".</html>");
+        } else if (connected) {
+            stripeConnectBannerOuter.setBackground(new Color(225, 246, 228));
+            stripeConnectBannerOuter.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(132, 199, 150), 1, true),
+                    new EmptyBorder(16, 18, 16, 18)
+            ));
+            stripeBannerStatusLarge.setText("Connected");
+            stripeBannerStatusLarge.setForeground(new Color(46, 120, 74));
+            stripeBannerDetailSmall.setText("Stripe Connect linked for this workstation (sandbox). You can vault cards with the button below.");
+        } else {
+            stripeConnectBannerOuter.setBackground(new Color(255, 235, 235));
+            stripeConnectBannerOuter.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(214, 160, 160), 1, true),
+                    new EmptyBorder(16, 18, 16, 18)
+            ));
+            stripeBannerStatusLarge.setText("Not connected");
+            stripeBannerStatusLarge.setForeground(new Color(160, 40, 40));
+            stripeBannerDetailSmall.setText("<html>Authorize Stripe Connect — redirect must match "
+                    + "<span style=\"font-family:monospace;\">" + StripeConfig.OAUTH_FULL_URL + "</span></html>");
+        }
+
+        stripeConnectAuthorizeButton.setEnabled(hasSecret && hasClient);
+        stripeConnectDisconnectButton.setEnabled(hasSecret && hasClient && connected);
+
+        String acctDisplay = shortenId(StripeGuestPreferences.getConnectedAccountId(email));
+        String custDisplay = shortenId(StripeGuestPreferences.getStripeCustomerId(email));
+        stripeIdsSummaryLabel.setText("<html><span style=\"color:#545454;\">Stripe Connect account:</span> " + acctDisplay
+                + " &nbsp;·&nbsp; <span style=\"color:#545454;\">Saved customer:</span> " + custDisplay + "</html>");
+    }
+
+    private static String shortenId(String id) {
+        if (id == null || id.isBlank()) {
+            return "<span style=\"color:#a36b6b;\">none yet</span>";
+        }
+        if (id.length() <= 16) {
+            return "<span style=\"font-family:monospace\">" + id + "</span>";
+        }
+        return "<span style=\"font-family:monospace\">"
+                + id.substring(0, 10)
+                + "…"
+                + id.substring(id.length() - 4)
+                + "</span>";
+    }
+
+    private void beginStripeOAuthFromAccountCenter() {
+        Account acc = AccountController.currentAccount;
+        if (acc == null) {
+            return;
+        }
+        if (!StripeConfig.hasSecretKey()) {
+            JOptionPane.showMessageDialog(this,
+                    "Add STRIPE_SECRET_KEY (sandbox) to .env before using OAuth.",
+                    "Stripe Connect",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (!StripeConfig.hasConnectClientId()) {
+            JOptionPane.showMessageDialog(this,
+                    "<html>Add STRIPE_CONNECT_CLIENT_ID (<code>ca_…</code>) and register redirect URI:<br/><code>"
+                            + StripeConfig.OAUTH_FULL_URL + "</code></html>",
+                    "Stripe Connect",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            paymentWorkspaceStatusLabel.setText("Listening for Stripe Connect redirect on port "
+                    + StripeConfig.OAUTH_HTTP_PORT + "...");
+
+            StripeHostedLocalServer.OAuthListening oauth = StripeHostedLocalServer.bindOAuth(
+                    code -> SwingUtilities.invokeLater(() -> exchangeStripeOAuthAndPersist(acc.getEmail(), code)));
+
+            if (!StripeHostedLocalServer.browse(oauth.authorizeUrl())) {
+                oauth.stopQuietly();
+                JOptionPane.showMessageDialog(this,
+                        "Could not launch a browser. Complete OAuth manually.",
+                        "Stripe Connect",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not bind local Stripe listener:\n" + ex.getMessage(),
+                    "Stripe Connect",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exchangeStripeOAuthAndPersist(String email, String authorizationCode) {
+        if (authorizationCode == null || authorizationCode.isBlank()) {
+            paymentWorkspaceStatusLabel.setText("Stripe Connect was interrupted.");
+            refreshPaymentWorkspace();
+            return;
+        }
+
+        new SwingWorker<String, Void>() {
+            String error;
+
+            @Override
+            protected String doInBackground() {
+                try {
+                    return StripeConnectOAuthTokenClient.exchangeCodeForStripeUserId(authorizationCode);
+                } catch (StripeConnectOAuthTokenClient.StripeOAuthException ex) {
+                    error = ex.getMessage();
+                } catch (IOException | InterruptedException ex) {
+                    error = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+                    if (ex instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                String acctId;
+                try {
+                    acctId = get();
+                } catch (Exception ex) {
+                    error = error != null ? error : ex.getMessage();
+                    JOptionPane.showMessageDialog(AccountCenterPage.this,
+                            error, "Stripe Connect", JOptionPane.ERROR_MESSAGE);
+                    refreshPaymentWorkspace();
+                    return;
+                }
+                if (error != null || acctId == null) {
+                    JOptionPane.showMessageDialog(AccountCenterPage.this,
+                            error != null ? error : "Stripe did not accept the OAuth handshake.",
+                            "Stripe Connect",
+                            JOptionPane.WARNING_MESSAGE);
+                } else {
+                    StripeGuestPreferences.setConnectedAccountId(email, acctId);
+                    JOptionPane.showMessageDialog(AccountCenterPage.this,
+                            "Stripe account linked locally for sandbox demos.\nStripe user id:\n" + acctId,
+                            "Stripe Connect",
+                            JOptionPane.INFORMATION_MESSAGE);
+                }
+                paymentWorkspaceStatusLabel.setText(" ");
+                refreshPaymentWorkspace();
+            }
+        }.execute();
+    }
+
+    private void disconnectStripeSandboxLink() {
+        Account account = AccountController.currentAccount;
+        if (account == null) {
+            return;
+        }
+        int decision = JOptionPane.showConfirmDialog(this,
+                "Remove the saved Stripe Connect account id only on this computer?",
+                "Disconnect Stripe Connect",
+                JOptionPane.OK_CANCEL_OPTION);
+        if (decision != JOptionPane.OK_OPTION) {
+            return;
+        }
+        StripeGuestPreferences.setConnectedAccountId(account.getEmail(), "");
+        paymentWorkspaceStatusLabel.setText("Disconnected Stripe sandbox link locally.");
+        refreshPaymentWorkspace();
+    }
+
+    private void saveStripeBillingSnapshot() {
+        Account account = AccountController.currentAccount;
+        if (account == null) {
+            return;
+        }
+        PaymentBillingValidator.ValidationResult vr = PaymentBillingValidator.validateBillingProfile(
+                payFullNameField.getText(),
+                payAddressLine1Field.getText(),
+                payCityField.getText(),
+                payStateField.getText(),
+                payZipField.getText());
+        if (!vr.ok()) {
+            JOptionPane.showMessageDialog(this, vr.message(), "Billing validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        StripeGuestPreferences.saveBillingProfile(
+                account.getEmail(),
+                payFullNameField.getText(),
+                payAddressLine1Field.getText(),
+                payAddressLine2Field.getText(),
+                payCityField.getText(),
+                payStateField.getText(),
+                payZipField.getText(),
+                payPhoneField.getText());
+        paymentWorkspaceStatusLabel.setText("Saved billing profile securely on this device (not sent to Stripe).");
+    }
+
+    private void startStripeHostedSavedCardCapture() {
+        Account account = AccountController.currentAccount;
+        if (account == null) {
+            return;
+        }
+        if (!StripeConfig.hasSecretKey()) {
+            JOptionPane.showMessageDialog(this,
+                    "Add STRIPE_SECRET_KEY to enable Stripe Hosted Setup.",
+                    "Stripe",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        PaymentBillingValidator.ValidationResult profile = PaymentBillingValidator.validateBillingProfile(
+                payFullNameField.getText(),
+                payAddressLine1Field.getText(),
+                payCityField.getText(),
+                payStateField.getText(),
+                payZipField.getText());
+        if (!profile.ok()) {
+            JOptionPane.showMessageDialog(this,
+                    "<html>" + profile.message().replace("\n", "<br/>") + "</html>",
+                    "Billing validation",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String pan = new String(payCardNumberField.getPassword()).trim();
+        String cvv = new String(payCardCvvField.getPassword()).trim();
+        PaymentBillingValidator.ValidationResult cardPractice = PaymentBillingValidator.validateCardPracticeFields(
+                pan,
+                payCardExpiryField.getText(),
+                cvv,
+                payZipField.getText());
+        if (!cardPractice.ok()) {
+            JOptionPane.showMessageDialog(this,
+                    "<html>" + cardPractice.message().replace("\n", "<br/>") + "</html>",
+                    "Card validation",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        payCardNumberField.setText("");
+        payCardCvvField.setText("");
+
+        new SwingWorker<Void, Void>() {
+            private volatile String fatal;
+
+            @Override
+            protected Void doInBackground() {
+                StripeHostedLocalServer.BindHandle binder = null;
+                try {
+                    binder = StripeHostedLocalServer.bindCheckout(
+                            sid -> SwingUtilities.invokeLater(() -> handleHostedStripeSessionForPaymentTab(account.getEmail(), sid)),
+                            () -> SwingUtilities.invokeLater(() ->
+                                    JOptionPane.showMessageDialog(AccountCenterPage.this,
+                                            "Stripe setup was canceled.",
+                                            "Stripe",
+                                            JOptionPane.INFORMATION_MESSAGE)));
+                    StripeCheckoutService.SessionCreateResult session = stripeCheckoutService.createCheckoutSessionAttachPaymentMethodSetup(
+                            account.getEmail(),
+                            StripeConfig.checkoutSuccessUrlTemplateWithSessionMacro(),
+                            StripeConfig.checkoutCancelUrl());
+                    if (!session.success()) {
+                        fatal = session.message();
+                        binder.stopQuietly();
+                        return null;
+                    }
+                    if (!StripeHostedLocalServer.browse(session.url())) {
+                        fatal = "Unable to open a browser.";
+                        binder.stopQuietly();
+                    }
+                    return null;
+                } catch (StripeException | IOException ex) {
+                    fatal = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+                    if (binder != null) {
+                        binder.stopQuietly();
+                    }
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                if (fatal != null && !fatal.isBlank()) {
+                    JOptionPane.showMessageDialog(AccountCenterPage.this, fatal, "Stripe setup", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    private void handleHostedStripeSessionForPaymentTab(String guestEmail, String checkoutSessionId) {
+        try {
+            StripeCheckoutSessionReader.StripeCheckoutSummary snap = StripeCheckoutSessionReader.read(checkoutSessionId);
+            if (snap.stripeCustomerId() != null && !snap.stripeCustomerId().isBlank()) {
+                StripeGuestPreferences.setStripeCustomerId(guestEmail, snap.stripeCustomerId());
+                paymentWorkspaceStatusLabel.setText("Saved Stripe Customer id locally for faster future checkouts.");
+            } else if (snap.suggestsSetupSucceeded()) {
+                paymentWorkspaceStatusLabel.setText("Stripe setup completed — customer id unavailable from session API yet.");
+            } else {
+                paymentWorkspaceStatusLabel.setText("Hosted Stripe returned — review Dashboard.");
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    "Stripe Hosted flow finished.\nSandbox cards are accepted directly on Stripe's page.",
+                    "Stripe sandbox",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (StripeException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not read Checkout session metadata:\n" + ex.getMessage(),
+                    "Stripe",
+                    JOptionPane.WARNING_MESSAGE);
+        }
+        refreshPaymentWorkspace();
     }
 
     private JPanel createReservationCard(Reservation reservation) {

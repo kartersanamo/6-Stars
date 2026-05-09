@@ -3,15 +3,24 @@ package com.sixstars.ui;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.*;
 import com.sixstars.service.BillingService;
+import com.sixstars.service.stripe.StripeCheckoutService;
+import com.sixstars.service.stripe.StripeCheckoutSessionReader;
+import com.sixstars.service.stripe.StripeConfig;
+import com.sixstars.service.stripe.StripeGuestPreferences;
+import com.sixstars.service.stripe.StripeHostedLocalServer;
+import com.stripe.exception.StripeException;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.io.IOException;
+import java.util.Locale;
 import java.util.List;
 
 public class BillingPage extends JPanel {
 
     private final BillingService billingService;
+    private final StripeCheckoutService stripeCheckoutService = new StripeCheckoutService();
     private final JPanel reservationsContainer;
     private final JPanel shopContainer;
     private final JLabel reservationTotalLabel;
@@ -110,6 +119,36 @@ public class BillingPage extends JPanel {
         totalsCard.add(grandTotalLabel);
 
         body.add(totalsCard);
+
+        body.add(Box.createRigidArea(new Dimension(0, 28)));
+
+        JPanel stripeCard = new JPanel();
+        stripeCard.setLayout(new BoxLayout(stripeCard, BoxLayout.Y_AXIS));
+        stripeCard.setBackground(UITheme.CARD_BACKGROUND);
+        stripeCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
+                new EmptyBorder(18, 18, 18, 18)
+        ));
+        JLabel stripeHeading = new JLabel("Pay securely with Stripe");
+        stripeHeading.setFont(new Font("SansSerif", Font.BOLD, 18));
+        stripeHeading.setForeground(UITheme.TEXT_DARK);
+        stripeHeading.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel stripeBlurb = new JLabel("<html><div style=\"width:520px\">Open Stripe's hosted Checkout in your browser "
+                + "(sandbox / test keys). Each reservation fee and shop line item appears as its own Checkout line "
+                + "so you can match it against Stripe Dashboard totals.</div></html>");
+        stripeBlurb.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        stripeBlurb.setForeground(UITheme.TEXT_MEDIUM);
+        stripeBlurb.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JButton btnPayStripe = new JButton("Pay with Stripe");
+        styleGoldButton(btnPayStripe);
+        btnPayStripe.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnPayStripe.addActionListener(e -> startStripeSandboxCheckout());
+        stripeCard.add(stripeHeading);
+        stripeCard.add(Box.createRigidArea(new Dimension(0, 8)));
+        stripeCard.add(stripeBlurb);
+        stripeCard.add(Box.createRigidArea(new Dimension(0, 14)));
+        stripeCard.add(btnPayStripe);
+        body.add(stripeCard);
 
         JScrollPane scrollPane = new JScrollPane(body);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -327,5 +366,103 @@ public class BillingPage extends JPanel {
         shopContainer.repaint();
         revalidate();
         repaint();
+    }
+
+    private void startStripeSandboxCheckout() {
+        Account current = AccountController.currentAccount;
+        if (current == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Please log in as a guest to pay your bill.", "Stripe checkout", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (!StripeConfig.hasSecretKey()) {
+            JOptionPane.showMessageDialog(this,
+                    "Stripe is not configured. Add STRIPE_SECRET_KEY (test key) to your .env before using sandbox Checkout.",
+                    "Stripe checkout", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String email = current.getEmail();
+        double due = billingService.getGrandTotal(email);
+        if (due <= 0.009) {
+            JOptionPane.showMessageDialog(this,
+                    "There is no balance to charge right now.", "Stripe checkout", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        new SwingWorker<Void, Void>() {
+            private volatile String fatal;
+
+            @Override
+            protected Void doInBackground() {
+                StripeHostedLocalServer.BindHandle binder = null;
+                try {
+                    binder = StripeHostedLocalServer.bindCheckout(
+                            sid -> SwingUtilities.invokeLater(() -> handleStripeHostedReturn(email, sid)),
+                            () -> SwingUtilities.invokeLater(() ->
+                                    JOptionPane.showMessageDialog(BillingPage.this,
+                                            "Stripe Checkout was canceled. No payment was finalized.",
+                                            "Stripe checkout",
+                                            JOptionPane.INFORMATION_MESSAGE))
+                    );
+
+                    StripeCheckoutService.SessionCreateResult session = stripeCheckoutService.createCheckoutSessionPayFullGuestBill(
+                            email.trim().toLowerCase(Locale.ROOT),
+                            StripeConfig.checkoutSuccessUrlTemplateWithSessionMacro(),
+                            StripeConfig.checkoutCancelUrl());
+
+                    if (!session.success()) {
+                        fatal = session.message();
+                        binder.stopQuietly();
+                        return null;
+                    }
+                    boolean opened = StripeHostedLocalServer.browse(session.url());
+                    if (!opened) {
+                        fatal = "Unable to launch a browser.";
+                    }
+                    if (!opened && binder != null) {
+                        binder.stopQuietly();
+                    }
+                    return null;
+                } catch (StripeException | IOException ex) {
+                    fatal = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+                    if (binder != null) {
+                        binder.stopQuietly();
+                    }
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                if (fatal != null && !fatal.isBlank()) {
+                    JOptionPane.showMessageDialog(BillingPage.this,
+                            fatal, "Stripe checkout", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    private void handleStripeHostedReturn(String guestEmail, String checkoutSessionId) {
+        try {
+            StripeCheckoutSessionReader.StripeCheckoutSummary snapshot =
+                    StripeCheckoutSessionReader.read(checkoutSessionId);
+            String customer = snapshot.stripeCustomerId();
+            if (customer != null && !customer.isBlank()) {
+                StripeGuestPreferences.setStripeCustomerId(guestEmail, customer);
+            }
+            String paidInfo = snapshot.suggestsPaymentSucceeded()
+                    ? "Stripe reports the Checkout session paid status as completed (sandbox)."
+                    : "Stripe returned to the hotel app — review the Checkout session in Stripe Dashboard (test mode) to confirm totals.";
+            JOptionPane.showMessageDialog(this,
+                    paidInfo + "\n\nStripe dashboard line items mirror every reservation fee and shop line on this billing page.",
+                    "Stripe sandbox",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (StripeException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not refresh session details:\n" + ex.getMessage(),
+                    "Stripe checkout",
+                    JOptionPane.WARNING_MESSAGE);
+        }
+        refresh();
     }
 }

@@ -229,25 +229,7 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
         content.add(viewAccountButton);
         content.add(new JLabel(" "));
 
-        // Add My Reservations for guests
         Account current = AccountController.currentAccount;
-        if (current != null && current.getRole() == Role.GUEST) {
-            JButton myReservationsButton = new JButton("My Reservations");
-            myReservationsButton.setHorizontalAlignment(SwingConstants.LEFT);
-            myReservationsButton.setFont(new Font("SansSerif", Font.BOLD, 13));
-            myReservationsButton.setBackground(UITheme.SECONDARY_BUTTON);
-            myReservationsButton.setFocusPainted(false);
-            myReservationsButton.setBorderPainted(false);
-            myReservationsButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            myReservationsButton.addActionListener(_ -> {
-                Main.reservationsPage.refresh();
-                cardLayout.show(pages, "reservations");
-                accountPopupMenu.setVisible(false);
-            });
-            content.add(myReservationsButton);
-            content.add(new JLabel(" "));
-        }
-
         // Add Dashboard for clerk and admin
         if (current != null && (current.getRole() == Role.CLERK || current.getRole() == Role.ADMIN)) {
             JButton dashboardButton = new JButton("Dashboard");
