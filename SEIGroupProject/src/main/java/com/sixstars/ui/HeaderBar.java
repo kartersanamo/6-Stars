@@ -229,6 +229,47 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
         content.add(viewAccountButton);
         content.add(new JLabel(" "));
 
+        // Add My Reservations for guests
+        Account current = AccountController.currentAccount;
+        if (current != null && current.getRole() == Role.GUEST) {
+            JButton myReservationsButton = new JButton("My Reservations");
+            myReservationsButton.setHorizontalAlignment(SwingConstants.LEFT);
+            myReservationsButton.setFont(new Font("SansSerif", Font.BOLD, 13));
+            myReservationsButton.setBackground(UITheme.SECONDARY_BUTTON);
+            myReservationsButton.setFocusPainted(false);
+            myReservationsButton.setBorderPainted(false);
+            myReservationsButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            myReservationsButton.addActionListener(_ -> {
+                Main.reservationsPage.refresh();
+                cardLayout.show(pages, "reservations");
+                accountPopupMenu.setVisible(false);
+            });
+            content.add(myReservationsButton);
+            content.add(new JLabel(" "));
+        }
+
+        // Add Dashboard for clerk and admin
+        if (current != null && (current.getRole() == Role.CLERK || current.getRole() == Role.ADMIN)) {
+            JButton dashboardButton = new JButton("Dashboard");
+            dashboardButton.setHorizontalAlignment(SwingConstants.LEFT);
+            dashboardButton.setFont(new Font("SansSerif", Font.BOLD, 13));
+            dashboardButton.setBackground(UITheme.SECONDARY_BUTTON);
+            dashboardButton.setFocusPainted(false);
+            dashboardButton.setBorderPainted(false);
+            dashboardButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            dashboardButton.addActionListener(_ -> {
+                if (current.getRole() == Role.CLERK) {
+                    cardLayout.show(pages, "clerk page");
+                } else {
+                    cardLayout.show(pages, "admin page");
+                }
+                accountPopupMenu.setVisible(false);
+            });
+            content.add(dashboardButton);
+            content.add(new JLabel(" "));
+        }
+        content.add(new JLabel(" "));
+
         JPanel titleRow = new JPanel(new BorderLayout());
         titleRow.setOpaque(false);
         JLabel title = new JLabel("Notifications");
@@ -241,7 +282,6 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
         clearAll.setForeground(UITheme.TEXT_MEDIUM);
         clearAll.setCursor(new Cursor(Cursor.HAND_CURSOR));
         clearAll.addActionListener(_ -> {
-            Account current = AccountController.currentAccount;
             if (current != null) {
                 notificationService.clearAll(current.getEmail());
             }
@@ -252,7 +292,6 @@ public class HeaderBar extends JPanel implements NotificationService.Notificatio
         content.add(titleRow);
         content.add(new JLabel(" "));
 
-        Account current = AccountController.currentAccount;
         List<AppNotification> notifications = current == null ? List.of() : notificationService.getNotifications(current.getEmail());
         if (notifications.isEmpty()) {
             JLabel empty = new JLabel("No notifications");

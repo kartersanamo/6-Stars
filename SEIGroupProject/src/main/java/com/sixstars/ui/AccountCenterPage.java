@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.prefs.Preferences;
@@ -39,7 +40,11 @@ import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.NotificationType;
 import com.sixstars.model.Role;
+import com.sixstars.model.Reservation;
+import com.sixstars.model.ShopOrder;
+import com.sixstars.model.ShopOrderItem;
 import com.sixstars.service.NotificationService;
+import com.sixstars.service.BillingService;
 
 public class AccountCenterPage extends JPanel {
     private static final int AVATAR_SIZE = 120;
@@ -53,11 +58,15 @@ public class AccountCenterPage extends JPanel {
     private static final Color SIDEBAR_SELECTED = UITheme.ACCENT_GOLD;
     private static final Color SIDEBAR_PANEL = new Color(252, 249, 241);
     private static final Color SIDEBAR_TEXT_MUTED = new Color(112, 103, 90);
+    private static final Color BILLING_SECTION_BG = new Color(252, 250, 245);
+    private static final Color BILLING_ACCENT = new Color(176, 132, 38);
+    private static final Color BILLING_POSITIVE = new Color(44, 122, 72);
 
     private final JPanel pages;
     private final CardLayout cardLayout;
     private final AccountController accountController;
     private final Preferences preferencesRoot = Preferences.userNodeForPackage(AccountCenterPage.class);
+    private final BillingService billingService = new BillingService();
 
     // Sidebar navigation buttons
     private JButton accountInfoButton;
@@ -100,6 +109,14 @@ public class AccountCenterPage extends JPanel {
     private final Map<NotificationType, JCheckBox> emailNotificationChecks = new EnumMap<>(NotificationType.class);
     private final Map<NotificationType, JCheckBox> inAppNotificationChecks = new EnumMap<>(NotificationType.class);
     private final NotificationService notificationService = NotificationService.getInstance();
+
+    // Billing Section Components
+    private JPanel reservationsContainer;
+    private JPanel shopContainer;
+    private JLabel reservationTotalLabel;
+    private JLabel shopTotalLabel;
+    private JLabel grandTotalLabel;
+
     private final JTextField deleteEmailField = new JTextField();
     private final JTextField deleteCodeField = new JTextField();
     private final JButton sendDeleteCodeButton = new JButton("Send Verification Code");
@@ -304,6 +321,10 @@ public class AccountCenterPage extends JPanel {
 
         button.addActionListener(_ -> {
             selectNavButton(button);
+            // Refresh billing content when switching to billing tab
+            if ("billing".equals(contentKey)) {
+                refreshBillingContent();
+            }
             contentLayout.show(contentArea, contentKey);
         });
 
@@ -542,11 +563,18 @@ public class AccountCenterPage extends JPanel {
         mainPanel.add(title);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 4)));
         mainPanel.add(subtitle);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 24)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
 
         JPanel notificationCard = createCardPanel();
         notificationCard.add(createSectionTitle("Delivery Preferences", "Toggle per category for Email and In-App alerts"));
         notificationCard.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        // Wrap notification content in its own non-expanding container
+        JPanel notificationContent = new JPanel();
+        notificationContent.setLayout(new BoxLayout(notificationContent, BoxLayout.Y_AXIS));
+        notificationContent.setOpaque(false);
+        notificationContent.setAlignmentX(Component.LEFT_ALIGNMENT);
+        notificationContent.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
         JPanel tableHeader = new JPanel(new GridLayout(1, 3, 12, 0));
         tableHeader.setOpaque(false);
@@ -555,8 +583,8 @@ public class AccountCenterPage extends JPanel {
         tableHeader.add(createHeaderCell("Notification Type"));
         tableHeader.add(createHeaderCell("Email"));
         tableHeader.add(createHeaderCell("In-App"));
-        notificationCard.add(tableHeader);
-        notificationCard.add(Box.createRigidArea(new Dimension(0, 8)));
+        notificationContent.add(tableHeader);
+        notificationContent.add(Box.createRigidArea(new Dimension(0, 8)));
 
         emailNotificationChecks.clear();
         inAppNotificationChecks.clear();
@@ -584,10 +612,12 @@ public class AccountCenterPage extends JPanel {
             row.add(typeLabel);
             row.add(emailCheck);
             row.add(inAppCheck);
-            notificationCard.add(row);
-            notificationCard.add(Box.createRigidArea(new Dimension(0, 6)));
+            notificationContent.add(row);
+            notificationContent.add(Box.createRigidArea(new Dimension(0, 6)));
         }
 
+        notificationCard.add(notificationContent);
+        notificationCard.add(Box.createVerticalGlue());
         mainPanel.add(notificationCard);
 
         return mainPanel;
@@ -607,32 +637,85 @@ public class AccountCenterPage extends JPanel {
         mainPanel.add(title);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 4)));
         mainPanel.add(subtitle);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 24)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        JPanel billingCard = createCardPanel();
-        billingCard.add(createSectionTitle("View Billing Information", "Access your billing history and invoices"));
-        billingCard.add(Box.createRigidArea(new Dimension(0, 16)));
+        JPanel overviewCard = createCardPanel();
+        overviewCard.setBackground(BILLING_SECTION_BG);
+        overviewCard.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(230, 221, 199), 1, true),
+                new EmptyBorder(18, 18, 18, 18)
+        ));
+        JLabel overviewTitle = new JLabel("Your Account Billing Summary");
+        overviewTitle.setFont(new Font("SansSerif", Font.BOLD, 18));
+        overviewTitle.setForeground(UITheme.TEXT_DARK);
+        overviewTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel overviewSub = new JLabel("Everything in one place: reservation charges, shop purchases, and total due.");
+        overviewSub.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        overviewSub.setForeground(UITheme.TEXT_MEDIUM);
+        overviewSub.setAlignmentX(Component.LEFT_ALIGNMENT);
+        overviewCard.add(overviewTitle);
+        overviewCard.add(Box.createRigidArea(new Dimension(0, 6)));
+        overviewCard.add(overviewSub);
+        mainPanel.add(overviewCard);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        JLabel billingInfo = new JLabel("Click the button below to access your billing information and past invoices.");
-        billingInfo.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        billingInfo.setForeground(UITheme.TEXT_MEDIUM);
-        billingCard.add(billingInfo);
+        JPanel reservationSection = createBillingSectionCard("Reservation Charges", "Your room stays and applicable fees");
+        reservationsContainer = new JPanel();
+        reservationsContainer.setLayout(new BoxLayout(reservationsContainer, BoxLayout.Y_AXIS));
+        reservationsContainer.setOpaque(false);
+        reservationsContainer.setAlignmentX(Component.LEFT_ALIGNMENT);
+        reservationSection.add(reservationsContainer);
+        mainPanel.add(reservationSection);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 14)));
 
-        billingCard.add(Box.createRigidArea(new Dimension(0, 16)));
+        JPanel shopSection = createBillingSectionCard("Shop Purchases", "Everything ordered from the hotel shop");
+        shopContainer = new JPanel();
+        shopContainer.setLayout(new BoxLayout(shopContainer, BoxLayout.Y_AXIS));
+        shopContainer.setOpaque(false);
+        shopContainer.setAlignmentX(Component.LEFT_ALIGNMENT);
+        shopSection.add(shopContainer);
+        mainPanel.add(shopSection);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        JButton viewBillingButton = new JButton("View Billing & Invoices");
-        viewBillingButton.addActionListener(_ -> {
-            if (Main.billingPage != null) {
-                Main.billingPage.refresh();
-            }
-            cardLayout.show(pages, "billing page");
-        });
-        styleButton(viewBillingButton, true);
-        billingCard.add(viewBillingButton);
+        JPanel totalsCard = createCardPanel();
+        totalsCard.setBackground(new Color(253, 250, 241));
+        totalsCard.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(225, 207, 167), 1, true),
+                new EmptyBorder(18, 18, 18, 18)
+        ));
+        JLabel totalsTitle = new JLabel("Balance Overview");
+        totalsTitle.setFont(new Font("SansSerif", Font.BOLD, 18));
+        totalsTitle.setForeground(UITheme.TEXT_DARK);
+        totalsTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        mainPanel.add(billingCard);
+        reservationTotalLabel = createTotalLabel("");
+        shopTotalLabel = createTotalLabel("");
+        grandTotalLabel = createGrandTotalLabel("");
+
+        totalsCard.add(totalsTitle);
+        totalsCard.add(Box.createRigidArea(new Dimension(0, 12)));
+        totalsCard.add(reservationTotalLabel);
+        totalsCard.add(Box.createRigidArea(new Dimension(0, 8)));
+        totalsCard.add(shopTotalLabel);
+        totalsCard.add(Box.createRigidArea(new Dimension(0, 12)));
+        totalsCard.add(new JSeparator());
+        totalsCard.add(Box.createRigidArea(new Dimension(0, 12)));
+        totalsCard.add(grandTotalLabel);
+        mainPanel.add(totalsCard);
 
         return mainPanel;
+    }
+
+    private JPanel createBillingSectionCard(String title, String subtitle) {
+        JPanel card = createCardPanel();
+        card.setBackground(BILLING_SECTION_BG);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(231, 223, 204), 1, true),
+                new EmptyBorder(18, 18, 18, 18)
+        ));
+        card.add(createSectionTitle(title, subtitle));
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+        return card;
     }
 
     private JPanel createPurchasesPanel() {
@@ -1007,6 +1090,7 @@ public class AccountCenterPage extends JPanel {
         clearPasswordFields();
         togglePasswordVisibility(showPasswordsCheck.isSelected());
         loadNotificationPreferences(account);
+        refreshBillingContent();
 
         revalidate();
         repaint();
@@ -1371,6 +1455,231 @@ public class AccountCenterPage extends JPanel {
         }
     }
 
+    // Billing panel refresh and helper methods
+    public void refreshBillingContent() {
+        if (reservationsContainer == null || shopContainer == null) {
+            return;
+        }
+
+        reservationsContainer.removeAll();
+        shopContainer.removeAll();
+
+        Account current = AccountController.currentAccount;
+        if (current == null) {
+            reservationsContainer.add(createEmptyCard("No guest is logged in."));
+            shopContainer.add(createEmptyCard("No guest is logged in."));
+            reservationTotalLabel.setText("Reservation Total  $0.00");
+            shopTotalLabel.setText("Shop Purchases  $0.00");
+            grandTotalLabel.setText("Grand Total  $0.00");
+            reservationsContainer.revalidate();
+            reservationsContainer.repaint();
+            shopContainer.revalidate();
+            shopContainer.repaint();
+            return;
+        }
+
+        // Load billing data for current account's email
+        String email = current.getEmail();
+        List<Reservation> reservations = billingService.getReservationCharges(email);
+        if (reservations.isEmpty()) {
+            reservationsContainer.add(createEmptyCard("No reservations found."));
+        } else {
+            for (Reservation reservation : reservations) {
+                reservationsContainer.add(createReservationCard(reservation));
+                reservationsContainer.add(Box.createRigidArea(new Dimension(0, 12)));
+            }
+        }
+
+        List<ShopOrder> orders = billingService.getShopPurchases(email);
+        if (orders.isEmpty()) {
+            shopContainer.add(createEmptyCard("No shop purchases found."));
+        } else {
+            for (ShopOrder order : orders) {
+                shopContainer.add(createShopOrderCard(order));
+                shopContainer.add(Box.createRigidArea(new Dimension(0, 12)));
+            }
+        }
+
+        int reservationTotal = billingService.getReservationTotal(email);
+        double shopTotal = billingService.getShopTotal(email);
+        double grandTotal = billingService.getGrandTotal(email);
+
+        reservationTotalLabel.setText(String.format("Reservation Total  $%,.2f", (double) reservationTotal));
+        shopTotalLabel.setText(String.format("Shop Purchases  $%,.2f", shopTotal));
+        grandTotalLabel.setText(String.format("Grand Total  $%,.2f", grandTotal));
+
+        reservationsContainer.revalidate();
+        reservationsContainer.repaint();
+        shopContainer.revalidate();
+        shopContainer.repaint();
+    }
+
+    private JPanel createReservationCard(Reservation reservation) {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(228, 223, 214), 1, true),
+                new EmptyBorder(16, 16, 16, 16)
+        ));
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        // Check if this is a cancelled booking
+        boolean isCancelled = "CANCELLED".equalsIgnoreCase(reservation.getStatus());
+
+        String roomText = reservation.getRooms().stream()
+                .map(r -> "Room " + r.getRoomNumber())
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("No rooms");
+
+        JPanel topRow = new JPanel(new BorderLayout(12, 0));
+        topRow.setOpaque(false);
+        topRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel top = new JLabel(roomText);
+        top.setFont(new Font("SansSerif", Font.BOLD, 17));
+        top.setForeground(UITheme.TEXT_DARK);
+
+        JLabel statusBadge = new JLabel(isCancelled ? "CANCELLED" : "CONFIRMED");
+        statusBadge.setFont(new Font("SansSerif", Font.BOLD, 11));
+        statusBadge.setOpaque(true);
+        statusBadge.setBorder(new EmptyBorder(4, 8, 4, 8));
+        if (isCancelled) {
+            statusBadge.setBackground(new Color(255, 233, 233));
+            statusBadge.setForeground(new Color(180, 40, 40));
+        } else {
+            statusBadge.setBackground(new Color(231, 246, 236));
+            statusBadge.setForeground(new Color(38, 109, 64));
+        }
+        topRow.add(top, BorderLayout.WEST);
+        topRow.add(statusBadge, BorderLayout.EAST);
+
+        JLabel dates = new JLabel("Dates: " + reservation.getStartDate() + " to " + reservation.getEndDate());
+        dates.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        dates.setForeground(UITheme.TEXT_MEDIUM);
+        dates.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        card.add(topRow);
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(dates);
+
+        // Only show Nightly Rate details if the reservation is ACTIVE
+        if (!isCancelled) {
+            JLabel nightly = new JLabel("Nightly Rate: $" + reservation.getNightlyRate() + ".00");
+            nightly.setFont(new Font("SansSerif", Font.PLAIN, 14));
+            nightly.setForeground(UITheme.TEXT_MEDIUM);
+            nightly.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            JLabel nights = new JLabel("Nights: " + reservation.getNights());
+            nights.setFont(new Font("SansSerif", Font.PLAIN, 14));
+            nights.setForeground(UITheme.TEXT_MEDIUM);
+            nights.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            card.add(Box.createRigidArea(new Dimension(0, 4)));
+            card.add(nightly);
+            card.add(Box.createRigidArea(new Dimension(0, 4)));
+            card.add(nights);
+        }
+
+        // The Charge Label
+        JLabel total = new JLabel();
+        if (isCancelled) {
+            total.setText("Cancellation Fee: $" + reservation.getTotalCost() + ".00");
+            total.setForeground(new Color(184, 45, 45));
+        } else {
+            total.setText("Reservation Total: $" + reservation.getTotalCost() + ".00");
+            total.setForeground(BILLING_POSITIVE);
+        }
+        total.setFont(new Font("SansSerif", Font.BOLD, 16));
+        total.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
+        card.add(total);
+
+        return card;
+    }
+
+    private JPanel createShopOrderCard(ShopOrder order) {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(228, 223, 214), 1, true),
+                new EmptyBorder(16, 16, 16, 16)
+        ));
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        JLabel top = new JLabel("Purchase Date: " + order.getPurchaseDate());
+        top.setFont(new Font("SansSerif", Font.BOLD, 18));
+        top.setForeground(UITheme.TEXT_DARK);
+        top.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(top);
+        card.add(Box.createRigidArea(new Dimension(0, 8)));
+
+        for (ShopOrderItem item : order.getItems()) {
+            JPanel line = new JPanel(new BorderLayout(8, 0));
+            line.setOpaque(false);
+            line.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            JLabel itemLabel = new JLabel(item.getItemName() + "  (x" + item.getQuantity() + ")");
+            itemLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+            itemLabel.setForeground(UITheme.TEXT_MEDIUM);
+
+            JLabel lineTotal = new JLabel(String.format("$%.2f", item.getLineTotal()));
+            lineTotal.setFont(new Font("SansSerif", Font.BOLD, 14));
+            lineTotal.setForeground(UITheme.TEXT_DARK);
+
+            line.add(itemLabel, BorderLayout.WEST);
+            line.add(lineTotal, BorderLayout.EAST);
+            card.add(line);
+            card.add(Box.createRigidArea(new Dimension(0, 6)));
+        }
+
+        JLabel total = new JLabel(String.format("Order Total: $%.2f", order.getTotalCost()));
+        total.setFont(new Font("SansSerif", Font.BOLD, 16));
+        total.setForeground(BILLING_POSITIVE);
+        total.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(Box.createRigidArea(new Dimension(0, 8)));
+        card.add(total);
+
+        return card;
+    }
+
+    private JPanel createEmptyCard(String text) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(new Color(253, 251, 246));
+        card.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(232, 224, 207), 1, true),
+                new EmptyBorder(20, 20, 20, 20)
+        ));
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        label.setForeground(UITheme.TEXT_MEDIUM);
+        card.add(label, BorderLayout.CENTER);
+        return card;
+    }
+
+    private JLabel createTotalLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("SansSerif", Font.BOLD, 17));
+        label.setForeground(UITheme.TEXT_DARK);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return label;
+    }
+
+    private JLabel createGrandTotalLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("SansSerif", Font.BOLD, 24));
+        label.setForeground(BILLING_ACCENT);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return label;
+    }
+
     private final class AvatarPanel extends JPanel {
         private BufferedImage image;
         private String initials = "??";
@@ -1469,6 +1778,10 @@ public class AccountCenterPage extends JPanel {
         }
     }
 }
+
+
+
+
 
 
 
