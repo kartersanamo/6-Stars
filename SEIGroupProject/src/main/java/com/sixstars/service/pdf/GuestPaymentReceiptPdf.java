@@ -112,7 +112,7 @@ public final class GuestPaymentReceiptPdf {
 
                 drawCenter(cs, helvBold, 20, PAGE_H - y, "S I X   S T A R S   H O T E L");
                 y += 26;
-                drawCenter(cs, helv, 10, PAGE_H - y, "A Luxury Collection Property · Waco, Texas");
+                drawCenter(cs, helv, 10, PAGE_H - y, "A Luxury Collection Property Waco, Texas");
                 y += 36;
 
                 drawLeft(cs, helvBold, 14, MARGIN, PAGE_H - y, "OFFICIAL GUEST FOLIO RECEIPT");
@@ -147,7 +147,7 @@ public final class GuestPaymentReceiptPdf {
 
                 // Line items header (hotel folio style)
                 drawLeft(cs, helvBold, 11, MARGIN, PAGE_H - y, "DESCRIPTION");
-                drawRight(cs, helvBold, 11, PAGE_W - MARGIN, PAGE_H - y, "AMOUNT (USD)");
+                drawRight(cs, helvBold, 11, PAGE_W - MARGIN, PAGE_H - y, "AMOUNT USD");
                 y += 16;
                 cs.setStrokingColor(0.35f, 0.35f, 0.35f);
                 cs.setLineWidth(0.75f);
@@ -156,7 +156,7 @@ public final class GuestPaymentReceiptPdf {
                 cs.stroke();
                 y += 14;
 
-                String lineDesc = "Payment received — " + record.getKind().getDisplay();
+                String lineDesc = "Payment received " + record.getKind().getDisplay();
                 drawLeft(cs, helv, 10, MARGIN, PAGE_H - y, wrapDescription(lineDesc, 70));
                 drawRight(cs, helvBold, 12, PAGE_W - MARGIN, PAGE_H - y,
                         String.format(Locale.US, "%s%,.2f", "$", record.getAmount()));
@@ -179,11 +179,11 @@ public final class GuestPaymentReceiptPdf {
                 y += 32;
 
                 drawCenter(cs, helv, 8, PAGE_H - y,
-                        "Six Stars Hotel LLC · Federal EIN 87-6543210 (demonstration property — not a legal tax document)");
+                        "Six Stars Hotel LLC Federal EIN 87-6543210 demonstration property not a legal tax document");
                 y += 22;
 
                 y += drawLeftBlock(cs, helv, 9, MARGIN, PAGE_H - y,
-                        "Amount shown in United States dollars (USD). For international guests, card issuer exchange "
+                        "Amount shown in United States dollars USD. For international guests, card issuer exchange "
                                 + "rates and international service fees may apply per your card agreement.");
                 y += drawLeftBlock(cs, helv, 9, MARGIN, PAGE_H - y,
                         "This receipt reflects payment recorded in the Six Stars property management system. "
@@ -193,10 +193,10 @@ public final class GuestPaymentReceiptPdf {
                 drawLeft(cs, helvBold, 9, MARGIN, PAGE_H - y, "PROPERTY INFORMATION");
                 y += 14;
                 drawLeft(cs, helv, 9, MARGIN, PAGE_H - y,
-                        "Six Stars Hotel · 1000 University Parks Drive · Waco, TX 76706 · United States");
+                        "Six Stars Hotel 1000 University Parks Drive Waco, TX 76706 United States");
                 y += 12;
                 drawLeft(cs, helv, 9, MARGIN, PAGE_H - y,
-                        "Front desk: +1 (254) 555-0142 · Reservations: reservations@sixstars-hotel.example");
+                        "Front desk: +1 254 555-0142 Reservations: reservations@6stars.xyz");
                 y += 28;
 
                 drawLeft(cs, helv, 8, MARGIN, PAGE_H - y,
