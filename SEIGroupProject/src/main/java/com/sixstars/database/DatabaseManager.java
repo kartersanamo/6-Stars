@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.ResultSet;
+import java.sql.PreparedStatement;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -145,8 +146,36 @@ public class DatabaseManager {
                     "saved_method_id INTEGER, " +
                     "created_at TEXT NOT NULL)");
 
+            ensureShopImagePaths(conn);
+
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Binds shop item rows to classpath image assets so thumbnails work regardless of process working directory.
+     */
+    private static void ensureShopImagePaths(Connection conn) throws SQLException {
+        updateShopImageIfMatch(conn, "%water%", "/assets/shopImages/water.png");
+        updateShopImageIfMatch(conn, "%chip%", "/assets/shopImages/chips.png");
+        updateShopImageIfMatch(conn, "%tooth%", "/assets/shopImages/toothbrush.png");
+        updateShopImageIfMatch(conn, "%snack%", "/assets/shopImages/snack.png");
+        updateShopImageIfMatch(conn, "%coffee%", "/assets/shopImages/coffee.png");
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE shop_items SET imagePath = ? WHERE imagePath IS NULL OR TRIM(imagePath) = ''")) {
+            ps.setString(1, "/assets/shopImages/default.png");
+            ps.executeUpdate();
+        }
+    }
+
+    private static void updateShopImageIfMatch(Connection conn, String nameLike, String classpathImage)
+            throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE shop_items SET imagePath = ? WHERE lower(name) LIKE ?")) {
+            ps.setString(1, classpathImage);
+            ps.setString(2, nameLike);
+            ps.executeUpdate();
         }
     }
 
