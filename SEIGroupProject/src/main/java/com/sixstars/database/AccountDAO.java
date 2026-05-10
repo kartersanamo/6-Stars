@@ -111,4 +111,16 @@ public class AccountDAO {
             e.printStackTrace();
         }
     }
+
+    public void deleteAccountByEmail(String email) {
+        String sql = "DELETE FROM accounts WHERE email = ?";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

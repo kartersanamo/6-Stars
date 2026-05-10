@@ -34,6 +34,9 @@ import com.sixstars.app.Main;
 import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.Role;
+import com.sixstars.service.security.PasswordStrengthEvaluator;
+import com.sixstars.service.security.SignInAuditService;
+import com.sixstars.ui.components.PasswordStrengthHeaderPanel;
 
 public class CreateAccountPage extends JPanel {
     private final AccountController accountController;
@@ -43,6 +46,8 @@ public class CreateAccountPage extends JPanel {
     private JTextField emailField;
     private boolean isAdmin;
     JPasswordField passwordField;
+    private final PasswordStrengthHeaderPanel passwordStrengthHeader = new PasswordStrengthHeaderPanel(true);
+    private Runnable refreshAccountValidationUi;
 
     public CreateAccountPage(JPanel pages, CardLayout cardLayout) {
         accountController = new AccountController();
@@ -187,6 +192,24 @@ public class CreateAccountPage extends JPanel {
         gbc.insets = new Insets(0, 0, 18, 0);
         formPanel.add(confirmPasswordField, gbc);
 
+        JLabel strengthTitle = createCenteredLabel("Password strength");
+        strengthTitle.setFont(new Font("SansSerif", Font.BOLD, 13));
+        strengthTitle.setForeground(UITheme.TEXT_DARK);
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 6, 0);
+        formPanel.add(strengthTitle, gbc);
+
+        JPanel strengthWrap = new JPanel();
+        strengthWrap.setLayout(new BoxLayout(strengthWrap, BoxLayout.Y_AXIS));
+        strengthWrap.setOpaque(false);
+        strengthWrap.setAlignmentX(Component.CENTER_ALIGNMENT);
+        passwordStrengthHeader.setAlignmentX(Component.CENTER_ALIGNMENT);
+        passwordStrengthHeader.setMaximumSize(new Dimension(320, 44));
+        strengthWrap.add(passwordStrengthHeader);
+        gbc.gridy = row++;
+        gbc.insets = new Insets(0, 0, 14, 0);
+        formPanel.add(strengthWrap, gbc);
+
         gbc.gridy = row++;
         gbc.insets = new Insets(0, 0, 4, 0);
         formPanel.add(passwordLengthRequirementLabel, gbc);
@@ -266,24 +289,26 @@ public class CreateAccountPage extends JPanel {
             String confirmPasswordText = new String(confirmPasswordField.getPassword());
 
             boolean emailValid = isValidEmail(emailText);
-            boolean hasLength = passwordText.length() >= 8;
-            boolean hasUpper = passwordText.chars().anyMatch(Character::isUpperCase);
-            boolean hasLower = passwordText.chars().anyMatch(Character::isLowerCase);
-            boolean hasDigit = passwordText.chars().anyMatch(Character::isDigit);
-            boolean hasSpecial = passwordText.chars().anyMatch(ch -> !Character.isLetterOrDigit(ch));
-            boolean passwordsMatch = !passwordText.isEmpty() && passwordText.equals(confirmPasswordText);
+            PasswordStrengthEvaluator.Result strength = PasswordStrengthEvaluator.evaluate(passwordText);
+            boolean passwordsMatch = !passwordText.isEmpty()
+                    && PasswordStrengthEvaluator.matches(passwordText, confirmPasswordText);
+
+            passwordStrengthHeader.updateFromNewPassword(passwordText);
 
             updateRequirementLabel(emailRequirementLabel, "Valid email format (example@domain.com)", emailValid);
-            updateRequirementLabel(passwordLengthRequirementLabel, "At least 8 characters", hasLength);
-            updateRequirementLabel(passwordUpperRequirementLabel, "At least 1 uppercase letter", hasUpper);
-            updateRequirementLabel(passwordLowerRequirementLabel, "At least 1 lowercase letter", hasLower);
-            updateRequirementLabel(passwordDigitRequirementLabel, "At least 1 number", hasDigit);
-            updateRequirementLabel(passwordSpecialRequirementLabel, "At least 1 special character", hasSpecial);
+            updateRequirementLabel(passwordLengthRequirementLabel, "At least 8 characters", strength.lengthOk());
+            updateRequirementLabel(passwordUpperRequirementLabel, "At least 1 uppercase letter", strength.upperOk());
+            updateRequirementLabel(passwordLowerRequirementLabel, "At least 1 lowercase letter", strength.lowerOk());
+            updateRequirementLabel(passwordDigitRequirementLabel, "At least 1 number", strength.digitOk());
+            updateRequirementLabel(passwordSpecialRequirementLabel, "At least 1 special character", strength.specialOk());
             updateRequirementLabel(passwordMatchRequirementLabel, "Passwords match", passwordsMatch);
 
-            createButton.setEnabled(emailValid && hasLength && hasUpper && hasLower && hasDigit && hasSpecial && passwordsMatch);
+            boolean passwordOk = strength.lengthOk() && strength.upperOk() && strength.lowerOk()
+                    && strength.digitOk() && strength.specialOk();
+            createButton.setEnabled(emailValid && passwordOk && passwordsMatch);
             updatePrimaryButtonState(createButton);
         };
+        refreshAccountValidationUi = refreshValidationUI;
 
         DocumentListener validationListener = new DocumentListener() {
             @Override
@@ -335,7 +360,7 @@ public class CreateAccountPage extends JPanel {
                 return;
             }
 
-            if (!isValidEmail(email) || !isStrongPassword(password)) {
+            if (!isValidEmail(email) || !passwordRulesSatisfied(password)) {
                 JOptionPane.showMessageDialog(
                         this,
                         "Please satisfy all email and password requirements.",
@@ -410,6 +435,7 @@ public class CreateAccountPage extends JPanel {
                     }
 
                     AccountController.currentAccount = verifiedAccount;
+                    SignInAuditService.recordSuccessfulSignIn(verifiedAccount, accountController.getAccountService());
 
                     Main.headerBar.refreshInfo();
 
@@ -466,29 +492,9 @@ public class CreateAccountPage extends JPanel {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$");
     }
 
-    private boolean isStrongPassword(String password) {
-        if (password == null || password.length() < 8) {
-            return false;
-        }
-
-        boolean hasUpper = false;
-        boolean hasLower = false;
-        boolean hasDigit = false;
-        boolean hasSpecial = false;
-
-        for (char c : password.toCharArray()) {
-            if (Character.isUpperCase(c)) {
-                hasUpper = true;
-            } else if (Character.isLowerCase(c)) {
-                hasLower = true;
-            } else if (Character.isDigit(c)) {
-                hasDigit = true;
-            } else {
-                hasSpecial = true;
-            }
-        }
-
-        return hasUpper && hasLower && hasDigit && hasSpecial;
+    private boolean passwordRulesSatisfied(String password) {
+        PasswordStrengthEvaluator.Result r = PasswordStrengthEvaluator.evaluate(password);
+        return r.lengthOk() && r.upperOk() && r.lowerOk() && r.digitOk() && r.specialOk();
     }
 
     private void styleTextField(JTextField field) {
@@ -596,5 +602,8 @@ public class CreateAccountPage extends JPanel {
         }
         formPanel.revalidate();
         formPanel.repaint();
+        if (refreshAccountValidationUi != null) {
+            refreshAccountValidationUi.run();
+        }
     }
 }

@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 
 import com.sixstars.database.AccountDAO;
 import com.sixstars.model.Account;
+import com.sixstars.model.NotificationType;
 import com.sixstars.model.Role;
 
 public class AccountService {
@@ -126,6 +127,19 @@ public class AccountService {
         return null;
     }
 
+    /** Best-effort security email; no-op when Mailgun is not configured or send fails. */
+    public void sendSecurityNoticeEmailIfConfigured(String email, String subject, String htmlBody) {
+        if (mailgunEmailSender == null || email == null || email.isBlank() || subject == null || htmlBody == null) {
+            return;
+        }
+        String to = email.trim().toLowerCase();
+        try {
+            mailgunEmailSender.sendHtmlEmail(to, subject, htmlBody);
+        } catch (Exception ignored) {
+            // Do not block sign-in if outbound mail fails
+        }
+    }
+
     public List<Account> getAllAccounts() {
         return accountDAO.getAllAccounts();
     }
@@ -195,6 +209,11 @@ public class AccountService {
                 performer.getProfileImagePath()
         );
         accountDAO.saveAccount(updated);
+        NotificationService notifications = NotificationService.getInstance();
+        notifications.publish(NotificationType.PASSWORD_AND_VERIFICATION, performer.getEmail(),
+                "Your password was changed successfully.");
+        notifications.publish(NotificationType.APP_UPDATES_AND_LEGAL, performer.getEmail(),
+                "Security reminder: if you did not change your password, reset it again and contact the hotel.");
     }
 
     public void sendVerificationCode(String email) {
@@ -266,6 +285,8 @@ public class AccountService {
         );
         accountDAO.saveAccount(updated);
         accountDAO.updateVerificationState(normalizedEmail, account.isEmailVerified(), null, null);
+        NotificationService.getInstance().publish(NotificationType.PASSWORD_AND_VERIFICATION, normalizedEmail,
+                "Your password was reset using the code sent to your email.");
     }
 
     private void issueCode(String email, boolean passwordReset) {
@@ -293,6 +314,14 @@ public class AccountService {
                 mailgunEmailSender.sendPasswordResetCode(normalizedEmail, code);
             } else {
                 mailgunEmailSender.sendVerificationCode(normalizedEmail, code);
+            }
+            NotificationService ns = NotificationService.getInstance();
+            if (passwordReset) {
+                ns.publish(NotificationType.PASSWORD_AND_VERIFICATION, normalizedEmail,
+                        "Password reset code sent to your inbox (valid 15 minutes).");
+            } else {
+                ns.publish(NotificationType.PASSWORD_AND_VERIFICATION, normalizedEmail,
+                        "Email verification code sent (valid 15 minutes).");
             }
         } catch (Exception e) {
             throw new RuntimeException((passwordReset ? "Failed to send password reset email: " : "Failed to send verification email: ") + e.getMessage(), e);
@@ -333,6 +362,10 @@ public class AccountService {
         }
 
         accountDAO.updateVerificationState(normalizedEmail, true, null, null);
+        NotificationService ns = NotificationService.getInstance();
+        ns.publish(NotificationType.ACCOUNT_ACTIVITY, normalizedEmail, "Email address verified on your account.");
+        ns.publish(NotificationType.PRIVACY_AND_POLICY, normalizedEmail,
+                "You can manage privacy-related notices under Account Center → Notifications.");
         return true;
     }
 
@@ -340,9 +373,85 @@ public class AccountService {
         sendVerificationCode(email);
     }
 
+    public void sendAccountActionCode(String email) {
+        issueActionCode(email, "Account action verification");
+    }
+
+    public boolean verifyAccountActionCode(String email, String code) {
+        String normalizedEmail = email == null ? null : email.trim().toLowerCase();
+        if (normalizedEmail == null || normalizedEmail.isBlank() || code == null || code.isBlank()) {
+            return false;
+        }
+
+        Account account = accountDAO.getAccountByEmail(normalizedEmail);
+        if (account == null || account.getVerificationCodeHash() == null || account.getVerificationExpiresAt() == null) {
+            return false;
+        }
+
+        Instant expiresAt;
+        try {
+            expiresAt = Instant.parse(account.getVerificationExpiresAt());
+        } catch (Exception ex) {
+            return false;
+        }
+
+        if (Instant.now().isAfter(expiresAt)) {
+            return false;
+        }
+
+        if (!hashPassword(code).equals(account.getVerificationCodeHash())) {
+            return false;
+        }
+
+        accountDAO.updateVerificationState(normalizedEmail, account.isEmailVerified(), null, null);
+        NotificationService.getInstance().publish(NotificationType.PASSWORD_AND_VERIFICATION, normalizedEmail,
+                "Account action verified with your emailed code.");
+        return true;
+    }
+
+    public void deleteAccount(String email) {
+        String normalizedEmail = email == null ? null : email.trim().toLowerCase();
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            throw new RuntimeException("Account email is required.");
+        }
+        if (accountDAO.getAccountByEmail(normalizedEmail) == null) {
+            throw new RuntimeException("Account not found.");
+        }
+        accountDAO.deleteAccountByEmail(normalizedEmail);
+    }
+
     private String generateVerificationCode() {
         int value = 100000 + SECURE_RANDOM.nextInt(900000);
         return Integer.toString(value);
+    }
+
+    private void issueActionCode(String email, String purpose) {
+        if (mailgunEmailSender == null) {
+            throw new RuntimeException("Mailgun is not configured. Set MAILGUN_API_KEY, MAILGUN_DOMAIN, and MAILGUN_FROM_EMAIL.");
+        }
+
+        String normalizedEmail = email == null ? null : email.trim().toLowerCase();
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            throw new RuntimeException("Email is required.");
+        }
+
+        Account account = accountDAO.getAccountByEmail(normalizedEmail);
+        if (account == null) {
+            throw new RuntimeException("Account not found.");
+        }
+
+        String code = generateVerificationCode();
+        String codeHash = hashPassword(code);
+        String expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES).toString();
+        accountDAO.updateVerificationState(normalizedEmail, account.isEmailVerified(), codeHash, expiresAt);
+
+        try {
+            mailgunEmailSender.sendVerificationCode(normalizedEmail, code);
+            NotificationService.getInstance().publish(NotificationType.PASSWORD_AND_VERIFICATION, normalizedEmail,
+                    "Account action verification code sent (valid 15 minutes).");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send " + purpose.toLowerCase() + " email: " + e.getMessage(), e);
+        }
     }
 
 

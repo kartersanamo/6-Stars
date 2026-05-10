@@ -4,6 +4,7 @@ import com.sixstars.database.ReservationDAO;
 import com.sixstars.database.RoomDAO;
 import com.sixstars.model.*;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,10 +12,12 @@ import java.util.stream.Collectors;
 public class ReservationService {
     private final ReservationDAO reservationDAO;
     private final RoomDAO roomDAO;
+    private final NotificationService notificationService;
 
     public ReservationService() {
         reservationDAO = new ReservationDAO();
         roomDAO = new RoomDAO();
+        notificationService = NotificationService.getInstance();
     }
 
     public List<Room> filterAvailableRooms(LocalDate start, LocalDate end, BedType type, Theme theme, QualityLevel quality) {
@@ -67,6 +70,32 @@ public class ReservationService {
 
         // 5. Save
         reservationDAO.saveReservation(newBooking);
+        notificationService.publish(NotificationType.RESERVATION_CONFIRMED, guestEmail,
+                "You're booked " + start + " → " + end + ". Check reminders for pre-arrival details.");
+
+        String roomLine = selectedRooms.stream()
+                .map(r -> "Room " + r.getRoomNumber())
+                .collect(Collectors.joining(", "));
+        notificationService.publish(NotificationType.PRE_ARRIVAL_PREFERENCES, guestEmail,
+                "Pre-arrival: reserved " + roomLine + ". Mention bedding, ADA, or arrival time requests at check-in.");
+        notificationService.publish(NotificationType.RESERVATION_REMINDERS, guestEmail,
+                "Reminder: check-in " + start + ", check-out " + end + ".");
+        notificationService.publish(NotificationType.TRANSPORT_AND_PARKING, guestEmail,
+                "Parking: valet and self-park are available — ask the desk for overnight rates and directions.");
+        DayOfWeek dow = start.getDayOfWeek();
+        if (dow == DayOfWeek.FRIDAY || dow == DayOfWeek.SATURDAY) {
+            notificationService.publish(NotificationType.LOCAL_EVENTS, guestEmail,
+                    "Weekend stay: expect busier dining and local traffic — plan airport or event transfers early.");
+        }
+        if (totalCost >= 200) {
+            notificationService.publish(NotificationType.LOYALTY_AND_POINTS, guestEmail,
+                    "Loyalty: this stay total is $" + totalCost + " — eligible stays count toward seasonal tier perks.");
+        }
+        List<Reservation> guestHistory = reservationDAO.getReservationsByEmail(guestEmail);
+        if (guestHistory.size() == 1) {
+            notificationService.publish(NotificationType.PERSONALIZED_OFFERS, guestEmail,
+                    "Welcome — your first booking is on file. Watch this inbox for tailored offers on future visits.");
+        }
 
         return newBooking;
     }
@@ -92,6 +121,11 @@ public class ReservationService {
 
     // Updates existing reservation
     public void updateReservation(int id, LocalDate start, LocalDate end, List<Room> rooms) {
+        Reservation existingReservation = reservationDAO.getAllReservations().stream()
+                .filter(r -> r.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
+
         if (start == null || end == null) {
             throw new IllegalStateException("Start date and end date are required.");
         }
@@ -113,6 +147,10 @@ public class ReservationService {
         }
 
         reservationDAO.updateReservationDates(id, start, end);
+        notificationService.publish(NotificationType.RESERVATION_UPDATES, existingReservation.getGuestEmail(),
+                "Reservation dates updated to " + start + " through " + end + ".");
+        notificationService.publish(NotificationType.EARLY_LATE_STAY, existingReservation.getGuestEmail(),
+                "Dates changed — ask the front desk about early check-in or late checkout availability.");
     }
 
     public void updateStatus(int reservationId, String status) {
@@ -140,6 +178,27 @@ public class ReservationService {
         }
 
         reservationDAO.updateReservationStatus(reservationId, status);
+        if ("CHECKED_IN".equalsIgnoreCase(status)) {
+            notificationService.publish(NotificationType.RESERVATION_UPDATES, res.getGuestEmail(),
+                    "You have been checked in for reservation #" + reservationId + ".");
+            notificationService.publish(NotificationType.RESERVATION_REMINDERS, res.getGuestEmail(),
+                    "In-house through " + res.getEndDate() + " — checkout time is printed on your door hanger.");
+            notificationService.publish(NotificationType.SPA_WELLNESS_AND_POOL, res.getGuestEmail(),
+                    "Spa & pool: pool 7am–10pm, fitness center 24h with room key — spa bookings at the desk.");
+            notificationService.publish(NotificationType.CONCIERGE_AND_STAFF, res.getGuestEmail(),
+                    "Concierge: dining, tickets, and transport — dial 0 from your room or visit the lobby desk.");
+            notificationService.publish(NotificationType.HOUSEKEEPING_AND_SERVICE, res.getGuestEmail(),
+                    "Housekeeping: request service timing or turndown from your room phone.");
+            notificationService.publish(NotificationType.IN_APP_CHAT_REPLIES, res.getGuestEmail(),
+                    "Front desk message: check-in is complete for reservation #" + reservationId + ".");
+        } else if ("CHECKED_OUT".equalsIgnoreCase(status)) {
+            notificationService.publish(NotificationType.RESERVATION_UPDATES, res.getGuestEmail(),
+                    "You have been checked out for reservation #" + reservationId + ".");
+            notificationService.publish(NotificationType.HOUSEKEEPING_AND_SERVICE, res.getGuestEmail(),
+                    "Thank you for staying — housekeeping may service the room after your departure.");
+            notificationService.publish(NotificationType.SURVEYS_AND_FEEDBACK, res.getGuestEmail(),
+                    "We would appreciate quick feedback on this stay — mention any issues at checkout or in Account Center.");
+        }
     }
 
     public String getRoomStatus(Room room, List<Reservation> allReservations) {
@@ -182,6 +241,10 @@ public class ReservationService {
             // If today is past the end date and status is not already checked out
             if (today.isAfter(res.getEndDate()) && !"CHECKED_OUT".equalsIgnoreCase(res.getStatus())) {
                 reservationDAO.updateReservationStatus(res.getId(), "CHECKED_OUT");
+                notificationService.publish(NotificationType.RESERVATION_UPDATES, res.getGuestEmail(),
+                        "Reservation #" + res.getId() + " was automatically checked out.");
+                notificationService.publish(NotificationType.MAINTENANCE_AND_QUIET_HOURS, res.getGuestEmail(),
+                        "Quiet hours 10pm–7am apply through departure morning — thank you for respecting neighbors.");
             }
         }
     }
@@ -221,8 +284,16 @@ public class ReservationService {
 
         reservationDAO.updateReservationStatus(res.getId(), "CANCELLED");
         reservationDAO.updateReservationCost(res.getId(), penalty);
+        notificationService.publish(NotificationType.RESERVATION_UPDATES, res.getGuestEmail(),
+                "Reservation #" + res.getId() + " was cancelled.");
+        notificationService.publish(NotificationType.SURVEYS_AND_FEEDBACK, res.getGuestEmail(),
+                "Sorry to see this booking cancelled — optional feedback helps us improve.");
 
         if (penalty > 0) {
+            notificationService.publish(NotificationType.INCIDENTALS_AND_FEES, res.getGuestEmail(),
+                    "Cancellation policy: a $" + penalty + " fee was applied to your folio per posted rules.");
+            notificationService.publish(NotificationType.FOLIO_AND_CHARGES, res.getGuestEmail(),
+                    "Folio: cancellation adjusted reservation #" + res.getId() + " balance by $" + penalty + ".");
             return String.format(
                     "Cancelled. Penalty applied: $%d.00 (80%% of one night at the reservation rate).",
                     penalty

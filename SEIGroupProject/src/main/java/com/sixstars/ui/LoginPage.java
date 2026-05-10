@@ -28,6 +28,7 @@ import com.sixstars.controller.AccountController;
 import com.sixstars.model.Account;
 import com.sixstars.model.Role;
 import com.sixstars.service.AccountService;
+import com.sixstars.service.security.SignInAuditService;
 
 public class LoginPage extends JPanel {
 
@@ -161,6 +162,7 @@ public class LoginPage extends JPanel {
             Account a = accountService.authenticate(email, password);
             if (a != null) {
                 AccountController.currentAccount = a;
+                SignInAuditService.recordSuccessfulSignIn(a, accountService);
                 errorNotificationPanel.setVisible(false);
                 Main.headerBar.refreshInfo();
 
@@ -194,6 +196,7 @@ public class LoginPage extends JPanel {
                         Account verified = accountService.getAccountByEmail(existing.getEmail());
                         if (verified != null) {
                             AccountController.currentAccount = verified;
+                            SignInAuditService.recordSuccessfulSignIn(verified, accountService);
                             errorNotificationPanel.setVisible(false);
                             Main.headerBar.refreshInfo();
 
