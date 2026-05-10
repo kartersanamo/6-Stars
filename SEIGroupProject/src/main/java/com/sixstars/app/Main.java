@@ -80,7 +80,7 @@ public class Main {
 
         pages.add(homeLandingPage, "home");
         pages.add(loginPage, "login");
-        pages.add(new AdminPage(pages, cardLayout), "admin page");
+        pages.add(new AdminPage(pages, cardLayout, reservationService, roomService, accountService), "admin page");
         pages.add(createAccountPage, "create account");
         pages.add(changePasswordPage, "reset password");
         pages.add(clerkPage, "clerk page");
