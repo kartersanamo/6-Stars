@@ -32,7 +32,6 @@ public class Main {
     public static ReservationConfirmationPage reservationConfirmationPage;
     public static RoomManagementPage roomManagementPage;
     public static ReservationsPage reservationsPage;
-    public static AccountDetailsPage accountDetailsPage;
     public static HomeLandingPage homeLandingPage;
     public static HeaderBar headerBar;
     private static PendingReservation pendingReservation;
@@ -63,15 +62,13 @@ public class Main {
         JPanel pages = new JPanel(cardLayout);
         headerBar = new HeaderBar(pages, cardLayout);
         homeLandingPage = new HomeLandingPage(pages, cardLayout);
-        WelcomePage welcomePage = new WelcomePage(pages, cardLayout);
         LoginPage loginPage = new LoginPage(pages, cardLayout, accountService);
         createAccountPage = new CreateAccountPage(pages, cardLayout);
-        clerkPage = new ClerkPage(pages, cardLayout);
+        clerkPage = new ClerkPage(pages, cardLayout, reservationService, roomService);
         makeReservationPage = new MakeReservationPage(pages, cardLayout, reservationService, roomService);
         reservationConfirmationPage = new ReservationConfirmationPage(pages, cardLayout, reservationService, roomService);
         roomManagementPage = new RoomManagementPage(pages, cardLayout, roomService, reservationService);
         reservationsPage = new ReservationsPage(pages, cardLayout, reservationService);
-        accountDetailsPage = new AccountDetailsPage(pages, cardLayout, accountController);
         changePasswordPage = new ChangePasswordPage(pages, cardLayout, accountService);
         passwordResetPage = new PasswordResetPage(pages, cardLayout, accountService);
         accountCenterPage = new AccountCenterPage(pages, cardLayout, accountController);
@@ -82,7 +79,6 @@ public class Main {
 
 
         pages.add(homeLandingPage, "home");
-        pages.add(welcomePage, "welcome");
         pages.add(loginPage, "login");
         pages.add(new AdminPage(pages, cardLayout), "admin page");
         pages.add(createAccountPage, "create account");
@@ -92,7 +88,6 @@ public class Main {
         pages.add(reservationConfirmationPage, "reservation confirmation");
         pages.add(roomManagementPage, "room management");
         pages.add(reservationsPage, "reservations");
-        pages.add(accountDetailsPage, "account details");
         pages.add(accountCenterPage, "account center");
         pages.add(shopPage, "shop");
         pages.add(billingPage, "billing page");

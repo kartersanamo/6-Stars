@@ -7,7 +7,6 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -15,8 +14,6 @@ import java.awt.GridLayout;
 import java.awt.CardLayout;
 import java.awt.Insets;
 import java.awt.RenderingHints;
-import java.awt.Shape;
-import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -67,6 +64,7 @@ import com.sixstars.service.pdf.GuestPaymentReceiptPdf;
 import com.sixstars.ui.accountcenter.AccountCenterContext;
 import com.sixstars.ui.accountcenter.AccountSecurityTabPanel;
 import com.sixstars.ui.accountcenter.SecurityPreferenceKeys;
+import com.sixstars.ui.components.AccountAvatarPanel;
 
 public class AccountCenterPage extends JPanel {
     private static final int AVATAR_SIZE = 120;
@@ -146,8 +144,8 @@ public class AccountCenterPage extends JPanel {
     private final CardLayout contentLayout;
 
     // Avatar and quick info
-    private final AvatarPanel avatarPanel = new AvatarPanel();
-    private final AvatarPanel profileAvatarPanel = new AvatarPanel();
+    private final AccountAvatarPanel avatarPanel = new AccountAvatarPanel(AVATAR_SIZE);
+    private final AccountAvatarPanel profileAvatarPanel = new AccountAvatarPanel(140);
     private final JLabel nameLabel = new JLabel("User");
     private final JLabel emailLabel = new JLabel("email@example.com");
     private final JLabel roleLabel = new JLabel("Guest");
@@ -247,8 +245,6 @@ public class AccountCenterPage extends JPanel {
         headerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         headerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
 
-        avatarPanel.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-        avatarPanel.setMaximumSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
         avatarPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         headerPanel.add(avatarPanel);
 
@@ -498,8 +494,6 @@ public class AccountCenterPage extends JPanel {
         avatarStack.setOpaque(false);
         avatarStack.setLayout(new BoxLayout(avatarStack, BoxLayout.Y_AXIS));
         profileAvatarPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        profileAvatarPanel.setPreferredSize(new Dimension(140, 140));
-        profileAvatarPanel.setMaximumSize(new Dimension(140, 140));
         avatarStack.add(profileAvatarPanel);
         avatarStack.add(Box.createRigidArea(new Dimension(0, 14)));
         avatarStatusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
@@ -2915,103 +2909,5 @@ public class AccountCenterPage extends JPanel {
         label.setForeground(BILLING_ACCENT);
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         return label;
-    }
-
-    private final class AvatarPanel extends JPanel {
-        private BufferedImage image;
-        private String initials = "??";
-
-        AvatarPanel() {
-            setOpaque(false);
-            setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-            setMinimumSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-            setMaximumSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-        }
-
-        void setAccount(Account account) {
-            initials = buildInitials(account);
-            image = null;
-            if (account != null && account.getProfileImagePath() != null && !account.getProfileImagePath().isBlank()) {
-                try {
-                    File file = new File(account.getProfileImagePath());
-                    if (file.exists()) {
-                        image = ImageIO.read(file);
-                    }
-                } catch (Exception ignored) {
-                    image = null;
-                }
-            }
-            repaint();
-        }
-
-        void clear() {
-            image = null;
-            initials = "??";
-            repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                Shape clip = new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 20, 20);
-                g2.setClip(clip);
-
-                if (image != null) {
-                    drawCoverImage(g2, image);
-                    g2.setColor(new Color(0, 0, 0, 48));
-                    g2.fillRect(0, 0, getWidth(), getHeight());
-                } else {
-                    g2.setPaint(new Color(194, 159, 92));
-                    g2.fillRect(0, 0, getWidth(), getHeight());
-                    g2.setPaint(new Color(229, 220, 201));
-                    g2.fillRect(0, 0, getWidth(), getHeight() / 2);
-                }
-
-                g2.setClip(null);
-                g2.setColor(new Color(255, 255, 255, 180));
-                g2.setStroke(new java.awt.BasicStroke(2f));
-                g2.draw(new RoundRectangle2D.Double(1, 1, getWidth() - 2, getHeight() - 2, 20, 20));
-
-                if (image == null) {
-                    g2.setColor(new Color(70, 50, 35));
-                    g2.setFont(new Font("SansSerif", Font.BOLD, 32));
-                    java.awt.FontMetrics fm = g2.getFontMetrics();
-                    int x = (getWidth() - fm.stringWidth(initials)) / 2;
-                    int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
-                    g2.drawString(initials, x, y);
-                }
-            } finally {
-                g2.dispose();
-            }
-        }
-
-        private void drawCoverImage(Graphics2D g2, BufferedImage img) {
-            int panelW = getWidth();
-            int panelH = getHeight();
-            int imageW = img.getWidth();
-            int imageH = img.getHeight();
-            double scale = Math.max((double) panelW / imageW, (double) panelH / imageH);
-            int drawW = (int) Math.round(imageW * scale);
-            int drawH = (int) Math.round(imageH * scale);
-            int drawX = (panelW - drawW) / 2;
-            int drawY = (panelH - drawH) / 2;
-            g2.drawImage(img, drawX, drawY, drawW, drawH, null);
-        }
-
-        private String buildInitials(Account account) {
-            if (account == null) {
-                return "??";
-            }
-            String first = account.getFirstName() == null || account.getFirstName().isBlank() ? "" : account.getFirstName().trim();
-            String last = account.getLastName() == null || account.getLastName().isBlank() ? "" : account.getLastName().trim();
-            StringBuilder sb = new StringBuilder();
-            if (!first.isEmpty()) sb.append(Character.toUpperCase(first.charAt(0)));
-            if (!last.isEmpty()) sb.append(Character.toUpperCase(last.charAt(0)));
-            return sb.length() == 0 ? "??" : sb.toString();
-        }
     }
 }

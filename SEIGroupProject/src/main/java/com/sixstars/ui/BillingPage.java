@@ -18,12 +18,12 @@ import com.sixstars.service.stripe.StripeConfig;
 import com.sixstars.service.stripe.StripeGuestPreferences;
 import com.sixstars.service.stripe.StripeHostedLocalServer;
 import com.sixstars.service.pdf.GuestPaymentReceiptPdf;
+import com.sixstars.ui.billing.BillingUiUtils;
 import com.stripe.exception.StripeException;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
-import javax.swing.plaf.basic.BasicButtonUI;
 import java.awt.*;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -98,7 +98,7 @@ public class BillingPage extends JPanel {
         titleText.add(subtitle);
 
         JButton btnBack = new JButton("Back");
-        styleSecondaryButton(btnBack);
+        BillingUiUtils.styleSecondaryButton(btnBack);
 
         btnBack.addActionListener(e -> {
             Account acc = AccountController.currentAccount;
@@ -173,7 +173,7 @@ public class BillingPage extends JPanel {
         totalsCard.add(totalsPayHint);
         totalsCard.add(Box.createRigidArea(new Dimension(0, 8)));
         JButton btnOpenPaymentFromTotals = new JButton("Open Account Center → Payment");
-        styleTotalsPaymentLinkButton(btnOpenPaymentFromTotals);
+        BillingUiUtils.styleTotalsPaymentLinkButton(btnOpenPaymentFromTotals);
         btnOpenPaymentFromTotals.setAlignmentX(Component.LEFT_ALIGNMENT);
         btnOpenPaymentFromTotals.addActionListener(e -> navigateToAccountCenterPayment(false));
         totalsCard.add(btnOpenPaymentFromTotals);
@@ -215,11 +215,11 @@ public class BillingPage extends JPanel {
         payHeroRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
 
         btnPayWithStripe = new JButton("Pay with Stripe");
-        stylePrimaryGoldButton(btnPayWithStripe);
+        BillingUiUtils.stylePrimaryGoldButton(btnPayWithStripe);
         btnPayWithStripe.addActionListener(e -> startStripeSandboxCheckout());
 
         btnPayWithCard = new JButton("Pay with card");
-        stylePrimaryGoldButton(btnPayWithCard);
+        BillingUiUtils.stylePrimaryGoldButton(btnPayWithCard);
         btnPayWithCard.addActionListener(e -> payWithSelectedSavedMethod());
 
         payHeroRow.add(btnPayWithStripe);
@@ -227,7 +227,7 @@ public class BillingPage extends JPanel {
         payNowShell.add(payHeroRow);
         payNowShell.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        JPanel stripeZone = softInsetPanel(STRIPE_ZONE_BG);
+        JPanel stripeZone = BillingUiUtils.softInsetPanel(STRIPE_ZONE_BG);
         stripeZone.setLayout(new BoxLayout(stripeZone, BoxLayout.Y_AXIS));
         stripeZone.setAlignmentX(Component.LEFT_ALIGNMENT);
         stripeZone.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
@@ -247,7 +247,7 @@ public class BillingPage extends JPanel {
         stripeBtnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         btnConnectStripeFromBilling = new JButton("Connect Stripe in Account Center");
-        styleSecondaryButton(btnConnectStripeFromBilling);
+        BillingUiUtils.styleSecondaryButton(btnConnectStripeFromBilling);
         btnConnectStripeFromBilling.addActionListener(e -> navigateToAccountCenterPayment(false));
 
         stripeBtnRow.add(btnConnectStripeFromBilling);
@@ -261,7 +261,7 @@ public class BillingPage extends JPanel {
         payNowShell.add(stripeZone);
         payNowShell.add(Box.createRigidArea(new Dimension(0, 16)));
 
-        JPanel savedZone = softInsetPanel(SAVED_ZONE_BG);
+        JPanel savedZone = BillingUiUtils.softInsetPanel(SAVED_ZONE_BG);
         savedZone.setLayout(new BoxLayout(savedZone, BoxLayout.Y_AXIS));
         savedZone.setAlignmentX(Component.LEFT_ALIGNMENT);
         savedZone.setMaximumSize(new Dimension(Integer.MAX_VALUE, 280));
@@ -286,7 +286,7 @@ public class BillingPage extends JPanel {
         savedBtnRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         btnAddPaymentMethod = new JButton("Add or manage cards");
-        styleSecondaryButton(btnAddPaymentMethod);
+        BillingUiUtils.styleSecondaryButton(btnAddPaymentMethod);
         btnAddPaymentMethod.addActionListener(e -> navigateToAccountCenterPayment(true));
 
         savedBtnRow.add(btnAddPaymentMethod);
@@ -355,17 +355,6 @@ public class BillingPage extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private static JPanel softInsetPanel(Color bg) {
-        JPanel p = new JPanel();
-        p.setOpaque(true);
-        p.setBackground(bg);
-        p.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(220, 220, 230), 1, true),
-                new EmptyBorder(14, 16, 16, 16)
-        ));
-        return p;
-    }
-
     public void refresh() {
         reservationsContainer.removeAll();
         shopContainer.removeAll();
@@ -386,66 +375,6 @@ public class BillingPage extends JPanel {
         }
 
         refreshForEmail(current.getEmail());
-    }
-
-    private void styleSecondaryButton(JButton button) {
-        button.setUI(new BasicButtonUI());
-        button.setPreferredSize(new Dimension(160, 40));
-        button.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        button.setOpaque(true);
-        button.setContentAreaFilled(true);
-        button.setBackground(UITheme.SECONDARY_BUTTON);
-        button.setForeground(UITheme.TEXT_DARK);
-        button.setFocusPainted(false);
-        button.setBorderPainted(true);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(190, 184, 172), 1, true),
-                new EmptyBorder(8, 14, 8, 14)));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    }
-
-    private void stylePrimaryGoldButton(JButton button) {
-        button.setUI(new BasicButtonUI());
-        button.setPreferredSize(new Dimension(220, 44));
-        button.setFont(new Font("SansSerif", Font.BOLD, 14));
-        button.setOpaque(true);
-        button.setContentAreaFilled(true);
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(88, 68, 36), 1, true),
-                new EmptyBorder(10, 16, 10, 16)));
-        button.setBorderPainted(true);
-        applyPrimaryGoldButtonColors(button, button.isEnabled());
-        button.addPropertyChangeListener("enabled", e ->
-                applyPrimaryGoldButtonColors(button, (Boolean) e.getNewValue()));
-    }
-
-    private static void applyPrimaryGoldButtonColors(JButton button, boolean enabled) {
-        if (enabled) {
-            button.setBackground(UITheme.ACCENT_GOLD);
-            button.setForeground(Color.BLACK);
-        } else {
-            button.setBackground(new Color(218, 212, 200));
-            button.setForeground(new Color(105, 98, 88));
-        }
-    }
-
-    /** Prominent link-style control under the billing totals (navigates to Account Center Payment). */
-    private static void styleTotalsPaymentLinkButton(JButton button) {
-        button.setUI(new BasicButtonUI());
-        button.setFont(new Font("SansSerif", Font.BOLD, 14));
-        button.setOpaque(true);
-        button.setContentAreaFilled(true);
-        button.setBackground(new Color(44, 108, 72));
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(28, 78, 52), 1, true),
-                new EmptyBorder(10, 18, 10, 18)));
-        button.setBorderPainted(true);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setAlignmentX(Component.LEFT_ALIGNMENT);
     }
 
     public void refreshForEmail(String email) {
@@ -612,23 +541,16 @@ public class BillingPage extends JPanel {
 
         String when = r.getCreatedAt().format(RECEIPT_TIME);
         JLabel left = new JLabel("<html><div style=\"font-size:13px;\"><b>$" + String.format(Locale.US, "%.2f", r.getAmount())
-                + "</b> &nbsp;·&nbsp; " + esc(r.getKind().getDisplay()) + "<br/><span style=\"color:#666;\">"
-                + esc(r.getMethodSummary()) + " · " + esc(when) + "</span></div></html>");
+                + "</b> &nbsp;·&nbsp; " + BillingUiUtils.esc(r.getKind().getDisplay()) + "<br/><span style=\"color:#666;\">"
+                + BillingUiUtils.esc(r.getMethodSummary()) + " · " + BillingUiUtils.esc(when) + "</span></div></html>");
         JButton receipt = new JButton("Receipt");
-        styleSecondaryButton(receipt);
+        BillingUiUtils.styleSecondaryButton(receipt);
         receipt.setPreferredSize(new Dimension(100, 34));
         receipt.addActionListener(_ -> showPaymentReceipt(r));
 
         row.add(left, BorderLayout.CENTER);
         row.add(receipt, BorderLayout.EAST);
         return row;
-    }
-
-    private static String esc(String raw) {
-        if (raw == null) {
-            return "";
-        }
-        return raw.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private void showPaymentReceipt(GuestPaymentRecord r) {

@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -160,6 +161,30 @@ public class ClerkBillingSearchPage extends JPanel {
             String email = (String) selected;
             performSearch(email);
         }
+    }
+
+    /**
+     * Navigates billing search to the given guest and renders their folio (same as typing email + Generate Bill).
+     */
+    public void openGuestFolio(String email) {
+        if (email == null || email.isBlank()) {
+            return;
+        }
+        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        emailField.setText(normalized);
+        boolean matched = false;
+        for (int i = 0; i < guestComboBox.getItemCount(); i++) {
+            Object o = guestComboBox.getItemAt(i);
+            if (o != null && normalized.equalsIgnoreCase(String.valueOf(o).trim())) {
+                guestComboBox.setSelectedIndex(i);
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            guestComboBox.setSelectedIndex(0);
+        }
+        performSearch(normalized);
     }
 
     private void performSearch(String email) {
