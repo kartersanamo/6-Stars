@@ -1,6 +1,5 @@
 package com.sixstars.ui;
 
-import com.sixstars.app.Main;
 import com.sixstars.model.*;
 import com.sixstars.service.ReservationService;
 import com.sixstars.service.RoomService;
@@ -9,6 +8,7 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.event.HierarchyEvent;
 import java.time.LocalDate;
@@ -18,6 +18,23 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class RoomManagementPage extends JPanel {
+    /**
+     * Warm palette aligned with {@link AccountCenterPage} (sidebar + billing sections),
+     * not flat white / gray chrome.
+     */
+    private static final Color RIM_PAGE = UITheme.PAGE_BACKGROUND;
+    private static final Color RIM_HEADER_FOOTER = new Color(245, 240, 228);
+    private static final Color RIM_PANEL = new Color(252, 249, 241);
+    private static final Color RIM_SECTION = new Color(252, 250, 245);
+    private static final Color RIM_WARM_BORDER = new Color(212, 200, 182);
+    private static final Color RIM_INPUT_FILL = new Color(255, 252, 246);
+    private static final Color RIM_BUTTON_IDLE = new Color(246, 241, 230);
+    private static final Color RIM_SUBHEAD = new Color(112, 103, 90);
+    private static final Color RIM_STAT_TOTAL = new Color(176, 132, 38);
+    private static final Color RIM_STAT_AVAILABLE = new Color(44, 122, 72);
+    private static final Color RIM_STAT_OCCUPIED = new Color(130, 86, 76);
+    private static final Color RIM_STAT_MAINT = new Color(108, 98, 88);
+
     private final JPanel pages;
     private final CardLayout cardLayout;
     private final RoomService roomService;
@@ -59,7 +76,7 @@ public class RoomManagementPage extends JPanel {
         this.reservationService = reservationService;
 
         setLayout(new BorderLayout(0, 0));
-        setBackground(UITheme.PAGE_BACKGROUND);
+        setBackground(RIM_PAGE);
 
         // Build notification panel first (will be added to page)
         notificationPanel = createNotificationPanel();
@@ -90,11 +107,11 @@ public class RoomManagementPage extends JPanel {
     }
 
     private JPanel buildHeaderSection() {
-        JPanel header = new JPanel(new BorderLayout(20, 0));
-        header.setBackground(UITheme.CARD_BACKGROUND);
+        JPanel header = new JPanel(new BorderLayout(24, 0));
+        header.setBackground(RIM_HEADER_FOOTER);
         header.setBorder(new CompoundBorder(
-                new LineBorder(UITheme.BORDER_COLOR, 1),
-                new EmptyBorder(20, 28, 20, 28)
+                new LineBorder(RIM_WARM_BORDER, 1),
+                new EmptyBorder(22, 28, 22, 28)
         ));
 
         // Title
@@ -103,25 +120,25 @@ public class RoomManagementPage extends JPanel {
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
 
         JLabel titleLabel = new JLabel("Room Inventory Manager");
-        titleLabel.setFont(UITheme.TITLE_FONT);
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 26));
         titleLabel.setForeground(UITheme.TEXT_DARK);
 
         JLabel subtitleLabel = new JLabel("Monitor and manage all hotel rooms");
-        subtitleLabel.setFont(UITheme.SUBTITLE_FONT);
-        subtitleLabel.setForeground(UITheme.TEXT_MEDIUM);
+        subtitleLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        subtitleLabel.setForeground(RIM_SUBHEAD);
 
         titlePanel.add(titleLabel);
         titlePanel.add(Box.createRigidArea(new Dimension(0, 6)));
         titlePanel.add(subtitleLabel);
 
-        // Statistics Cards
-        JPanel statsPanel = new JPanel(new GridLayout(1, 4, 12, 0));
+        // Statistics — neutral cards with a slim accent stripe (values stay typographic, not traffic-light hues)
+        JPanel statsPanel = new JPanel(new GridLayout(1, 4, 10, 0));
         statsPanel.setOpaque(false);
 
-        statsPanel.add(createStatCardPanel("Total Rooms", totalRoomsValueLabel = new JLabel("0"), new Color(100, 150, 200)));
-        statsPanel.add(createStatCardPanel("Available", availableRoomsValueLabel = new JLabel("0"), new Color(76, 175, 80)));
-        statsPanel.add(createStatCardPanel("Occupied", occupiedRoomsValueLabel = new JLabel("0"), new Color(244, 67, 54)));
-        statsPanel.add(createStatCardPanel("Maintenance", maintenanceRoomsValueLabel = new JLabel("0"), new Color(255, 193, 7)));
+        statsPanel.add(createStatCardPanel("Total Rooms", totalRoomsValueLabel = new JLabel("0"), RIM_STAT_TOTAL));
+        statsPanel.add(createStatCardPanel("Available", availableRoomsValueLabel = new JLabel("0"), RIM_STAT_AVAILABLE));
+        statsPanel.add(createStatCardPanel("Occupied", occupiedRoomsValueLabel = new JLabel("0"), RIM_STAT_OCCUPIED));
+        statsPanel.add(createStatCardPanel("Maintenance", maintenanceRoomsValueLabel = new JLabel("0"), RIM_STAT_MAINT));
 
         header.add(titlePanel, BorderLayout.WEST);
         header.add(statsPanel, BorderLayout.EAST);
@@ -129,33 +146,26 @@ public class RoomManagementPage extends JPanel {
         return header;
     }
 
-    private JLabel createStatCard(String label, String value, Color accentColor) {
-        // We'll return just the value label for easy updating later
-        // The JLabel itself acts as a container
-        JLabel valueComp = new JLabel(value);
-        valueComp.setFont(new Font("SansSerif", Font.BOLD, 28));
-        valueComp.setForeground(accentColor);
-        valueComp.setAlignmentX(Component.CENTER_ALIGNMENT);
-        return valueComp;
-    }
-
-    private JPanel createStatCardPanel(String label, JLabel valueLabel, Color accentColor) {
+    private JPanel createStatCardPanel(String label, JLabel valueLabel, Color accentStripe) {
         JPanel card = new JPanel();
         card.setOpaque(true);
-        card.setBackground(UITheme.CARD_BACKGROUND);
+        card.setBackground(RIM_PANEL);
         card.setBorder(new CompoundBorder(
-                new LineBorder(accentColor, 2),
-                new EmptyBorder(12, 16, 12, 16)
+                new MatteBorder(0, 3, 0, 0, accentStripe),
+                new CompoundBorder(
+                        new LineBorder(RIM_WARM_BORDER, 1),
+                        new EmptyBorder(12, 14, 12, 14)
+                )
         ));
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 
         JLabel labelComp = new JLabel(label);
-        labelComp.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        labelComp.setForeground(UITheme.TEXT_MEDIUM);
+        labelComp.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        labelComp.setForeground(RIM_SUBHEAD);
         labelComp.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        valueLabel.setFont(new Font("SansSerif", Font.BOLD, 28));
-        valueLabel.setForeground(accentColor);
+        valueLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
+        valueLabel.setForeground(UITheme.TEXT_DARK);
         valueLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         card.add(labelComp);
@@ -167,7 +177,7 @@ public class RoomManagementPage extends JPanel {
 
     private JPanel buildMainContent() {
         JPanel main = new JPanel(new BorderLayout(0, 20));
-        main.setBackground(UITheme.PAGE_BACKGROUND);
+        main.setBackground(RIM_PAGE);
         main.setBorder(new EmptyBorder(20, 28, 20, 28));
 
         // Left Panel: Filters & Add Form (Scrollable)
@@ -195,8 +205,8 @@ public class RoomManagementPage extends JPanel {
 
         // Wrap left panel in scroll pane
         JScrollPane leftScrollPane = new JScrollPane(leftPanelContent);
-        leftScrollPane.setBackground(UITheme.PAGE_BACKGROUND);
-        leftScrollPane.getViewport().setBackground(UITheme.PAGE_BACKGROUND);
+        leftScrollPane.setBackground(RIM_PAGE);
+        leftScrollPane.getViewport().setBackground(RIM_PAGE);
         leftScrollPane.setBorder(BorderFactory.createEmptyBorder());
         leftScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         leftScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -208,14 +218,14 @@ public class RoomManagementPage extends JPanel {
         rightPanel.setOpaque(false);
 
         JScrollPane scrollPane = new JScrollPane();
-        scrollPane.setBackground(UITheme.PAGE_BACKGROUND);
-        scrollPane.getViewport().setBackground(UITheme.PAGE_BACKGROUND);
+        scrollPane.setBackground(RIM_PAGE);
+        scrollPane.getViewport().setBackground(RIM_PAGE);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
         roomGridPanel = new JPanel();
-        roomGridPanel.setLayout(new GridLayout(0, 3, 16, 16));
-        roomGridPanel.setBackground(UITheme.PAGE_BACKGROUND);
+        roomGridPanel.setLayout(new GridLayout(0, 3, 12, 12));
+        roomGridPanel.setBackground(RIM_PAGE);
         roomGridPanel.setBorder(new EmptyBorder(8, 8, 8, 8));
 
         scrollPane.setViewportView(roomGridPanel);
@@ -225,6 +235,8 @@ public class RoomManagementPage extends JPanel {
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftScrollPane, rightPanel);
         splitPane.setDividerLocation(320);
         splitPane.setOpaque(false);
+        splitPane.setDividerSize(5);
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
 
         main.add(splitPane, BorderLayout.CENTER);
         return main;
@@ -234,15 +246,15 @@ public class RoomManagementPage extends JPanel {
         JPanel filtersPanel = new JPanel();
         filtersPanel.setLayout(new BoxLayout(filtersPanel, BoxLayout.Y_AXIS));
         filtersPanel.setOpaque(true);
-        filtersPanel.setBackground(UITheme.CARD_BACKGROUND);
+        filtersPanel.setBackground(RIM_SECTION);
         filtersPanel.setBorder(new CompoundBorder(
-                new LineBorder(UITheme.BORDER_COLOR, 1),
-                new EmptyBorder(16, 16, 16, 16)
+                new LineBorder(RIM_WARM_BORDER, 1),
+                new EmptyBorder(18, 18, 18, 18)
         ));
 
-        JLabel filterTitle = new JLabel("Filters & Search");
-        filterTitle.setFont(UITheme.LABEL_FONT);
-        filterTitle.setForeground(UITheme.TEXT_DARK);
+        JLabel filterTitle = new JLabel("Filters & search");
+        filterTitle.setFont(new Font("SansSerif", Font.BOLD, 13));
+        filterTitle.setForeground(UITheme.ACCENT_GOLD);
         filtersPanel.add(filterTitle);
         filtersPanel.add(Box.createRigidArea(new Dimension(0, 12)));
 
@@ -310,7 +322,7 @@ public class RoomManagementPage extends JPanel {
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(UITheme.CARD_BACKGROUND);
+        panel.setBackground(RIM_PANEL);
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         JLabel title = new JLabel("Modify Room " + room.getRoomNumber());
@@ -330,10 +342,11 @@ public class RoomManagementPage extends JPanel {
         JSpinner editPriceSpinner = new JSpinner(
                 new SpinnerNumberModel(room.getPricePerNight(), 50, 500, 10)
         );
+        styleSpinnerEditor(editPriceSpinner);
 
         JCheckBox editSmokingCheckBox = new JCheckBox("Smoking Allowed");
         editSmokingCheckBox.setSelected(room.isSmoking());
-        editSmokingCheckBox.setBackground(UITheme.CARD_BACKGROUND);
+        editSmokingCheckBox.setBackground(RIM_PANEL);
 
         panel.add(title);
         panel.add(Box.createRigidArea(new Dimension(0, 16)));
@@ -385,8 +398,8 @@ public class RoomManagementPage extends JPanel {
 
     private JLabel createFilterLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("SansSerif", Font.BOLD, 12));
-        label.setForeground(UITheme.TEXT_MEDIUM);
+        label.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        label.setForeground(RIM_SUBHEAD);
         return label;
     }
 
@@ -395,14 +408,27 @@ public class RoomManagementPage extends JPanel {
         field.setFont(UITheme.INPUT_FONT);
         field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         field.setPreferredSize(new Dimension(300, 36));
-        field.setBackground(Color.WHITE);
+        field.setBackground(RIM_INPUT_FILL);
         field.setForeground(UITheme.TEXT_DARK);
         field.setToolTipText(placeholder);
         field.setBorder(new CompoundBorder(
-                new LineBorder(UITheme.BORDER_COLOR, 1),
-                new EmptyBorder(6, 8, 6, 8)
+                new LineBorder(RIM_WARM_BORDER, 1),
+                new EmptyBorder(6, 10, 6, 10)
         ));
         return field;
+    }
+
+    private void styleSpinnerEditor(JSpinner spinner) {
+        JComponent editor = spinner.getEditor();
+        if (editor instanceof JSpinner.DefaultEditor defaultEditor) {
+            JTextField tf = defaultEditor.getTextField();
+            tf.setBackground(RIM_INPUT_FILL);
+            tf.setForeground(UITheme.TEXT_DARK);
+            tf.setBorder(new CompoundBorder(
+                    new LineBorder(RIM_WARM_BORDER, 1),
+                    new EmptyBorder(4, 8, 4, 8)
+            ));
+        }
     }
 
     private JComboBox<String> createFilterComboBox(String allOption, Class<?> enumClass) {
@@ -423,7 +449,7 @@ public class RoomManagementPage extends JPanel {
 
     private void styleComboBox(JComboBox<String> box) {
         box.setFont(UITheme.INPUT_FONT);
-        box.setBackground(Color.WHITE);
+        box.setBackground(RIM_INPUT_FILL);
         box.setForeground(UITheme.TEXT_DARK);
         box.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         box.setPreferredSize(new Dimension(300, 36));
@@ -433,14 +459,17 @@ public class RoomManagementPage extends JPanel {
         JPanel addPanel = new JPanel();
         addPanel.setLayout(new BoxLayout(addPanel, BoxLayout.Y_AXIS));
         addPanel.setOpaque(true);
-        addPanel.setBackground(UITheme.CARD_BACKGROUND);
+        addPanel.setBackground(RIM_PANEL);
         addPanel.setBorder(new CompoundBorder(
-                new LineBorder(UITheme.ACCENT_GOLD, 2),
-                new EmptyBorder(16, 16, 16, 16)
+                new MatteBorder(0, 3, 0, 0, UITheme.ACCENT_GOLD),
+                new CompoundBorder(
+                        new LineBorder(RIM_WARM_BORDER, 1),
+                        new EmptyBorder(18, 15, 18, 18)
+                )
         ));
 
-        JLabel addTitle = new JLabel("Add New Room");
-        addTitle.setFont(UITheme.LABEL_FONT);
+        JLabel addTitle = new JLabel("Add new room");
+        addTitle.setFont(new Font("SansSerif", Font.BOLD, 13));
         addTitle.setForeground(UITheme.ACCENT_GOLD);
         addPanel.add(addTitle);
         addPanel.add(Box.createRigidArea(new Dimension(0, 12)));
@@ -477,13 +506,14 @@ public class RoomManagementPage extends JPanel {
         pricePerNightSpinner = new JSpinner(new SpinnerNumberModel(149, 50, 500, 10));
         pricePerNightSpinner.setFont(UITheme.INPUT_FONT);
         pricePerNightSpinner.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        styleSpinnerEditor(pricePerNightSpinner);
         addPanel.add(pricePerNightSpinner);
         addPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         // Smoking
         smokingCheckBox = new JCheckBox("Smoking Allowed");
         smokingCheckBox.setFont(UITheme.INPUT_FONT);
-        smokingCheckBox.setBackground(UITheme.CARD_BACKGROUND);
+        smokingCheckBox.setBackground(RIM_PANEL);
         smokingCheckBox.setForeground(UITheme.TEXT_DARK);
         addPanel.add(smokingCheckBox);
         addPanel.add(Box.createRigidArea(new Dimension(0, 16)));
@@ -498,10 +528,10 @@ public class RoomManagementPage extends JPanel {
 
     private JPanel buildFooterSection() {
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        footer.setBackground(UITheme.CARD_BACKGROUND);
+        footer.setBackground(RIM_HEADER_FOOTER);
         footer.setBorder(new CompoundBorder(
-                new LineBorder(UITheme.BORDER_COLOR, 1),
-                new EmptyBorder(12, 28, 12, 28)
+                new LineBorder(RIM_WARM_BORDER, 1),
+                new EmptyBorder(14, 28, 14, 28)
         ));
 
         JButton backButton = createSecondaryButton("Back to Clerk Dashboard");
@@ -520,9 +550,9 @@ public class RoomManagementPage extends JPanel {
 
     private JButton createPrimaryButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(UITheme.BUTTON_FONT);
+        button.setFont(new Font("SansSerif", Font.BOLD, 14));
         button.setBackground(UITheme.ACCENT_GOLD);
-        button.setForeground(Color.WHITE);
+        button.setForeground(new Color(255, 252, 246));
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setOpaque(true);
@@ -534,12 +564,16 @@ public class RoomManagementPage extends JPanel {
 
     private JButton createSecondaryButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(UITheme.BUTTON_FONT);
-        button.setBackground(UITheme.SECONDARY_BUTTON);
+        button.setFont(new Font("SansSerif", Font.BOLD, 14));
+        button.setBackground(RIM_BUTTON_IDLE);
         button.setForeground(UITheme.TEXT_DARK);
         button.setFocusPainted(false);
-        button.setBorderPainted(false);
+        button.setBorderPainted(true);
         button.setOpaque(true);
+        button.setBorder(new CompoundBorder(
+                new LineBorder(RIM_WARM_BORDER, 1),
+                new EmptyBorder(9, 14, 9, 14)
+        ));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         button.setPreferredSize(new Dimension(300, 40));
@@ -628,7 +662,7 @@ public class RoomManagementPage extends JPanel {
             roomGridPanel.setLayout(new BorderLayout());
             roomGridPanel.add(emptyLabel, BorderLayout.CENTER);
         } else {
-            roomGridPanel.setLayout(new GridLayout(0, 3, 16, 16));
+            roomGridPanel.setLayout(new GridLayout(0, 3, 12, 12));
             for (Room room : filtered) {
                 roomGridPanel.add(createRoomCard(room));
             }
@@ -683,113 +717,148 @@ public class RoomManagementPage extends JPanel {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setOpaque(true);
-        card.setBackground(UITheme.CARD_BACKGROUND);
+        card.setBackground(RIM_PANEL);
 
-        // Colored border based on status
-        Color borderColor = getStatusColor(room.getStatus());
+        Color stripe = getStatusStripeColor(room.getStatus());
         card.setBorder(new CompoundBorder(
-                new LineBorder(borderColor, 3),
-                new EmptyBorder(12, 12, 12, 12)
+                new MatteBorder(0, 2, 0, 0, stripe),
+                new CompoundBorder(
+                        new LineBorder(RIM_WARM_BORDER, 1),
+                        new EmptyBorder(14, 14, 14, 14)
+                )
         ));
 
-        // Room Number
         JLabel roomNumLabel = new JLabel("Room " + room.getRoomNumber());
-        roomNumLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+        roomNumLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         roomNumLabel.setForeground(UITheme.TEXT_DARK);
+        roomNumLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         card.add(roomNumLabel);
 
         card.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        // Status Badge
-        JLabel statusLabel = new JLabel(room.getStatus().toUpperCase());
+        JLabel statusLabel = new JLabel(room.getStatus());
         statusLabel.setFont(new Font("SansSerif", Font.BOLD, 11));
-        statusLabel.setForeground(Color.WHITE);
-        statusLabel.setBackground(borderColor);
+        statusLabel.setForeground(getStatusBadgeForeground(room.getStatus()));
+        statusLabel.setBackground(getStatusBadgeBackground(room.getStatus()));
         statusLabel.setOpaque(true);
         statusLabel.setBorder(new EmptyBorder(4, 8, 4, 8));
-        statusLabel.setMaximumSize(new Dimension(150, 20));
+        statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        statusLabel.setMaximumSize(new Dimension(160, 24));
         card.add(statusLabel);
 
         card.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        // Bed Type
-        JLabel bedLabel = new JLabel("🛏 " + room.getBedType());
+        JLabel bedLabel = new JLabel("Bed · " + room.getBedType());
         bedLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        bedLabel.setForeground(UITheme.TEXT_MEDIUM);
+        bedLabel.setForeground(RIM_SUBHEAD);
+        bedLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         card.add(bedLabel);
 
-        // Theme
-        JLabel themeLabel = new JLabel("🎨 " + room.getTheme());
+        JLabel themeLabel = new JLabel("Theme · " + room.getTheme());
         themeLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        themeLabel.setForeground(UITheme.TEXT_MEDIUM);
+        themeLabel.setForeground(RIM_SUBHEAD);
+        themeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         card.add(themeLabel);
 
-        // Quality
-        JLabel qualityLabel = new JLabel("⭐ " + room.getQualityLevel());
+        JLabel qualityLabel = new JLabel("Quality · " + room.getQualityLevel());
         qualityLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        qualityLabel.setForeground(UITheme.TEXT_MEDIUM);
+        qualityLabel.setForeground(RIM_SUBHEAD);
+        qualityLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         card.add(qualityLabel);
 
-        // Smoking
         if (room.isSmoking()) {
-            JLabel smokingLabel = new JLabel("🚬 Smoking Allowed");
+            JLabel smokingLabel = new JLabel("Smoking allowed");
             smokingLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-            smokingLabel.setForeground(new Color(200, 100, 100));
+            smokingLabel.setForeground(new Color(130, 95, 80));
+            smokingLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
             card.add(smokingLabel);
         }
 
         card.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        // Price
-        JLabel priceLabel = new JLabel("$" + room.getPricePerNight() + "/night");
-        priceLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
-        priceLabel.setForeground(UITheme.ACCENT_GOLD);
-        card.add(priceLabel);
+        Box priceRow = Box.createHorizontalBox();
+        priceRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel priceMain = new JLabel("$" + room.getPricePerNight());
+        priceMain.setFont(new Font("SansSerif", Font.BOLD, 14));
+        priceMain.setForeground(UITheme.ACCENT_GOLD);
+        JLabel priceUnit = new JLabel(" / night");
+        priceUnit.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        priceUnit.setForeground(RIM_SUBHEAD);
+        priceRow.add(priceMain);
+        priceRow.add(priceUnit);
+        priceRow.add(Box.createHorizontalGlue());
+        card.add(priceRow);
 
         card.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        // Action Button
-        JButton detailsButton = new JButton("View Details");
-        detailsButton.setFont(new Font("SansSerif", Font.BOLD, 11));
-        detailsButton.setBackground(UITheme.ACCENT_GOLD);
-        detailsButton.setForeground(Color.WHITE);
-        detailsButton.setFocusPainted(false);
-        detailsButton.setBorderPainted(false);
-        detailsButton.setOpaque(true);
-        detailsButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        detailsButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        JButton detailsButton = createCardOutlineButton("View details");
         detailsButton.addActionListener(e -> showRoomDetails(room));
         card.add(detailsButton);
 
         card.add(Box.createVerticalGlue());
-
         card.add(Box.createRigidArea(new Dimension(0, 6)));
 
-        JButton modifyButton = new JButton("Modify Room");
-        modifyButton.setFont(new Font("SansSerif", Font.BOLD, 11));
-        modifyButton.setBackground(UITheme.SECONDARY_BUTTON);
-        modifyButton.setForeground(UITheme.TEXT_DARK);
-        modifyButton.setFocusPainted(false);
-        modifyButton.setBorderPainted(false);
-        modifyButton.setOpaque(true);
-        modifyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        modifyButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
-
+        JButton modifyButton = createCardOutlineButton("Modify room");
         modifyButton.addActionListener(e -> showModifyRoomDialog(room));
-
         card.add(modifyButton);
 
         return card;
     }
 
-    private Color getStatusColor(String status) {
-        if (status == null) status = "Available";
+    private JButton createCardOutlineButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("SansSerif", Font.BOLD, 12));
+        button.setBackground(RIM_BUTTON_IDLE);
+        button.setForeground(UITheme.TEXT_DARK);
+        button.setFocusPainted(false);
+        button.setBorderPainted(true);
+        button.setOpaque(true);
+        button.setBorder(new CompoundBorder(
+                new LineBorder(RIM_WARM_BORDER, 1),
+                new EmptyBorder(6, 10, 6, 10)
+        ));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setAlignmentX(Component.LEFT_ALIGNMENT);
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        return button;
+    }
 
-        return switch (status) {
-            case "Occupied" -> new Color(244, 67, 54);
-            case "Maintenance" -> new Color(255, 193, 7);
-            case "Reserved" -> new Color(63, 81, 181);
-            default -> new Color(76, 175, 80);
+    private Color getStatusStripeColor(String status) {
+        String s = status == null ? "Vacant" : status.trim();
+        if (s.isEmpty()) {
+            s = "Vacant";
+        }
+        return switch (s) {
+            case "Occupied" -> new Color(208, 192, 188);
+            case "Booked", "Reserved" -> new Color(198, 202, 214);
+            case "Checked Out", "Maintenance" -> new Color(210, 204, 196);
+            default -> new Color(196, 206, 190);
+        };
+    }
+
+    private Color getStatusBadgeBackground(String status) {
+        String s = status == null ? "Vacant" : status.trim();
+        if (s.isEmpty()) {
+            s = "Vacant";
+        }
+        return switch (s) {
+            case "Occupied" -> new Color(247, 238, 235);
+            case "Booked", "Reserved" -> new Color(238, 240, 246);
+            case "Checked Out", "Maintenance" -> new Color(244, 241, 234);
+            default -> new Color(236, 242, 232);
+        };
+    }
+
+    private Color getStatusBadgeForeground(String status) {
+        String s = status == null ? "Vacant" : status.trim();
+        if (s.isEmpty()) {
+            s = "Vacant";
+        }
+        return switch (s) {
+            case "Occupied" -> new Color(92, 52, 52);
+            case "Booked", "Reserved" -> new Color(52, 58, 76);
+            case "Checked Out", "Maintenance" -> new Color(72, 66, 58);
+            default -> new Color(48, 72, 52);
         };
     }
 
@@ -804,7 +873,7 @@ public class RoomManagementPage extends JPanel {
 
         JPanel dialogContent = new JPanel();
         dialogContent.setLayout(new BoxLayout(dialogContent, BoxLayout.Y_AXIS));
-        dialogContent.setBackground(UITheme.PAGE_BACKGROUND);
+        dialogContent.setBackground(RIM_PAGE);
         dialogContent.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         // Details
@@ -830,12 +899,12 @@ public class RoomManagementPage extends JPanel {
 
         JLabel reservationSectionTitle = new JLabel("Reservation Activity");
         reservationSectionTitle.setFont(new Font("SansSerif", Font.BOLD, 15));
-        reservationSectionTitle.setForeground(UITheme.TEXT_DARK);
+        reservationSectionTitle.setForeground(UITheme.ACCENT_GOLD);
         dialogContent.add(reservationSectionTitle);
 
         JLabel reservationSectionSubtitle = new JLabel("Verbose timeline for this room (newest first)");
         reservationSectionSubtitle.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        reservationSectionSubtitle.setForeground(UITheme.TEXT_MEDIUM);
+        reservationSectionSubtitle.setForeground(RIM_SUBHEAD);
         dialogContent.add(Box.createRigidArea(new Dimension(0, 2)));
         dialogContent.add(reservationSectionSubtitle);
         dialogContent.add(Box.createRigidArea(new Dimension(0, 10)));
@@ -843,15 +912,15 @@ public class RoomManagementPage extends JPanel {
         if (roomReservations.isEmpty()) {
             JPanel emptyReservationPanel = new JPanel(new BorderLayout());
             emptyReservationPanel.setOpaque(true);
-            emptyReservationPanel.setBackground(UITheme.CARD_BACKGROUND);
+            emptyReservationPanel.setBackground(RIM_PANEL);
             emptyReservationPanel.setBorder(new CompoundBorder(
-                    new LineBorder(UITheme.BORDER_COLOR, 1),
+                    new LineBorder(RIM_WARM_BORDER, 1),
                     new EmptyBorder(12, 12, 12, 12)
             ));
 
             JLabel emptyReservationLabel = new JLabel("No reservations found for this room yet.");
             emptyReservationLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-            emptyReservationLabel.setForeground(UITheme.TEXT_MEDIUM);
+            emptyReservationLabel.setForeground(RIM_SUBHEAD);
             emptyReservationPanel.add(emptyReservationLabel, BorderLayout.CENTER);
             dialogContent.add(emptyReservationPanel);
         } else {
@@ -873,7 +942,7 @@ public class RoomManagementPage extends JPanel {
         buttonPanel.add(closeButton);
 
         JPanel outer = new JPanel(new BorderLayout());
-        outer.setBackground(UITheme.PAGE_BACKGROUND);
+        outer.setBackground(RIM_PAGE);
 
         JScrollPane scrollPane = new JScrollPane(dialogContent);
         scrollPane.setBorder(null);
@@ -913,9 +982,9 @@ public class RoomManagementPage extends JPanel {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setOpaque(true);
-        card.setBackground(UITheme.CARD_BACKGROUND);
+        card.setBackground(RIM_SECTION);
         card.setBorder(new CompoundBorder(
-                new LineBorder(UITheme.BORDER_COLOR, 1),
+                new LineBorder(RIM_WARM_BORDER, 1),
                 new EmptyBorder(10, 10, 10, 10)
         ));
 
@@ -946,7 +1015,7 @@ public class RoomManagementPage extends JPanel {
 
         JLabel labelComp = new JLabel(label);
         labelComp.setFont(new Font("SansSerif", Font.BOLD, 13));
-        labelComp.setForeground(UITheme.TEXT_MEDIUM);
+        labelComp.setForeground(RIM_SUBHEAD);
 
         JLabel valueComp = new JLabel(value);
         valueComp.setFont(new Font("SansSerif", Font.PLAIN, 13));
@@ -971,33 +1040,32 @@ public class RoomManagementPage extends JPanel {
 
     private JPanel createNotificationPanel() {
         JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout(8, 0));
-        panel.setBackground(new Color(240, 248, 255));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(100, 150, 200), 1),
-                new EmptyBorder(12, 14, 12, 14)
-        ));
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
-        panel.setBorder(new EmptyBorder(8, 28, 8, 28));
+        panel.setLayout(new BorderLayout(10, 0));
+        panel.setBackground(RIM_SECTION);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
 
-        JLabel iconLabel = new JLabel("ℹ");
-        iconLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        iconLabel.setForeground(new Color(100, 150, 200));
+        panel.setBorder(new CompoundBorder(
+                new LineBorder(RIM_WARM_BORDER, 1),
+                new EmptyBorder(10, 28, 10, 28)
+        ));
+
+        JLabel iconLabel = new JLabel("●");
+        iconLabel.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        iconLabel.setForeground(UITheme.ACCENT_GOLD);
 
         notificationMessageLabel = new JLabel("Notification message");
         notificationMessageLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
         notificationMessageLabel.setForeground(UITheme.TEXT_DARK);
 
-        JButton dismissButton = new JButton("✕");
-        dismissButton.setFont(new Font("SansSerif", Font.BOLD, 16));
-        dismissButton.setForeground(new Color(100, 150, 200));
-        dismissButton.setBackground(new Color(240, 248, 255));
+        JButton dismissButton = new JButton("Close");
+        dismissButton.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        dismissButton.setForeground(RIM_SUBHEAD);
+        dismissButton.setBackground(RIM_SECTION);
         dismissButton.setFocusPainted(false);
         dismissButton.setBorderPainted(false);
         dismissButton.setOpaque(false);
         dismissButton.setContentAreaFilled(false);
         dismissButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        dismissButton.setPreferredSize(new Dimension(24, 24));
         dismissButton.addActionListener(_ -> panel.setVisible(false));
 
         panel.add(iconLabel, BorderLayout.WEST);
